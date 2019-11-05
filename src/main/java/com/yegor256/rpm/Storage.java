@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.yegor256.npm;
+package com.yegor256.rpm;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -71,7 +71,7 @@ public interface Storage {
          * @throws IOException If fails
          */
         public Fake() throws IOException {
-            this(Files.createTempDirectory("npm-files"));
+            this(Files.createTempDirectory("rpm-files"));
         }
         /**
          * Ctor.

@@ -21,13 +21,48 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.yegor256.rpm;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 /**
- * Npm files, tests.
- *
+ * Test case for {@link Storage}.
  * @author Yegor Bugayenko (yegor256@gmail.com)
  * @version $Id$
- * @since 0.1
  */
-package com.yegor256.npm;
+public final class StorageTest {
 
+    /**
+     * Temp folder for all tests.
+     */
+    @Rule
+    @SuppressWarnings("PMD.BeanMembersShouldSerialize")
+    public TemporaryFolder folder = new TemporaryFolder();
+
+    /**
+     * Fake storage works.
+     * @throws Exception If some problem inside
+     */
+    @Test
+    public void savesAndLoads() throws Exception {
+        final Storage storage = new Storage.Fake();
+        final Path input = this.folder.newFile("a.deb").toPath();
+        final String content = "Hello, друг!";
+        Files.write(input, content.getBytes());
+        final String key = "a/b/test.deb";
+        storage.save(key, input);
+        final Path output = this.folder.newFile("b.deb").toPath();
+        storage.load(key, output);
+        MatcherAssert.assertThat(
+            new String(Files.readAllBytes(output)),
+            Matchers.equalTo(content)
+        );
+    }
+
+}
