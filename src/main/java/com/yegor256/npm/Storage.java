@@ -1,0 +1,99 @@
+/**
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2019 Yegor Bugayenko
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.yegor256.npm;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+
+/**
+ * The storage.
+ *
+ * @author Yegor Bugayenko (yegor256@gmail.com)
+ * @version $Id$
+ * @since 0.1
+ */
+public interface Storage {
+
+    /**
+     * Saves the file to the specified key.
+     *
+     * @param key The key (file name)
+     * @param content Where to get the content
+     * @throws IOException If fails
+     */
+    void save(String key, Path content) throws IOException;
+
+    /**
+     * Loads the file from the storage.
+     *
+     * @param key The key (file name)
+     * @param content Where to put the content
+     * @throws IOException If fails
+     */
+    void load(String key, Path content) throws IOException;
+
+    /**
+     * Fake storage.
+     *
+     * @since 0.1
+     */
+    final class Fake implements Storage {
+        /**
+         * Where we keep the data.
+         */
+        private final Path dir;
+        /**
+         * Ctor.
+         * @throws IOException If fails
+         */
+        public Fake() throws IOException {
+            this(Files.createTempDirectory("npm-files"));
+        }
+        /**
+         * Ctor.
+         * @param path The path to the dir
+         */
+        public Fake(final Path path) {
+            this.dir = path;
+        }
+        @Override
+        public void save(final String key, final Path path) throws IOException {
+            final Path target = Paths.get(this.dir.toString(), key);
+            target.getParent().toFile().mkdirs();
+            Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING);
+        }
+        @Override
+        public void load(final String key, final Path path) throws IOException {
+            Files.copy(
+                Paths.get(this.dir.toString(), key),
+                path,
+                StandardCopyOption.REPLACE_EXISTING
+            );
+        }
+    }
+
+}
