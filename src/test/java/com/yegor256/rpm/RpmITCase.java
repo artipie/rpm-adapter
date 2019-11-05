@@ -25,6 +25,7 @@ package com.yegor256.rpm;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Rule;
@@ -32,13 +33,13 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 /**
- * Test case for {@link Storage}.
+ * Integration case for {@link Rpm}.
  *
  * @author Yegor Bugayenko (yegor256@gmail.com)
  * @version $Id$
  * @since 0.1
  */
-public final class StorageTest {
+public final class RpmITCase {
 
     /**
      * Temp folder for all tests.
@@ -48,22 +49,50 @@ public final class StorageTest {
     public TemporaryFolder folder = new TemporaryFolder();
 
     /**
-     * Fake storage works.
+     * RPM works.
      * @throws Exception If some problem inside
      */
     @Test
     public void savesAndLoads() throws Exception {
-        final Storage storage = new Storage.Simple();
-        final Path input = this.folder.newFile("a.deb").toPath();
-        final String content = "Hello, друг!";
-        Files.write(input, content.getBytes());
-        final String key = "a/b/test.deb";
-        storage.save(key, input);
-        final Path output = this.folder.newFile("b.deb").toPath();
-        storage.load(key, output);
+        final Path repo = this.folder.newFolder("repo").toPath();
+        final Rpm rpm = new Rpm(new Storage.Simple(repo));
+        final Path bin = this.folder.newFile("x.rpm").toPath();
+        Files.copy(
+            RpmITCase.class.getResourceAsStream(
+                "/nginx-module-xslt-1.16.1-1.el7.ngx.x86_64.rpm"
+            ),
+            bin,
+            StandardCopyOption.REPLACE_EXISTING
+        );
+        rpm.publish(bin);
+        final Path stdout = this.folder.newFile("stdout.txt").toPath();
+        new ProcessBuilder()
+            .command(
+                "docker",
+                "run",
+                "--rm",
+                "--volume",
+                String.format("%s:/repo", repo),
+                "af27e27cbf9d",
+                "/bin/bash",
+                "-c",
+                String.join(
+                    ";",
+                    "createrepo /repo",
+                    "yum-config-manager --add-repo file:///repo",
+                    "yum --disablerepo='*' --enablerepo='repo' list available"
+                )
+            )
+            .redirectOutput(stdout.toFile())
+            .redirectError(stdout.toFile())
+            .start()
+            .waitFor();
         MatcherAssert.assertThat(
-            new String(Files.readAllBytes(output)),
-            Matchers.equalTo(content)
+            new String(Files.readAllBytes(stdout)),
+            Matchers.allOf(
+                Matchers.containsString("nginx-module-xslt.x86_64"),
+                Matchers.containsString("1:1.16.1-1.el7.ngx")
+            )
         );
     }
 

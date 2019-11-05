@@ -23,6 +23,7 @@
  */
 package com.yegor256.rpm;
 
+import com.jcabi.log.Logger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,11 +58,11 @@ public interface Storage {
     void load(String key, Path content) throws IOException;
 
     /**
-     * Fake storage.
+     * Simple storage.
      *
      * @since 0.1
      */
-    final class Fake implements Storage {
+    final class Simple implements Storage {
         /**
          * Where we keep the data.
          */
@@ -70,14 +71,14 @@ public interface Storage {
          * Ctor.
          * @throws IOException If fails
          */
-        public Fake() throws IOException {
+        public Simple() throws IOException {
             this(Files.createTempDirectory("rpm-files"));
         }
         /**
          * Ctor.
          * @param path The path to the dir
          */
-        public Fake(final Path path) {
+        public Simple(final Path path) {
             this.dir = path;
         }
         @Override
@@ -85,13 +86,20 @@ public interface Storage {
             final Path target = Paths.get(this.dir.toString(), key);
             target.getParent().toFile().mkdirs();
             Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING);
+            Logger.info(
+                this,
+                "Saved %d bytes to %s: %s",
+                Files.size(target), key, target
+            );
         }
         @Override
         public void load(final String key, final Path path) throws IOException {
-            Files.copy(
-                Paths.get(this.dir.toString(), key),
-                path,
-                StandardCopyOption.REPLACE_EXISTING
+            final Path source = Paths.get(this.dir.toString(), key);
+            Files.copy(source, path, StandardCopyOption.REPLACE_EXISTING);
+            Logger.info(
+                this,
+                "Loaded %d bytes of %s: %s",
+                Files.size(source), key, source
             );
         }
     }

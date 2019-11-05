@@ -23,48 +23,39 @@
  */
 package com.yegor256.rpm;
 
-import java.nio.file.Files;
+import java.io.IOException;
 import java.nio.file.Path;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 /**
- * Test case for {@link Storage}.
+ * The RPM front.
  *
  * @author Yegor Bugayenko (yegor256@gmail.com)
  * @version $Id$
  * @since 0.1
  */
-public final class StorageTest {
+public final class Rpm {
 
     /**
-     * Temp folder for all tests.
+     * The storage.
      */
-    @Rule
-    @SuppressWarnings("PMD.BeanMembersShouldSerialize")
-    public TemporaryFolder folder = new TemporaryFolder();
+    private final Storage storage;
 
     /**
-     * Fake storage works.
-     * @throws Exception If some problem inside
+     * Ctor.
+     * @param stg The storage
      */
-    @Test
-    public void savesAndLoads() throws Exception {
-        final Storage storage = new Storage.Simple();
-        final Path input = this.folder.newFile("a.deb").toPath();
-        final String content = "Hello, друг!";
-        Files.write(input, content.getBytes());
-        final String key = "a/b/test.deb";
-        storage.save(key, input);
-        final Path output = this.folder.newFile("b.deb").toPath();
-        storage.load(key, output);
-        MatcherAssert.assertThat(
-            new String(Files.readAllBytes(output)),
-            Matchers.equalTo(content)
-        );
+    public Rpm(final Storage stg) {
+        this.storage = stg;
+    }
+
+    /**
+     * Publish a single DEB artifact.
+     *
+     * @param path The file
+     * @throws IOException If fails
+     */
+    public void publish(final Path path) throws IOException {
+        this.storage.save("x.rpm", path);
     }
 
 }
