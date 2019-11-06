@@ -54,9 +54,9 @@ public final class RpmITCase {
     @Before
     public void dockerExists() throws IOException, InterruptedException {
         Assume.assumeThat(
-            "Docker is present at the build machine",
+            "Docker is NOT present at the build machine",
             new ProcessBuilder()
-                .command("docker", "--version")
+                .command("which", "docker")
                 .start()
                 .waitFor(),
             Matchers.equalTo(0)
