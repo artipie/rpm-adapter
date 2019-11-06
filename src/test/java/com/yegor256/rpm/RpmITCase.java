@@ -23,11 +23,14 @@
  */
 package com.yegor256.rpm;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -47,6 +50,18 @@ public final class RpmITCase {
     @Rule
     @SuppressWarnings("PMD.BeanMembersShouldSerialize")
     public TemporaryFolder folder = new TemporaryFolder();
+
+    @Before
+    public void dockerExists() throws IOException, InterruptedException {
+        Assume.assumeThat(
+            "Docker is present at the build machine",
+            new ProcessBuilder()
+                .command("docker", "--version")
+                .start()
+                .waitFor(),
+            Matchers.equalTo(0)
+        );
+    }
 
     /**
      * RPM works.
