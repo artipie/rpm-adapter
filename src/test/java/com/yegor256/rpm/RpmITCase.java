@@ -23,7 +23,6 @@
  */
 package com.yegor256.rpm;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -42,6 +41,7 @@ import org.junit.rules.TemporaryFolder;
  * @version $Id$
  * @since 0.1
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class RpmITCase {
 
     /**
@@ -51,8 +51,12 @@ public final class RpmITCase {
     @SuppressWarnings("PMD.BeanMembersShouldSerialize")
     public TemporaryFolder folder = new TemporaryFolder();
 
+    /**
+     * Make sure Docker is here.
+     * @throws Exception If fails
+     */
     @Before
-    public void dockerExists() throws IOException, InterruptedException {
+    public void dockerExists() throws Exception {
         Assume.assumeThat(
             "Docker is NOT present at the build machine",
             new ProcessBuilder()

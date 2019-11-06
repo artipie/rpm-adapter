@@ -1,3 +1,12 @@
+[![DevOps By Rultor.com](http://www.rultor.com/b/yegor256/rpm-files)](http://www.rultor.com/p/yegor256/rpm-files)
+[![We recommend IntelliJ IDEA](https://www.elegantobjects.org/intellij-idea.svg)](https://www.jetbrains.com/idea/)
+
+[![Javadoc](http://www.javadoc.io/badge/com.yegor256/rpm-files.svg)](http://www.javadoc.io/doc/com.yegor256/rpm-files)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/yegor256/rpm-files/blob/master/LICENSE.txt)
+[![Hits-of-Code](https://hitsofcode.com/github/yegor256/rpm-files)](https://hitsofcode.com/view/github/yegor256/rpm-files)
+[![Maven Central](https://img.shields.io/maven-central/v/com.yegor256/rpm-files.svg)](https://maven-badges.herokuapp.com/maven-central/com.yegor256/rpm-files)
+[![PDD status](http://www.0pdd.com/svg?name=yegor256/rpm-files)](http://www.0pdd.com/p?name=yegor256/rpm-files)
+
 Turns your binary storage (files, S3 objects, anything) into an RPM repository.
 
 Similar solutions:
