@@ -24,50 +24,66 @@
 package com.yegor256.rpm;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import org.redline_rpm.header.Header;
+import org.xembly.Directives;
 
 /**
- * The RPM front.
+ * The other XML file.
  *
  * @author Yegor Bugayenko (yegor256@gmail.com)
  * @version $Id$
  * @since 0.1
  */
-public final class Rpm {
+final class Other {
 
     /**
-     * The storage.
+     * The path of XML.
      */
-    private final Storage storage;
+    private final Path xml;
 
     /**
      * Ctor.
-     * @param stg The storage
+     * @param path The path of XML file
      */
-    public Rpm(final Storage stg) {
-        this.storage = stg;
+    Other(final Path path) {
+        this.xml = path;
     }
 
     /**
-     * Update the meta info by this artifact.
+     * Update the RPM package from the header.
      *
-     * @param key The name of the file just updated
+     * @param pkg The package
      * @throws IOException If fails
      */
-    public void update(final String key) throws IOException {
-        final Path temp = Files.createTempFile("rpm", ".rpm");
-        this.storage.load(key, temp);
-        final Pkg pkg = new Pkg(temp);
-        final Path primary = Files.createTempFile("rpm", ".xml");
-        new Primary(primary).update(pkg);
-        this.storage.save("primary.xml", primary);
-        final Path filelists = Files.createTempFile("rpm", ".xml");
-        new Filelists(filelists).update(pkg);
-        this.storage.save("filelists.xml", filelists);
-        final Path other = Files.createTempFile("rpm", ".xml");
-        new Other(other).update(pkg);
-        this.storage.save("other.xml", other);
+    public void update(final Pkg pkg) throws IOException {
+        new Update(this.xml).apply(
+            new Directives()
+                .xpath("/")
+                .addIf("otherdata")
+                .xpath(
+                    String.format(
+                        "/otherdata/package[name='%s']",
+                        pkg.tag(Header.HeaderTag.NAME)
+                    )
+                )
+                .remove()
+                .xpath("/otherdata")
+                .attr("xmlns", "http://linux.duke.edu/metadata/other")
+                .attr("packages", 1)
+                .add("package")
+                .attr("pkgid", pkg.hash())
+                .attr("name", pkg.tag(Header.HeaderTag.NAME))
+                .attr("arch", pkg.tag(Header.HeaderTag.ARCH))
+                .add("version")
+                .attr("epoch", pkg.num(Header.HeaderTag.EPOCH))
+                .attr("ver", pkg.tag(Header.HeaderTag.VERSION))
+                .attr("rel", pkg.tag(Header.HeaderTag.RELEASE))
+                .up()
+                .add("changelog")
+                .set("?")
+                .up()
+        );
     }
 
 }

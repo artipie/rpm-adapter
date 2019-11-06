@@ -18,6 +18,8 @@ Some valuable references:
 
   * [RPM format](https://rpm-packaging-guide.github.io/)
   * [_Yum repository internals_](https://blog.packagecloud.io/eng/2015/07/20/yum-repository-internals/) (blog post)
+  * [_YUM repository and package management: Complete Tutorial_](https://www.slashroot.in/yum-repository-and-package-management-complete-tutorial) (blog post)
+  * [_The Origin of RPM Content_](https://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/rpm.html)
 
 This is the dependency you need:
 
@@ -32,13 +34,13 @@ This is the dependency you need:
 Then, you implement `com.yegor256.rpm.Storage` interface.
 
 Then, you make an instance of `Rpm` class with your storage
-as an argument. Finally, you publish your artifacts via this
-object, or manipulate them:
+as an argument. Finally, you put your artifacts to the storage
+and instruct `Rpm` to update the meta info:
 
 ```java
 import com.yegor256.rpm.Rpm;
 Rpm rpm = new Rpm(storage);
-rpm.publish(file); // add a single RPM artifact to the repo
+rpm.update("test/my.rpm");
 // Do you need more operations? Submit a ticket.
 ```
 

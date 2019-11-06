@@ -23,51 +23,43 @@
  */
 package com.yegor256.rpm;
 
-import java.io.IOException;
+import com.jcabi.matchers.XhtmlMatchers;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.hamcrest.MatcherAssert;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.xembly.Directives;
 
 /**
- * The RPM front.
+ * Test case for {@link Update}.
  *
  * @author Yegor Bugayenko (yegor256@gmail.com)
  * @version $Id$
  * @since 0.1
  */
-public final class Rpm {
+public final class UpdateTest {
 
     /**
-     * The storage.
+     * Temp folder for all tests.
      */
-    private final Storage storage;
+    @Rule
+    @SuppressWarnings("PMD.BeanMembersShouldSerialize")
+    public TemporaryFolder folder = new TemporaryFolder();
 
     /**
-     * Ctor.
-     * @param stg The storage
+     * Fake storage works.
+     * @throws Exception If some problem inside
      */
-    public Rpm(final Storage stg) {
-        this.storage = stg;
-    }
-
-    /**
-     * Update the meta info by this artifact.
-     *
-     * @param key The name of the file just updated
-     * @throws IOException If fails
-     */
-    public void update(final String key) throws IOException {
-        final Path temp = Files.createTempFile("rpm", ".rpm");
-        this.storage.load(key, temp);
-        final Pkg pkg = new Pkg(temp);
-        final Path primary = Files.createTempFile("rpm", ".xml");
-        new Primary(primary).update(pkg);
-        this.storage.save("primary.xml", primary);
-        final Path filelists = Files.createTempFile("rpm", ".xml");
-        new Filelists(filelists).update(pkg);
-        this.storage.save("filelists.xml", filelists);
-        final Path other = Files.createTempFile("rpm", ".xml");
-        new Other(other).update(pkg);
-        this.storage.save("other.xml", other);
+    @Test
+    public void makesUpdateToXmlFile() throws Exception {
+        final Path xml = this.folder.newFile("a.xml").toPath();
+        new Update(xml).apply(new Directives().add("test").add("foo"));
+        MatcherAssert.assertThat(
+            new String(Files.readAllBytes(xml)),
+            XhtmlMatchers.hasXPath("/test/foo")
+        );
     }
 
 }

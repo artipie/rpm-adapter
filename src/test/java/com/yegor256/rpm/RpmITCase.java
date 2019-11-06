@@ -74,7 +74,8 @@ public final class RpmITCase {
     @Test
     public void savesAndLoads() throws Exception {
         final Path repo = this.folder.newFolder("repo").toPath();
-        final Rpm rpm = new Rpm(new Storage.Simple(repo));
+        final Storage storage = new Storage.Simple(repo);
+        final Rpm rpm = new Rpm(storage);
         final Path bin = this.folder.newFile("x.rpm").toPath();
         Files.copy(
             RpmITCase.class.getResourceAsStream(
@@ -83,7 +84,9 @@ public final class RpmITCase {
             bin,
             StandardCopyOption.REPLACE_EXISTING
         );
-        rpm.publish(bin);
+        final String key = "nginx-module";
+        storage.save(key, bin);
+        rpm.update(key);
         final Path stdout = this.folder.newFile("stdout.txt").toPath();
         new ProcessBuilder()
             .command(
@@ -96,7 +99,7 @@ public final class RpmITCase {
                 "/bin/bash",
                 "-c",
                 String.join(
-                    ";",
+                    " && ",
                     "yum-config-manager --add-repo file:///repo",
                     "yum --disablerepo='*' --enablerepo='repo' list available"
                 )

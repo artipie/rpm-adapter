@@ -23,51 +23,56 @@
  */
 package com.yegor256.rpm;
 
+import com.jcabi.log.Logger;
+import com.jcabi.xml.XMLDocument;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.w3c.dom.Node;
+import org.xembly.Directives;
+import org.xembly.Xembler;
 
 /**
- * The RPM front.
+ * One update to an XML file.
  *
  * @author Yegor Bugayenko (yegor256@gmail.com)
  * @version $Id$
  * @since 0.1
  */
-public final class Rpm {
+final class Update {
 
     /**
-     * The storage.
+     * The path of XML.
      */
-    private final Storage storage;
+    private final Path xml;
 
     /**
      * Ctor.
-     * @param stg The storage
+     * @param path The path of XML file
      */
-    public Rpm(final Storage stg) {
-        this.storage = stg;
+    Update(final Path path) {
+        this.xml = path;
     }
 
     /**
-     * Update the meta info by this artifact.
+     * Apply an update.
      *
-     * @param key The name of the file just updated
+     * @param dirs Directives
      * @throws IOException If fails
      */
-    public void update(final String key) throws IOException {
-        final Path temp = Files.createTempFile("rpm", ".rpm");
-        this.storage.load(key, temp);
-        final Pkg pkg = new Pkg(temp);
-        final Path primary = Files.createTempFile("rpm", ".xml");
-        new Primary(primary).update(pkg);
-        this.storage.save("primary.xml", primary);
-        final Path filelists = Files.createTempFile("rpm", ".xml");
-        new Filelists(filelists).update(pkg);
-        this.storage.save("filelists.xml", filelists);
-        final Path other = Files.createTempFile("rpm", ".xml");
-        new Other(other).update(pkg);
-        this.storage.save("other.xml", other);
+    public void apply(final Directives dirs) throws IOException {
+        final Node output;
+        if (this.xml.toFile().exists() && this.xml.toFile().length() > 0L) {
+            output = new Xembler(dirs).applyQuietly(
+                new XMLDocument(this.xml.toFile()).node()
+            );
+        } else {
+            output = new Xembler(dirs).domQuietly();
+        }
+        final String doc = new XMLDocument(output).toString();
+        Files.write(this.xml, doc.getBytes(StandardCharsets.UTF_8));
+        Logger.info(this, "Saved: %s", doc);
     }
 
 }

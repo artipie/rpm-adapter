@@ -23,51 +23,56 @@
  */
 package com.yegor256.rpm;
 
-import java.io.IOException;
+import com.jcabi.matchers.XhtmlMatchers;
+import com.jcabi.xml.XMLDocument;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import org.hamcrest.MatcherAssert;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 /**
- * The RPM front.
+ * Test case for {@link Primary}.
  *
  * @author Yegor Bugayenko (yegor256@gmail.com)
  * @version $Id$
  * @since 0.1
  */
-public final class Rpm {
+public final class PrimaryTest {
 
     /**
-     * The storage.
+     * Temp folder for all tests.
      */
-    private final Storage storage;
+    @Rule
+    @SuppressWarnings("PMD.BeanMembersShouldSerialize")
+    public TemporaryFolder folder = new TemporaryFolder();
 
     /**
-     * Ctor.
-     * @param stg The storage
+     * Fake storage works.
+     * @throws Exception If some problem inside
      */
-    public Rpm(final Storage stg) {
-        this.storage = stg;
-    }
-
-    /**
-     * Update the meta info by this artifact.
-     *
-     * @param key The name of the file just updated
-     * @throws IOException If fails
-     */
-    public void update(final String key) throws IOException {
-        final Path temp = Files.createTempFile("rpm", ".rpm");
-        this.storage.load(key, temp);
-        final Pkg pkg = new Pkg(temp);
-        final Path primary = Files.createTempFile("rpm", ".xml");
-        new Primary(primary).update(pkg);
-        this.storage.save("primary.xml", primary);
-        final Path filelists = Files.createTempFile("rpm", ".xml");
-        new Filelists(filelists).update(pkg);
-        this.storage.save("filelists.xml", filelists);
-        final Path other = Files.createTempFile("rpm", ".xml");
-        new Other(other).update(pkg);
-        this.storage.save("other.xml", other);
+    @Test
+    public void addsSingleHeader() throws Exception {
+        final Path bin = this.folder.newFile("x.rpm").toPath();
+        Files.copy(
+            RpmITCase.class.getResourceAsStream(
+                "/nginx-module-xslt-1.16.1-1.el7.ngx.x86_64.rpm"
+            ),
+            bin,
+            StandardCopyOption.REPLACE_EXISTING
+        );
+        final Path xml = this.folder.newFile("primary.xml").toPath();
+        final Primary primary = new Primary(xml);
+        primary.update(new Pkg(bin));
+        MatcherAssert.assertThat(
+            new XMLDocument(new String(Files.readAllBytes(xml))),
+            XhtmlMatchers.hasXPath(
+                "/ns1:metadata/ns1:package",
+                "http://linux.duke.edu/metadata/common"
+            )
+        );
     }
 
 }

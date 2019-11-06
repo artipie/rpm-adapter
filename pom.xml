@@ -78,6 +78,25 @@ SOFTWARE.
   </distributionManagement>
   <dependencies>
     <dependency>
+      <groupId>org.redline-rpm</groupId>
+      <artifactId>redline</artifactId>
+      <version>1.2.9</version>
+    </dependency>
+    <dependency>
+      <groupId>com.jcabi.incubator</groupId>
+      <artifactId>xembly</artifactId>
+      <version>0.22</version>
+    </dependency>
+    <dependency>
+      <groupId>com.jcabi</groupId>
+      <artifactId>jcabi-xml</artifactId>
+      <version>0.17.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.jcabi</groupId>
+      <artifactId>jcabi-matchers</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.jcabi</groupId>
       <artifactId>jcabi-log</artifactId>
     </dependency>
