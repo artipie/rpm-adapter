@@ -21,8 +21,3 @@ $ mvn clean install -Pqulice
 ```
 
 To avoid build errors use Maven 3.2+.
-
-Pay attention that our `pom.xml` inherits a lot of configuration
-from [jcabi-parent](http://parent.jcabi.com).
-[This article](http://www.yegor256.com/2015/02/05/jcabi-parent-maven-pom.html)
-explains why it's done this way.
