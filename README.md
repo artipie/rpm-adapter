@@ -1,4 +1,4 @@
-Turns your binary storage (files, S3 objects, anything) into an NPM repository.
+Turns your binary storage (files, S3 objects, anything) into an RPM repository.
 
 Similar solutions:
 
@@ -8,6 +8,32 @@ Similar solutions:
 Some valuable references:
 
   * [RPM format](https://rpm-packaging-guide.github.io/)
+  * [_Yum repository internals_](https://blog.packagecloud.io/eng/2015/07/20/yum-repository-internals/) (blog post)
+
+This is the dependency you need:
+
+```xml
+<dependency>
+  <groupId>com.yegor256</groupId>
+  <artifactId>rpm-files</artifactId>
+  <version>[...]</version>
+</dependency>
+```
+
+Then, you implement `com.yegor256.rpm.Storage` interface.
+
+Then, you make an instance of `Rpm` class with your storage
+as an argument. Finally, you publish your artifacts via this
+object, or manipulate them:
+
+```java
+import com.yegor256.rpm.Rpm;
+Rpm rpm = new Rpm(storage);
+rpm.publish(file); // add a single RPM artifact to the repo
+// Do you need more operations? Submit a ticket.
+```
+
+Should work.
 
 ## How to contribute
 

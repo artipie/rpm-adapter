@@ -23,7 +23,7 @@
  */
 
 /**
- * Npm files.
+ * Rpm files.
  *
  * @author Yegor Bugayenko (yegor256@gmail.com)
  * @version $Id$
