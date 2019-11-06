@@ -55,7 +55,42 @@ public final class Rpm {
      * @throws IOException If fails
      */
     public void publish(final Path path) throws IOException {
+        if (!(this.storage instanceof Storage.Simple)) {
+            throw new IllegalArgumentException(
+                "We currently support only file-based simple storage"
+            );
+        }
         this.storage.save("x.rpm", path);
+        Rpm.update(Storage.Simple.class.cast(this.storage).directory());
+    }
+
+    /**
+     * Update the repo in the directory.
+     * @param dir The directory
+     * @throws IOException If fails
+     */
+    private static void update(final Path dir) throws IOException {
+        try {
+            new ProcessBuilder()
+                .command(
+                    "docker",
+                    "run",
+                    "--rm",
+                    "--volume",
+                    String.format("%s:/repo", dir),
+                    "yegor256/yum-utils",
+                    "createrepo",
+                    "--update",
+                    "/repo"
+                )
+                .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+                .redirectError(ProcessBuilder.Redirect.INHERIT)
+                .start()
+                .waitFor();
+        } catch (final InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(ex);
+        }
     }
 
 }

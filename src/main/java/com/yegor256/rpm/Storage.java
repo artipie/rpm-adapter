@@ -81,6 +81,13 @@ public interface Storage {
         public Simple(final Path path) {
             this.dir = path;
         }
+        /**
+         * Get directory.
+         * @return The path to directory
+         */
+        public Path directory() {
+            return this.dir;
+        }
         @Override
         public void save(final String key, final Path path) throws IOException {
             final Path target = Paths.get(this.dir.toString(), key);

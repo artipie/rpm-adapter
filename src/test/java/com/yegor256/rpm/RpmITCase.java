@@ -73,12 +73,11 @@ public final class RpmITCase {
                 "--rm",
                 "--volume",
                 String.format("%s:/repo", repo),
-                "af27e27cbf9d",
+                "yegor256/yum-utils",
                 "/bin/bash",
                 "-c",
                 String.join(
                     ";",
-                    "createrepo /repo",
                     "yum-config-manager --add-repo file:///repo",
                     "yum --disablerepo='*' --enablerepo='repo' list available"
                 )
