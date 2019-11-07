@@ -1,6 +1,7 @@
 [![DevOps By Rultor.com](http://www.rultor.com/b/yegor256/rpm-files)](http://www.rultor.com/p/yegor256/rpm-files)
 [![We recommend IntelliJ IDEA](https://www.elegantobjects.org/intellij-idea.svg)](https://www.jetbrains.com/idea/)
 
+[![Build Status](https://img.shields.io/travis/yegor256/rpm-files/master.svg)](https://travis-ci.org/yegor256/rpm-files)
 [![Javadoc](http://www.javadoc.io/badge/com.yegor256/rpm-files.svg)](http://www.javadoc.io/doc/com.yegor256/rpm-files)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/yegor256/rpm-files/blob/master/LICENSE.txt)
 [![Hits-of-Code](https://hitsofcode.com/github/yegor256/rpm-files)](https://hitsofcode.com/view/github/yegor256/rpm-files)
