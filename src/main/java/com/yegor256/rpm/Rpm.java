@@ -30,6 +30,20 @@ import java.nio.file.Path;
 /**
  * The RPM front.
  *
+ * First, you make an instance of this class, providing
+ * your storage as an argument:
+ *
+ * <pre> Rpm rpm = new Rpm(storage);</pre>
+ *
+ * Then, you put your binary RPM artifact to the storage and call
+ * {@link Rpm#update(String)}. This method will parse the RPM package
+ * and update all the necessary meta-data files. Right after this,
+ * your clients will be able to use the package, via {@code yum}:
+ *
+ * <pre> rpm.update("nginx.rpm");</pre>
+ *
+ * That's it.
+ *
  * @author Yegor Bugayenko (yegor256@gmail.com)
  * @version $Id$
  * @since 0.1

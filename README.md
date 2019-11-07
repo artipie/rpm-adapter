@@ -8,7 +8,11 @@
 [![Maven Central](https://img.shields.io/maven-central/v/com.yegor256/rpm-files.svg)](https://maven-badges.herokuapp.com/maven-central/com.yegor256/rpm-files)
 [![PDD status](http://www.0pdd.com/svg?name=yegor256/rpm-files)](http://www.0pdd.com/p?name=yegor256/rpm-files)
 
-Turns your binary storage (files, S3 objects, anything) into an RPM repository.
+This Java library turns your binary storage
+(files, S3 objects, anything) into an RPM repository.
+You may add it to your binary storage and it will become
+a fully-functionable RPM repository, which `yum` and `dnf`
+will perfectly understand.
 
 Similar solutions:
 
@@ -44,6 +48,9 @@ Rpm rpm = new Rpm(storage);
 rpm.update("test/my.rpm");
 // Do you need more operations? Submit a ticket.
 ```
+
+Read the [Javadoc](http://www.javadoc.io/doc/com.yegor256/rpm-files)
+for more technical details.
 
 Should work.
 
