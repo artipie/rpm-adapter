@@ -40,6 +40,15 @@ import java.nio.file.StandardCopyOption;
 public interface Storage {
 
     /**
+     * This file exists?
+     *
+     * @param key The key (file name)
+     * @return TRUE if exists
+     * @throws IOException If fails
+     */
+    boolean exists(String key) throws IOException;
+
+    /**
      * Saves the file to the specified key.
      *
      * @param key The key (file name)
@@ -81,12 +90,10 @@ public interface Storage {
         public Simple(final Path path) {
             this.dir = path;
         }
-        /**
-         * Get directory.
-         * @return The path to directory
-         */
-        public Path directory() {
-            return this.dir;
+        @Override
+        public boolean exists(final String key) {
+            final Path path = Paths.get(this.dir.toString(), key);
+            return Files.exists(path);
         }
         @Override
         public void save(final String key, final Path path) throws IOException {

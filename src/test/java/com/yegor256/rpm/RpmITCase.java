@@ -23,6 +23,7 @@
  */
 package com.yegor256.rpm;
 
+import com.jcabi.log.Logger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -77,14 +78,14 @@ public final class RpmITCase {
         final Storage storage = new Storage.Simple(repo);
         final Rpm rpm = new Rpm(storage);
         final Path bin = this.folder.newFile("x.rpm").toPath();
+        final String key = "nginx-module-xslt-1.16.1-1.el7.ngx.x86_64.rpm";
         Files.copy(
             RpmITCase.class.getResourceAsStream(
-                "/nginx-module-xslt-1.16.1-1.el7.ngx.x86_64.rpm"
+                String.format("/%s", key)
             ),
             bin,
             StandardCopyOption.REPLACE_EXISTING
         );
-        final String key = "nginx-module";
         storage.save(key, bin);
         rpm.update(key);
         final Path stdout = this.folder.newFile("stdout.txt").toPath();
@@ -99,17 +100,26 @@ public final class RpmITCase {
                 "/bin/bash",
                 "-c",
                 String.join(
-                    " && ",
-                    "yum-config-manager --add-repo file:///repo",
-                    "yum --disablerepo='*' --enablerepo='repo' list available"
+                    "\n",
+                    "set -e",
+                    "set -x",
+                    "cat /repo/repodata/primary.xml",
+                    "cat /repo/repodata/filelists.xml",
+                    "cat /repo/repodata/other.xml",
+                    "dnf config-manager --verbose --add-repo file:///repo",
+                    // @checkstyle LineLength (2 lines)
+                    "dnf repolist --verbose --disablerepo='*' --enablerepo='repo'",
+                    "dnf install --verbose --disablerepo='*' --enablerepo='repo' nginx-module-xslt"
                 )
             )
             .redirectOutput(stdout.toFile())
-            .redirectError(stdout.toFile())
+            .redirectErrorStream(true)
             .start()
             .waitFor();
+        final String log = new String(Files.readAllBytes(stdout));
+        Logger.debug(this, "Full stdout/stderr:\n%s", log);
         MatcherAssert.assertThat(
-            new String(Files.readAllBytes(stdout)),
+            log,
             Matchers.allOf(
                 Matchers.containsString("nginx-module-xslt.x86_64"),
                 Matchers.containsString("1:1.16.1-1.el7.ngx")

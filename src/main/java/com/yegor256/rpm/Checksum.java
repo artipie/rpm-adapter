@@ -23,56 +23,51 @@
  */
 package com.yegor256.rpm;
 
-import com.jcabi.matchers.XhtmlMatchers;
-import com.jcabi.xml.XMLDocument;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import org.hamcrest.MatcherAssert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Locale;
+import javax.xml.bind.DatatypeConverter;
 
 /**
- * Test case for {@link Primary}.
+ * SHA-256 checksum of a file.
  *
  * @author Yegor Bugayenko (yegor256@gmail.com)
  * @version $Id$
  * @since 0.1
  */
-public final class PrimaryTest {
+final class Checksum {
 
     /**
-     * Temp folder for all tests.
+     * The XML.
      */
-    @Rule
-    @SuppressWarnings("PMD.BeanMembersShouldSerialize")
-    public TemporaryFolder folder = new TemporaryFolder();
+    private final Path file;
 
     /**
-     * Fake storage works.
-     * @throws Exception If some problem inside
+     * Ctor.
+     * @param path The path
      */
-    @Test
-    public void addsSingleHeader() throws Exception {
-        final Path bin = this.folder.newFile("x.rpm").toPath();
-        Files.copy(
-            RpmITCase.class.getResourceAsStream(
-                "/nginx-module-xslt-1.16.1-1.el7.ngx.x86_64.rpm"
-            ),
-            bin,
-            StandardCopyOption.REPLACE_EXISTING
-        );
-        final Path xml = this.folder.newFile("primary.xml").toPath();
-        final Primary primary = new Primary(xml);
-        primary.update("test.rpm", new Pkg(bin));
-        MatcherAssert.assertThat(
-            new XMLDocument(new String(Files.readAllBytes(xml))),
-            XhtmlMatchers.hasXPath(
-                "/ns1:metadata/ns1:package",
-                "http://linux.duke.edu/metadata/common"
-            )
-        );
+    Checksum(final Path path) {
+        this.file = path;
+    }
+
+    /**
+     * Calculate it.
+     * @return The SHA-256 of the file content
+     * @throws IOException If fails
+     */
+    public String sha() throws IOException {
+        try {
+            return DatatypeConverter.printHexBinary(
+                MessageDigest.getInstance("SHA-256").digest(
+                    Files.readAllBytes(this.file)
+                )
+            ).toLowerCase(Locale.ENGLISH);
+        } catch (final NoSuchAlgorithmException ex) {
+            throw new IllegalStateException(ex);
+        }
     }
 
 }

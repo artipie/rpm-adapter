@@ -24,6 +24,7 @@
 package com.yegor256.rpm;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.redline_rpm.header.Header;
 import org.xembly.Directives;
@@ -35,28 +36,29 @@ import org.xembly.Directives;
  * @version $Id$
  * @since 0.1
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 final class Primary {
 
     /**
-     * The path of XML.
+     * The XML.
      */
     private final Path xml;
 
     /**
      * Ctor.
-     * @param path The path of XML file
+     * @param path The path
      */
     Primary(final Path path) {
         this.xml = path;
     }
 
     /**
-     * Update the RPM package from the header.
-     *
+     * Update.
+     * @param key The key
      * @param pkg The package
      * @throws IOException If fails
      */
-    public void update(final Pkg pkg) throws IOException {
+    public void update(final String key, final Pkg pkg) throws IOException {
         new Update(this.xml).apply(
             new Directives()
                 .xpath("/")
@@ -73,10 +75,11 @@ final class Primary {
                 .attr("xmlns:rpm", "http://linux.duke.edu/metadata/rpm")
                 .attr("packages", 1)
                 .add("package")
+                .attr("type", "rpm")
                 .add("checksum")
                 .attr("type", "sha256")
                 .attr("pkgid", "YES")
-                .set(pkg.hash())
+                .set(new Checksum(pkg.path()).sha())
                 .up()
                 .add("name")
                 .set(pkg.tag(Header.HeaderTag.NAME))
@@ -102,7 +105,24 @@ final class Primary {
                 .set(pkg.tag(Header.HeaderTag.URL))
                 .up()
                 .add("location")
-                .attr("href", "test.rpm")
+                .attr("href", key)
+                .up()
+                .add("size")
+                .attr("package", Files.size(pkg.path()))
+                .attr("installed", pkg.num(Header.HeaderTag.FILESIZES))
+                .attr("archive", pkg.num(Header.HeaderTag.ARCHIVESIZE))
+                .up()
+                .add("time")
+                .attr("file", pkg.num(Header.HeaderTag.FILEMTIMES))
+                .attr("build", pkg.num(Header.HeaderTag.BUILDTIME))
+                .up()
+                .add("format")
+                .add("rpm:vendor")
+                .set(pkg.tag(Header.HeaderTag.VENDOR))
+                .up()
+                .add("rpm:license")
+                .set(pkg.tag(Header.HeaderTag.LICENSE))
+                .up()
                 .up()
         );
     }

@@ -59,15 +59,19 @@ public final class Rpm {
         final Path temp = Files.createTempFile("rpm", ".rpm");
         this.storage.load(key, temp);
         final Pkg pkg = new Pkg(temp);
-        final Path primary = Files.createTempFile("rpm", ".xml");
-        new Primary(primary).update(pkg);
-        this.storage.save("primary.xml", primary);
-        final Path filelists = Files.createTempFile("rpm", ".xml");
-        new Filelists(filelists).update(pkg);
-        this.storage.save("filelists.xml", filelists);
-        final Path other = Files.createTempFile("rpm", ".xml");
-        new Other(other).update(pkg);
-        this.storage.save("other.xml", other);
+        final Repomd repomd = new Repomd(this.storage);
+        repomd.update(
+            "primary",
+            file -> new Primary(file).update(key, pkg)
+        );
+        repomd.update(
+            "filelists",
+            file -> new Filelists(file).update(pkg)
+        );
+        repomd.update(
+            "other",
+            file -> new Other(file).update(pkg)
+        );
     }
 
 }

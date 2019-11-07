@@ -25,12 +25,14 @@ package com.yegor256.rpm;
 
 import com.jcabi.log.Logger;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.channels.Channels;
 import java.nio.file.Path;
 import java.util.logging.Level;
+import org.cactoos.Scalar;
+import org.cactoos.scalar.StickyScalar;
+import org.cactoos.scalar.UncheckedScalar;
 import org.redline_rpm.ReadableChannelWrapper;
 import org.redline_rpm.Scanner;
 import org.redline_rpm.header.AbstractHeader;
@@ -52,53 +54,83 @@ final class Pkg {
     private final Path file;
 
     /**
+     * The header.
+     */
+    private final UncheckedScalar<Header> hdr;
+
+    /**
      * Ctor.
      * @param path The path
      */
     Pkg(final Path path) {
         this.file = path;
+        this.hdr = new UncheckedScalar<>(
+            new StickyScalar<>(
+                new Scalar<Header>() {
+                    @Override
+                    public Header value() throws Exception {
+                        try (final InputStream fios =
+                            new FileInputStream(Pkg.this.file.toFile())) {
+                            final Format format = new Scanner(
+                                new PrintStream(Logger.stream(Level.INFO, this))
+                            // @checkstyle LineLength (1 line)
+                            ).run(new ReadableChannelWrapper(Channels.newChannel(fios)));
+                            final Header header = format.getHeader();
+                            Logger.debug(this, "header: %s", header.toString());
+                            return header;
+                        }
+                    }
+                }
+            )
+        );
+    }
+
+    /**
+     * Get path.
+     * @return Path
+     */
+    public Path path() {
+        return this.file;
     }
 
     /**
      * Get header.
      * @return The header
-     * @throws IOException If fails
      */
-    public Header header() throws IOException {
-        try (final InputStream fios = new FileInputStream(this.file.toFile())) {
-            final Format format = new Scanner(
-                new PrintStream(Logger.stream(Level.INFO, this))
-            ).run(new ReadableChannelWrapper(Channels.newChannel(fios)));
-            final Header header = format.getHeader();
-//            Logger.info(this, "header: %s", header.toString());
-            return header;
-        }
-    }
-
-    /**
-     * Make a sha256 hash.
-     * @return The hash
-     */
-    public String hash() {
-        return "2e266720cef0303dcdd2124936726d91f652a6c017513bf70466e7f6623d6aad";
+    public Header header() {
+        return this.hdr.value();
     }
 
     /**
      * Get tag by ID.
+     * @param tag The tag
      * @return The tag
-     * @throws IOException If fails
      */
-    public String tag(final AbstractHeader.Tag tag) throws IOException {
-        return ((String[]) this.header().getEntry(tag).getValues())[0];
+    public String tag(final AbstractHeader.Tag tag) {
+        final AbstractHeader.Entry<?> entry = this.header().getEntry(tag);
+        final String val;
+        if (entry == null) {
+            val = "";
+        } else {
+            val = ((String[]) entry.getValues())[0];
+        }
+        return val;
     }
 
     /**
      * Get numeric tag by ID.
+     * @param tag The tag
      * @return The tag
-     * @throws IOException If fails
      */
-    public int num(final AbstractHeader.Tag tag) throws IOException {
-        return ((int[]) this.header().getEntry(tag).getValues())[0];
+    public int num(final AbstractHeader.Tag tag) {
+        final AbstractHeader.Entry<?> entry = this.header().getEntry(tag);
+        final int val;
+        if (entry == null) {
+            val = 0;
+        } else {
+            val = ((int[]) entry.getValues())[0];
+        }
+        return val;
     }
 
 }

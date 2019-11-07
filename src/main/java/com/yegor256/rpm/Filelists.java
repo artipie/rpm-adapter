@@ -38,21 +38,20 @@ import org.xembly.Directives;
 final class Filelists {
 
     /**
-     * The path of XML.
+     * The XML.
      */
     private final Path xml;
 
     /**
      * Ctor.
-     * @param path The path of XML file
+     * @param path The path
      */
     Filelists(final Path path) {
         this.xml = path;
     }
 
     /**
-     * Update the RPM package from the header.
-     *
+     * Update.
      * @param pkg The package
      * @throws IOException If fails
      */
@@ -72,7 +71,7 @@ final class Filelists {
                 .attr("xmlns", "http://linux.duke.edu/metadata/filelists")
                 .attr("packages", 1)
                 .add("package")
-                .attr("pkgid", pkg.hash())
+                .attr("pkgid", new Checksum(pkg.path()).sha())
                 .attr("name", pkg.tag(Header.HeaderTag.NAME))
                 .attr("arch", pkg.tag(Header.HeaderTag.ARCH))
                 .add("version")
