@@ -31,8 +31,8 @@ import java.nio.channels.Channels;
 import java.nio.file.Path;
 import java.util.logging.Level;
 import org.cactoos.Scalar;
-import org.cactoos.scalar.StickyScalar;
-import org.cactoos.scalar.UncheckedScalar;
+import org.cactoos.scalar.Sticky;
+import org.cactoos.scalar.Unchecked;
 import org.redline_rpm.ReadableChannelWrapper;
 import org.redline_rpm.Scanner;
 import org.redline_rpm.header.AbstractHeader;
@@ -56,7 +56,7 @@ final class Pkg {
     /**
      * The header.
      */
-    private final UncheckedScalar<Header> hdr;
+    private final Unchecked<Header> hdr;
 
     /**
      * Ctor.
@@ -64,8 +64,8 @@ final class Pkg {
      */
     Pkg(final Path path) {
         this.file = path;
-        this.hdr = new UncheckedScalar<>(
-            new StickyScalar<>(
+        this.hdr = new Unchecked<>(
+            new Sticky<>(
                 new Scalar<Header>() {
                     @Override
                     public Header value() throws Exception {

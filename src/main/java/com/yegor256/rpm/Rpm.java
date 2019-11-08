@@ -70,22 +70,24 @@ public final class Rpm {
      * @throws IOException If fails
      */
     public void update(final String key) throws IOException {
-        final Path temp = Files.createTempFile("rpm", ".rpm");
-        this.storage.load(key, temp);
-        final Pkg pkg = new Pkg(temp);
-        final Repomd repomd = new Repomd(this.storage);
-        repomd.update(
-            "primary",
-            file -> new Primary(file).update(key, pkg)
-        );
-        repomd.update(
-            "filelists",
-            file -> new Filelists(file).update(pkg)
-        );
-        repomd.update(
-            "other",
-            file -> new Other(file).update(pkg)
-        );
+        synchronized (this.storage) {
+            final Path temp = Files.createTempFile("rpm", ".rpm");
+            this.storage.load(key, temp);
+            final Pkg pkg = new Pkg(temp);
+            final Repomd repomd = new Repomd(this.storage);
+            repomd.update(
+                "primary",
+                file -> new Primary(file).update(key, pkg)
+            );
+            repomd.update(
+                "filelists",
+                file -> new Filelists(file).update(pkg)
+            );
+            repomd.update(
+                "other",
+                file -> new Other(file).update(pkg)
+            );
+        }
     }
 
 }
