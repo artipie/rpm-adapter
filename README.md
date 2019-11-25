@@ -12,7 +12,9 @@
 This Java library turns your binary storage
 (files, S3 objects, anything) into an RPM repository.
 You may add it to your binary storage and it will become
-a fully-functionable RPM repository, which `yum` and `dnf`
+a fully-functionable RPM repository, which
+[`yum`](https://en.wikipedia.org/wiki/Yum_%28software%29) and
+[`dnf`](https://en.wikipedia.org/wiki/DNF_%28software%29)
 will perfectly understand.
 
 Similar solutions:
@@ -47,13 +49,17 @@ and instruct `Rpm` to update the meta info:
 import com.yegor256.rpm.Rpm;
 Rpm rpm = new Rpm(storage);
 rpm.update("test/my.rpm");
-// Do you need more operations? Submit a ticket.
 ```
 
 Read the [Javadoc](http://www.javadoc.io/doc/com.yegor256/rpm-files)
 for more technical details.
 
-Should work.
+## How it works?
+
+First, you upload your `.rpm` artifact to the repository. Then,
+you call `update()` and these four system XML files are updated
+in the `repodata` directory:
+`repomd.xml`, `primary.xml.gz`, `filelists.xml.gz`, and `others.xml.gz`.
 
 ## How to contribute
 
