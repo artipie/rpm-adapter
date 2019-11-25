@@ -61,6 +61,9 @@ you call `update()` and these four system XML files are updated
 in the `repodata` directory:
 `repomd.xml`, `primary.xml.gz`, `filelists.xml.gz`, and `others.xml.gz`.
 
+Examples of these files you can find in
+[this repo](https://download.docker.com/linux/centos/7/source/stable/repodata/).
+
 ## How to contribute
 
 Fork repository, make changes, send us a pull request. We will review
