@@ -23,9 +23,9 @@ Similar solutions:
 Some valuable references:
 
   * [RPM format](https://rpm-packaging-guide.github.io/)
-  * [_Yum repository internals_](https://blog.packagecloud.io/eng/2015/07/20/yum-repository-internals/) (blog post)
-  * [_YUM repository and package management: Complete Tutorial_](https://www.slashroot.in/yum-repository-and-package-management-complete-tutorial) (blog post)
-  * [_The Origin of RPM Content_](https://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/rpm.html)
+  * [Yum repository internals](https://blog.packagecloud.io/eng/2015/07/20/yum-repository-internals/) (blog post)
+  * [YUM repository and package management: Complete Tutorial](https://www.slashroot.in/yum-repository-and-package-management-complete-tutorial) (blog post)
+  * [The Origin of RPM Content](https://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/rpm.html)
 
 This is the dependency you need:
 
