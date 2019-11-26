@@ -68,7 +68,9 @@ public final class RpmTest {
     @Test
     @SuppressWarnings("unchecked")
     public void addsSingleRpm() throws Exception {
-        final Path home = Paths.get(System.getProperty("testDirectory"));
+        final Path home = Paths.get(
+            System.getProperty("testDirectory", "target/tests")
+        );
         FileUtils.deleteDirectory(home.toFile());
         home.toFile().mkdirs();
         final Storage storage = new Storage.Simple(home);
