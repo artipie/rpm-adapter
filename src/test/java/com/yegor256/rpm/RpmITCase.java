@@ -109,7 +109,7 @@ public final class RpmITCase {
                     "dnf config-manager --verbose --add-repo file:///repo",
                     // @checkstyle LineLength (2 lines)
                     "dnf repolist --verbose --disablerepo='*' --enablerepo='repo'",
-                    "dnf install --verbose --disablerepo='*' --enablerepo='repo' nginx-module-xslt"
+                    "dnf install -y --verbose --disablerepo='*' --enablerepo='repo' nginx-module-xslt"
                 )
             )
             .redirectOutput(stdout.toFile())

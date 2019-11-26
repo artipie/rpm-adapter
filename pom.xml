@@ -112,6 +112,11 @@ SOFTWARE.
       <artifactId>jcabi-matchers</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <testResources>
@@ -125,6 +130,15 @@ SOFTWARE.
       </testResource>
     </testResources>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <testDirectory>${build.directory}/tests</testDirectory>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
