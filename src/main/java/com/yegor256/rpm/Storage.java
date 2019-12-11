@@ -1,4 +1,4 @@
-/**
+/*
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Yegor Bugayenko
@@ -38,8 +38,6 @@ import java.nio.file.StandardCopyOption;
  * want to work with files. Otherwise, for S3 or something else, you have
  * to implement it yourself.
  *
- * @author Yegor Bugayenko (yegor256@gmail.com)
- * @version $Id$
  * @since 0.1
  */
 public interface Storage {
@@ -83,6 +81,7 @@ public interface Storage {
          * Where we keep the data.
          */
         private final Path dir;
+
         /**
          * Ctor.
          * @throws IOException If fails
@@ -90,6 +89,7 @@ public interface Storage {
         public Simple() throws IOException {
             this(Files.createTempDirectory("rpm-files"));
         }
+
         /**
          * Ctor.
          * @param path The path to the dir
@@ -97,11 +97,13 @@ public interface Storage {
         public Simple(final Path path) {
             this.dir = path;
         }
+
         @Override
         public boolean exists(final String key) {
             final Path path = Paths.get(this.dir.toString(), key);
             return Files.exists(path);
         }
+
         @Override
         public void save(final String key, final Path path) throws IOException {
             final Path target = Paths.get(this.dir.toString(), key);
@@ -113,6 +115,7 @@ public interface Storage {
                 Files.size(target), key, target
             );
         }
+
         @Override
         public void load(final String key, final Path path) throws IOException {
             final Path source = Paths.get(this.dir.toString(), key);
