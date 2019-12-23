@@ -24,6 +24,7 @@
 package com.yegor256.rpm;
 
 import com.jcabi.log.Logger;
+import com.yegor256.asto.Storage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;

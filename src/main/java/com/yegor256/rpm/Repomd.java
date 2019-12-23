@@ -25,6 +25,7 @@ package com.yegor256.rpm;
 
 import com.jcabi.xml.XML;
 import com.jcabi.xml.XMLDocument;
+import com.yegor256.asto.Storage;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;

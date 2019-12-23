@@ -23,6 +23,7 @@
  */
 package com.yegor256.rpm;
 
+import com.yegor256.asto.Storage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

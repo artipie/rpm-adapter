@@ -25,6 +25,7 @@ package com.yegor256.rpm;
 
 import com.jcabi.matchers.XhtmlMatchers;
 import com.jcabi.xml.XMLDocument;
+import com.yegor256.asto.Storage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
