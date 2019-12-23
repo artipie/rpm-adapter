@@ -1,4 +1,4 @@
-/**
+/*
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Yegor Bugayenko
@@ -24,10 +24,10 @@
 package com.yegor256.rpm;
 
 import com.jcabi.log.Logger;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.channels.Channels;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.logging.Level;
 import org.cactoos.Scalar;
@@ -42,8 +42,6 @@ import org.redline_rpm.header.Header;
 /**
  * Single package in a file.
  *
- * @author Yegor Bugayenko (yegor256@gmail.com)
- * @version $Id$
  * @since 0.1
  */
 final class Pkg {
@@ -69,8 +67,8 @@ final class Pkg {
                 new Scalar<Header>() {
                     @Override
                     public Header value() throws Exception {
-                        try (final InputStream fios =
-                            new FileInputStream(Pkg.this.file.toFile())) {
+                        try (InputStream fios =
+                            Files.newInputStream(Pkg.this.file)) {
                             final Format format = new Scanner(
                                 new PrintStream(Logger.stream(Level.INFO, this))
                             // @checkstyle LineLength (1 line)

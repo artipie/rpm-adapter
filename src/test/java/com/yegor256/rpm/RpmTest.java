@@ -1,4 +1,4 @@
-/**
+/*
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Yegor Bugayenko
@@ -43,8 +43,6 @@ import org.junit.rules.TemporaryFolder;
 /**
  * Test case for {@link Rpm}.
  *
- * @author Yegor Bugayenko (yegor256@gmail.com)
- * @version $Id$
  * @since 0.0.3
  */
 public final class RpmTest {

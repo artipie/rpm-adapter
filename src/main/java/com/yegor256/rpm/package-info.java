@@ -1,4 +1,4 @@
-/**
+/*
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Yegor Bugayenko
@@ -25,8 +25,6 @@
 /**
  * Rpm files.
  *
- * @author Yegor Bugayenko (yegor256@gmail.com)
- * @version $Id$
  * @since 0.1
  */
 package com.yegor256.rpm;

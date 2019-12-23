@@ -1,4 +1,4 @@
-/**
+/*
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Yegor Bugayenko
@@ -34,8 +34,6 @@ import javax.xml.bind.DatatypeConverter;
 /**
  * SHA-256 checksum of a file.
  *
- * @author Yegor Bugayenko (yegor256@gmail.com)
- * @version $Id$
  * @since 0.1
  */
 final class Checksum {

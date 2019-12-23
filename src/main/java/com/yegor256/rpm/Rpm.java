@@ -1,4 +1,4 @@
-/**
+/*
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Yegor Bugayenko
@@ -45,8 +45,6 @@ import java.nio.file.Path;
  *
  * That's it.
  *
- * @author Yegor Bugayenko (yegor256@gmail.com)
- * @version $Id$
  * @since 0.1
  */
 public final class Rpm {

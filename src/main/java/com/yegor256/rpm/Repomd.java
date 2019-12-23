@@ -1,4 +1,4 @@
-/**
+/*
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Yegor Bugayenko
@@ -26,9 +26,9 @@ package com.yegor256.rpm;
 import com.jcabi.xml.XML;
 import com.jcabi.xml.XMLDocument;
 import com.yegor256.asto.Storage;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -38,8 +38,6 @@ import org.xembly.Directives;
 /**
  * Repomd XML file.
  *
- * @author Yegor Bugayenko (yegor256@gmail.com)
- * @version $Id$
  * @since 0.1
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
@@ -135,9 +133,9 @@ final class Repomd {
      */
     private static void gzip(final Path input, final Path output)
         throws IOException {
-        try (final FileInputStream fis = new FileInputStream(input.toFile());
-            final FileOutputStream fos = new FileOutputStream(output.toFile());
-            final GZIPOutputStream gzos = new GZIPOutputStream(fos)) {
+        try (InputStream fis = Files.newInputStream(input);
+            OutputStream fos = Files.newOutputStream(output);
+            GZIPOutputStream gzos = new GZIPOutputStream(fos)) {
             // @checkstyle MagicNumberCheck (1 line)
             final byte[] buffer = new byte[65_536];
             while (true) {
@@ -153,6 +151,8 @@ final class Repomd {
 
     /**
      * The act.
+     *
+     * @since 0.1
      */
     public interface Act {
         /**
