@@ -56,7 +56,7 @@ public final class PrimaryTest {
         final Path bin = this.folder.newFile("x.rpm").toPath();
         Files.copy(
             RpmITCase.class.getResourceAsStream(
-                "/nginx-module-xslt-1.16.1-1.el7.ngx.x86_64.rpm"
+                "/nginx-1.16.1-1.el8.ngx.x86_64.rpm"
             ),
             bin,
             StandardCopyOption.REPLACE_EXISTING

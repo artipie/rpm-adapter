@@ -74,7 +74,7 @@ public final class RpmTest {
         home.toFile().mkdirs();
         final Storage storage = new Storage.Simple(home);
         final Path bin = this.folder.newFile("x.rpm").toPath();
-        final String key = "nginx-module-xslt-1.16.1-1.el7.ngx.x86_64.rpm";
+        final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
         Files.copy(
             RpmITCase.class.getResourceAsStream(
                 String.format("/%s", key)
@@ -103,7 +103,7 @@ public final class RpmTest {
         MatcherAssert.assertThat(
             new XMLDocument(new String(Files.readAllBytes(primary))),
             XhtmlMatchers.hasXPath(
-                "/ns1:metadata/ns1:package[ns1:name='nginx-module-xslt']",
+                "/ns1:metadata/ns1:package[ns1:name='nginx']",
                 "http://linux.duke.edu/metadata/common"
             )
         );

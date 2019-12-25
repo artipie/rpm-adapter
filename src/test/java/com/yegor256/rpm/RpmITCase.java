@@ -77,7 +77,7 @@ public final class RpmITCase {
         final Storage storage = new Storage.Simple(repo);
         final Rpm rpm = new Rpm(storage);
         final Path bin = this.folder.newFile("x.rpm").toPath();
-        final String key = "nginx-module-xslt-1.16.1-1.el7.ngx.x86_64.rpm";
+        final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
         Files.copy(
             RpmITCase.class.getResourceAsStream(
                 String.format("/%s", key)
@@ -95,7 +95,7 @@ public final class RpmITCase {
                 "--rm",
                 "--volume",
                 String.format("%s:/repo", repo),
-                "yegor256/yum-utils",
+                "centos:8",
                 "/bin/bash",
                 "-c",
                 String.join(
@@ -105,10 +105,16 @@ public final class RpmITCase {
                     "cat /repo/repodata/primary.xml",
                     "cat /repo/repodata/filelists.xml",
                     "cat /repo/repodata/other.xml",
-                    "dnf config-manager --verbose --add-repo file:///repo",
+                    "echo '[repo]' >> /etc/yum.repos.d/repo.repo",
+                    "echo 'name=test-repo' >> /etc/yum.repos.d/repo.repo",
+                    "echo 'gpgcheck=0' >> /etc/yum.repos.d/repo.repo",
+                    "echo 'enabled=1' >> /etc/yum.repos.d/repo.repo",
+                    "echo 'baseurl=file:///repo' >> /etc/yum.repos.d/repo.repo",
                     // @checkstyle LineLength (2 lines)
                     "dnf repolist --verbose --disablerepo='*' --enablerepo='repo'",
-                    "dnf install -y --verbose --disablerepo='*' --enablerepo='repo' nginx-module-xslt"
+                    "ls -la /etc/yum.repos.d/",
+                    "cat /etc/yum.repos.d/repo.repo",
+                    "dnf install -y --verbose --disablerepo='*' --enablerepo='repo' nginx"
                 )
             )
             .redirectOutput(stdout.toFile())
@@ -120,8 +126,9 @@ public final class RpmITCase {
         MatcherAssert.assertThat(
             log,
             Matchers.allOf(
-                Matchers.containsString("nginx-module-xslt.x86_64"),
-                Matchers.containsString("1:1.16.1-1.el7.ngx")
+                Matchers.containsString("nginx-1:1.16.1-1.el8.ngx.x86_64"),
+                Matchers.containsString("Installed"),
+                Matchers.containsString("Complete!")
             )
         );
     }
