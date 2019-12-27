@@ -25,9 +25,18 @@ package com.yegor256.rpm;
 
 import com.jcabi.log.Logger;
 import com.yegor256.asto.Storage;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
+import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assume;
@@ -35,10 +44,14 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.xmlunit.builder.DiffBuilder;
+import org.xmlunit.builder.Input;
+import org.xmlunit.diff.Diff;
+import org.xmlunit.diff.Difference;
 
 /**
  * Integration case for {@link Rpm}.
- *
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @since 0.1
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
@@ -53,6 +66,7 @@ public final class RpmITCase {
 
     /**
      * Make sure Docker is here.
+     *
      * @throws Exception If fails
      */
     @Before
@@ -69,6 +83,7 @@ public final class RpmITCase {
 
     /**
      * RPM works.
+     *
      * @throws Exception If some problem inside
      */
     @Test
@@ -133,4 +148,139 @@ public final class RpmITCase {
         );
     }
 
+    /**
+     * RPM meta info generated in the same way as native createrepo do it.
+     *
+     * @throws Exception If some problem inside
+     */
+    @Test
+    public void primaryFileIsTheSameAsCreateRepoGenerates() throws Exception {
+        final Path repo = this.folder.newFolder("rpm-files-repo").toPath();
+        final Storage storage = new Storage.Simple(repo);
+        final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
+        final Path bin = this.folder.newFile(key).toPath();
+        Files.copy(
+            RpmITCase.class.getResourceAsStream(String.format("/%s", key)),
+            bin,
+            StandardCopyOption.REPLACE_EXISTING
+        );
+        storage.save(key, bin);
+        final Rpm rpm = new Rpm(storage);
+        rpm.update(key);
+        final String expected = this.etalon(bin);
+        final String actual = primary(repo);
+        comparePrimaryFiles(expected, actual);
+    }
+
+    private static void comparePrimaryFiles(
+        final String expected,
+        final String actual
+    ) {
+        final Diff diff = DiffBuilder.compare(Input.fromString(expected))
+            .withTest(Input.fromString(actual))
+            .ignoreWhitespace()
+            .ignoreComments()
+            .checkForSimilar()
+            .normalizeWhitespace()
+            .ignoreElementContentWhitespace()
+            .withAttributeFilter(attr -> !attr.getName().equals("archive"))
+            .withNodeFilter(
+                node ->
+                    !new ListOf<>(
+                        "time",
+                        "rpm:requires",
+                        "rpm:provides",
+                        "file"
+                    ).contains(node.getNodeName())
+            )
+            .build();
+        Logger.info(
+            RpmITCase.class,
+            "Comapring file:\n%s\nwith:\n%s\n",
+            expected,
+            actual
+        );
+        final ArrayList<Difference> diffarr = new ArrayList<>(0);
+        diff.getDifferences().forEach(diffarr::add);
+        final String diffstr = diffarr.stream()
+            .map(Difference::toString)
+            .collect(Collectors.joining("\n"));
+        MatcherAssert.assertThat(
+            // @checkstyle LineLength (1 lines)
+            String.format("There are %d differences between rpm-files and createrepo primary.xml files:\n\n%s\n", diffarr.size(), diffstr),
+            diff.hasDifferences(), Matchers.is(false)
+        );
+    }
+
+    private String etalon(
+        final Path rpm) throws IOException, InterruptedException {
+        final Path repo =
+            this.folder.newFolder("createrepo-repo").toPath();
+        final Path stdout = this.folder.newFile("stdout.txt").toPath();
+        final File originalprkg = new File(
+            String.format(
+                "%s/%s",
+                repo.toAbsolutePath().toString(),
+                rpm.getFileName()
+            )
+        );
+        Files.copy(rpm, originalprkg.toPath());
+        new ProcessBuilder()
+            .command(
+                "docker",
+                "run",
+                "--rm",
+                "--volume",
+                String.format("%s:/createrepo-repo", repo),
+                "yegor256/yum-utils",
+                "/bin/bash",
+                "-c",
+                String.join(
+                    "\n",
+                    "set -e",
+                    "set -x",
+                    "createrepo /createrepo-repo",
+                    "createrepo --update /createrepo-repo"
+                )
+            )
+            .redirectOutput(stdout.toFile())
+            .redirectErrorStream(true)
+            .start()
+            .waitFor();
+        final String log = new String(Files.readAllBytes(stdout));
+        Logger.debug(this, "Full stdout/stderr:\n%s", log);
+        return primary(repo);
+    }
+
+    private static String primary(final Path repo) throws IOException {
+        final File folder =
+            new File(String.format("%s/repodata", repo.toString()));
+        final File[] primarygzip = Objects.requireNonNull(
+            folder.listFiles((dir, name) -> name.endsWith("primary.xml.gz"))
+        );
+        if (primarygzip.length == 1) {
+            return readGzFile(primarygzip[0]);
+        }
+        throw new IllegalStateException(".*primary.xml.gz file not found");
+    }
+
+    private static String readGzFile(final File file) throws IOException {
+        try (
+            BufferedReader stream = new BufferedReader(
+                new InputStreamReader(
+                    new GZIPInputStream(
+                        Files.newInputStream(file.toPath())
+                    )
+                )
+            )
+        ) {
+            final StringBuilder res = new StringBuilder();
+            String line = stream.readLine();
+            while (line != null) {
+                res.append(line).append('\n');
+                line = stream.readLine();
+            }
+            return res.toString();
+        }
+    }
 }
