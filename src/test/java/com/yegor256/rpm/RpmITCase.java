@@ -110,7 +110,7 @@ public final class RpmITCase {
                 "--rm",
                 "--volume",
                 String.format("%s:/repo", repo),
-                "centos:8",
+                "yegor256/yum-utils",
                 "/bin/bash",
                 "-c",
                 String.join(
@@ -120,11 +120,8 @@ public final class RpmITCase {
                     "cat /repo/repodata/primary.xml",
                     "cat /repo/repodata/filelists.xml",
                     "cat /repo/repodata/other.xml",
-                    "echo '[repo]' >> /etc/yum.repos.d/repo.repo",
-                    "echo 'name=test-repo' >> /etc/yum.repos.d/repo.repo",
+                    "dnf config-manager --add-repo=file:///repo",
                     "echo 'gpgcheck=0' >> /etc/yum.repos.d/repo.repo",
-                    "echo 'enabled=1' >> /etc/yum.repos.d/repo.repo",
-                    "echo 'baseurl=file:///repo' >> /etc/yum.repos.d/repo.repo",
                     // @checkstyle LineLength (2 lines)
                     "dnf repolist --verbose --disablerepo='*' --enablerepo='repo'",
                     "ls -la /etc/yum.repos.d/",
