@@ -89,14 +89,14 @@ final class Repomd {
                     final List<XML> nodes = xml.nodes(
                         String.format("/ns:repomd/data[type='%s']", type)
                     );
-                    Completable res;
+                    final Completable res;
                     if (!nodes.isEmpty()) {
                         final String location = nodes.get(0).xpath("location/@href").get(0);
                         res = this.storage.load(location, file);
                     } else {
                         res = Completable.complete();
                     }
-                    return res.andThen(Completable.fromAction(() -> act.update(file)))
+                    return res.andThen(act.update(file))
                         .andThen(Single.fromCallable(() -> Files.createTempFile("x", ".gz")))
                         .flatMapCompletable(gzip ->
                             Repomd.gzip(file, gzip)
@@ -180,9 +180,9 @@ final class Repomd {
          * Update.
          *
          * @param file The file
-         * @throws IOException If fails
+         * @return Completion or error signal.
          */
-        void update(Path file) throws IOException;
+        Completable update(Path file);
     }
 
 }

@@ -91,7 +91,7 @@ public final class RpmTest {
                 new Repeated<Scalar<Boolean>>(
                     threads,
                     () -> {
-                        rpm.update(key);
+                        rpm.update(key).blockingAwait();
                         return true;
                     }
                 )

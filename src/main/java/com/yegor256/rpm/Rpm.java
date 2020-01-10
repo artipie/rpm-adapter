@@ -26,10 +26,10 @@ package com.yegor256.rpm;
 import com.yegor256.asto.Storage;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.locks.Lock;
 
 /**
  * The RPM front.
@@ -58,6 +58,21 @@ public final class Rpm {
     private final Storage storage;
 
     /**
+     * Access lock for primary.xml file.
+     */
+    private final ReactiveLock primary = new ReactiveLock();
+
+    /**
+     * Access lock for filelists.xml file.
+     */
+    private final ReactiveLock filelists = new ReactiveLock();
+
+    /**
+     * Access lock for other.xml file.
+     */
+    private final ReactiveLock other = new ReactiveLock();
+
+    /**
      * Ctor.
      * @param stg The storage
      */
@@ -69,9 +84,9 @@ public final class Rpm {
      * Update the meta info by this artifact.
      *
      * @param key The name of the file just updated
-     * @throws IOException If fails
+     * @return Completion or error signal.
      */
-    public Completable update(final String key) throws IOException {
+    public Completable update(final String key) {
         return Single.fromCallable(() -> Files.createTempFile("rpm", ".rpm"))
             .flatMap(temp -> this.storage.load(key, temp).andThen(Single.just(new Pkg(temp))))
             .flatMapCompletable(pkg -> {
@@ -79,15 +94,15 @@ public final class Rpm {
                 return Completable.concatArray(
                     repomd.update(
                         "primary",
-                        file -> new Primary(file).update(key, pkg)
+                        new SynchronousAct(file -> new Primary(file).update(key, pkg), primary)
                     ),
                     repomd.update(
                         "filelists",
-                        file -> new Filelists(file).update(pkg)
+                        new SynchronousAct(file -> new Filelists(file).update(pkg), filelists)
                     ),
                     repomd.update(
                         "other",
-                        file -> new Other(file).update(pkg)
+                        new SynchronousAct(file -> new Other(file).update(pkg), other)
                     )
                 );
             }); 
