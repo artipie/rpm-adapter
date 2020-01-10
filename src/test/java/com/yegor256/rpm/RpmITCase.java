@@ -125,6 +125,7 @@ public final class RpmITCase {
                     // @checkstyle LineLength (2 lines)
                     "dnf repolist --verbose --disablerepo='*' --enablerepo='repo'",
                     "ls -la /etc/yum.repos.d/",
+                    "ls -lhS /repo/repodata",
                     "cat /etc/yum.repos.d/repo.repo",
                     "dnf install -y --verbose --disablerepo='*' --enablerepo='repo' nginx"
                 )

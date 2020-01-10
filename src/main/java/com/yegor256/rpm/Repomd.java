@@ -118,9 +118,8 @@ final class Repomd {
         }
         final String key = String.format("repodata/%s.xml", type);
         final Path gzip = Files.createTempFile("x", ".gz");
-        return res
+        return res.andThen(act.update(file))
             .andThen(Repomd.gzip(file, gzip))
-            .andThen(res.andThen(act.update(file)))
             .andThen(
                 Single.just(new Directives()
                     .xpath("/repomd")
