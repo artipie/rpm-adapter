@@ -25,6 +25,8 @@ package com.yegor256.rpm;
 
 import java.io.IOException;
 import java.nio.file.Path;
+
+import io.reactivex.rxjava3.core.Completable;
 import org.redline_rpm.header.Header;
 import org.xembly.Directives;
 
@@ -51,10 +53,10 @@ final class Other {
     /**
      * Update.
      * @param pkg The package
-     * @throws IOException If fails
+     * @return Completion or error signal.
      */
-    public void update(final Pkg pkg) throws IOException {
-        new Update(this.xml).apply(
+    public Completable update(final Pkg pkg) {
+        return new Update(this.xml).apply(
             new Directives()
                 .xpath("/")
                 .addIf("otherdata")

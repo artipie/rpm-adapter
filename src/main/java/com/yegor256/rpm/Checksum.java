@@ -23,11 +23,10 @@
  */
 package com.yegor256.rpm;
 
-import java.io.IOException;
+import io.reactivex.rxjava3.core.Single;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
 import javax.xml.bind.DatatypeConverter;
 
@@ -53,19 +52,14 @@ final class Checksum {
 
     /**
      * Calculate it.
-     * @return The SHA-256 of the file content
-     * @throws IOException If fails
+     * @return The SHA-256 of the file content or error.
      */
-    public String sha() throws IOException {
-        try {
-            return DatatypeConverter.printHexBinary(
-                MessageDigest.getInstance("SHA-256").digest(
-                    Files.readAllBytes(this.file)
-                )
-            ).toLowerCase(Locale.ENGLISH);
-        } catch (final NoSuchAlgorithmException ex) {
-            throw new IllegalStateException(ex);
-        }
+    public Single<String> sha() {
+        return Single.fromCallable(
+            () -> Files.readAllBytes(this.file)
+        ).map(bytes -> DatatypeConverter.printHexBinary(
+            MessageDigest.getInstance("SHA-256").digest(bytes)
+        ).toLowerCase(Locale.ENGLISH));
     }
 
 }
