@@ -24,6 +24,9 @@
 package com.yegor256.rpm;
 
 import com.yegor256.asto.Storage;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -68,25 +71,26 @@ public final class Rpm {
      * @param key The name of the file just updated
      * @throws IOException If fails
      */
-    public void update(final String key) throws IOException {
-        synchronized (this.storage) {
-            final Path temp = Files.createTempFile("rpm", ".rpm");
-            this.storage.load(key, temp);
-            final Pkg pkg = new Pkg(temp);
-            final Repomd repomd = new Repomd(this.storage);
-            repomd.update(
-                "primary",
-                file -> new Primary(file).update(key, pkg)
-            );
-            repomd.update(
-                "filelists",
-                file -> new Filelists(file).update(pkg)
-            );
-            repomd.update(
-                "other",
-                file -> new Other(file).update(pkg)
-            );
-        }
+    public Completable update(final String key) throws IOException {
+        return Single.fromCallable(() -> Files.createTempFile("rpm", ".rpm"))
+            .flatMap(temp -> this.storage.load(key, temp).andThen(Single.just(new Pkg(temp))))
+            .flatMapCompletable(pkg -> {
+                final Repomd repomd = new Repomd(this.storage);
+                return Completable.concatArray(
+                    repomd.update(
+                        "primary",
+                        file -> new Primary(file).update(key, pkg)
+                    ),
+                    repomd.update(
+                        "filelists",
+                        file -> new Filelists(file).update(pkg)
+                    ),
+                    repomd.update(
+                        "other",
+                        file -> new Other(file).update(pkg)
+                    )
+                );
+            }); 
     }
 
 }

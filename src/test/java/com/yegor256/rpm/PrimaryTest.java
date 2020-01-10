@@ -63,7 +63,7 @@ public final class PrimaryTest {
         );
         final Path xml = this.folder.newFile("primary.xml").toPath();
         final Primary primary = new Primary(xml);
-        primary.update("test.rpm", new Pkg(bin));
+        primary.update("test.rpm", new Pkg(bin)).blockingAwait();
         MatcherAssert.assertThat(
             new XMLDocument(new String(Files.readAllBytes(xml))),
             XhtmlMatchers.hasXPath(

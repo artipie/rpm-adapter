@@ -100,8 +100,8 @@ public final class RpmITCase {
             bin,
             StandardCopyOption.REPLACE_EXISTING
         );
-        storage.save(key, bin);
-        rpm.update(key);
+        storage.save(key, bin).blockingAwait();
+        rpm.update(key).blockingAwait();
         final Path stdout = this.folder.newFile("stdout.txt").toPath();
         new ProcessBuilder()
             .command(
@@ -161,9 +161,9 @@ public final class RpmITCase {
             bin,
             StandardCopyOption.REPLACE_EXISTING
         );
-        storage.save(key, bin);
+        storage.save(key, bin).blockingAwait();
         final Rpm rpm = new Rpm(storage);
-        rpm.update(key);
+        rpm.update(key).blockingAwait();
         final String expected = this.etalon(bin);
         final String actual = primary(repo);
         comparePrimaryFiles(expected, actual);

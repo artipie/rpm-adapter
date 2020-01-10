@@ -53,7 +53,7 @@ public final class UpdateTest {
     @Test
     public void makesUpdateToXmlFile() throws Exception {
         final Path xml = this.folder.newFile("a.xml").toPath();
-        new Update(xml).apply(new Directives().add("test").add("foo"));
+        new Update(xml).apply(new Directives().add("test").add("foo")).blockingAwait();
         MatcherAssert.assertThat(
             new String(Files.readAllBytes(xml)),
             XhtmlMatchers.hasXPath("/test/foo")
