@@ -25,12 +25,10 @@ package com.yegor256.rpm;
 
 import com.jcabi.log.Logger;
 import com.jcabi.xml.XMLDocument;
-import java.io.IOException;
+import io.reactivex.rxjava3.core.Completable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import io.reactivex.rxjava3.core.Completable;
 import org.w3c.dom.Node;
 import org.xembly.Directives;
 import org.xembly.Xembler;
@@ -62,19 +60,20 @@ final class Update {
      * @return Completion or error signal.
      */
     public Completable apply(final Directives dirs) {
-        return Completable.fromAction(() -> {
-            final Node output;
-            if (this.xml.toFile().exists() && this.xml.toFile().length() > 0L) {
-                output = new Xembler(dirs).applyQuietly(
-                    new XMLDocument(this.xml.toFile()).node()
-                );
-            } else {
-                output = new Xembler(dirs).domQuietly();
-            }
-            final String doc = new XMLDocument(output).toString();
-            Files.write(this.xml, doc.getBytes(StandardCharsets.UTF_8));
-            Logger.debug(this, "Saved:\n%s", doc);
-        });
+        return Completable.fromAction(
+            () -> {
+                final Node output;
+                if (this.xml.toFile().exists() && this.xml.toFile().length() > 0L) {
+                    output = new Xembler(dirs).applyQuietly(
+                        new XMLDocument(this.xml.toFile()).node()
+                    );
+                } else {
+                    output = new Xembler(dirs).domQuietly();
+                }
+                final String doc = new XMLDocument(output).toString();
+                Files.write(this.xml, doc.getBytes(StandardCharsets.UTF_8));
+                Logger.debug(this, "Saved:\n%s", doc);
+            });
     }
 
 }

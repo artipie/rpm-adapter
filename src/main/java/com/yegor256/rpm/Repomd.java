@@ -26,6 +26,9 @@ package com.yegor256.rpm;
 import com.jcabi.xml.XML;
 import com.jcabi.xml.XMLDocument;
 import com.yegor256.asto.Storage;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.CompletableSource;
+import io.reactivex.rxjava3.core.Single;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,9 +37,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
-
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Single;
 import org.xembly.Directives;
 
 /**
@@ -62,6 +62,32 @@ final class Repomd {
     }
 
     /**
+     * Load or create repomd.xml file.
+     *
+     * @param file file to load it to.
+     * @return Completion or error signal.
+     */
+    private Completable loadRepomd(final Path file) {
+        return this.storage.exists("repodata/repomd.xml")
+            .flatMapCompletable(
+                exists -> {
+                    final Completable res;
+                    if (exists) {
+                        res = this.storage.load("repodata/repomd.xml", file);
+                    } else {
+                        res = Completable.fromAction(
+                            () -> Files.write(
+                                file,
+                                // @checkstyle LineLength (1 line)
+                                "<repomd xmlns='http://linux.duke.edu/metadata/repo'/>".getBytes()
+                            )
+                        );
+                    }
+                    return res;
+                });
+    }
+
+    /**
      * Update.
      *
      * @param type The type
@@ -70,104 +96,108 @@ final class Repomd {
      */
     public Completable update(final String type, final Repomd.Act act) {
         return Single.fromCallable(() -> Files.createTempFile("repomd", ".xml"))
-            .flatMapCompletable(temp -> this.storage.exists("repodata/repomd.xml")
-                .flatMapCompletable(exists -> {
-                    if (exists) {
-                        return this.storage.load("repodata/repomd.xml", temp);
-                    } else {
-                        return Completable.fromAction(() -> Files.write(
-                            temp,
-                            // @checkstyle LineLength (1 line)
-                            "<repomd xmlns='http://linux.duke.edu/metadata/repo'/>".getBytes()
-                        ));
-                    }
-                })
-                .andThen(Single.fromCallable(() -> Files.createTempFile("x", ".data")))
-                .flatMapCompletable(file -> {
-                    final XML xml = new XMLDocument(temp.toFile())
-                        .registerNs("ns", "http://linux.duke.edu/metadata/repo");
-                    final List<XML> nodes = xml.nodes(
-                        String.format("/ns:repomd/data[type='%s']", type)
-                    );
-                    final Completable res;
-                    if (!nodes.isEmpty()) {
-                        final String location = nodes.get(0).xpath("location/@href").get(0);
-                        res = this.storage.load(location, file);
-                    } else {
-                        res = Completable.complete();
-                    }
-                    return res.andThen(act.update(file))
-                        .andThen(Single.fromCallable(() -> Files.createTempFile("x", ".gz")))
-                        .flatMapCompletable(gzip ->
-                            Repomd.gzip(file, gzip)
-                                .andThen(new Checksum(gzip).sha())
-                                .flatMapCompletable(checksum ->
-                                    new Checksum(file).sha().flatMapCompletable(open -> {
-                                        final String key = String.format("repodata/%s.xml", type);
-                                        return this.storage.save(key, file).andThen(this.storage.save(String.format("%s.gz", key), gzip))
-                                            .andThen(new Update(temp).apply(
-                                                new Directives()
-                                                    .xpath("/repomd")
-                                                    .addIf("revision").set("1")
-                                                    .xpath(String.format("/repomd/data[type='%s']", type))
-                                                    .remove()
-                                                    .xpath("/repomd")
-                                                    .add("data")
-                                                    .attr("type", type)
-                                                    .add("location")
-                                                    .attr("href", String.format("%s.gz", key))
-                                                    .up()
-                                                    .add("open-size")
-                                                    .set(Files.size(file))
-                                                    .up()
-                                                    .add("size")
-                                                    .set(Files.size(gzip))
-                                                    .up()
-                                                    .add("checksum")
-                                                    .attr("type", "sha256")
-                                                    .set(checksum)
-                                                    .up()
-                                                    .add("open-checksum")
-                                                    .attr("type", "sha256")
-                                                    .set(open)
-                                                    .up()
-                                                    .add("timestamp")
-                                                    // @checkstyle MagicNumberCheck (1 line)
-                                                    .set(System.currentTimeMillis() / 1000L)
-                                                    .up()
-                                                )
-                                            ).andThen(this.storage.save("repodata/repomd.xml", temp));
-                                    })
-                                )
-                        );
-                })
+            .flatMapCompletable(
+                temp -> loadRepomd(temp)
+                    .andThen(Single.fromCallable(() -> Files.createTempFile("x", ".data")))
+                    .flatMapCompletable(file -> this.performUpdate(type, act, temp, file))
             );
+    }
+
+    private CompletableSource performUpdate(String type, Act act, Path temp, Path file) throws IOException {
+        final XML xml = new XMLDocument(temp.toFile())
+            .registerNs("ns", "http://linux.duke.edu/metadata/repo");
+        final List<XML> nodes = xml.nodes(
+            String.format("/ns:repomd/data[type='%s']", type)
+        );
+        final Completable res;
+        if (!nodes.isEmpty()) {
+            final String location = nodes.get(0).xpath("location/@href").get(0);
+            res = this.storage.load(location, file);
+        } else {
+            res = Completable.complete();
+        }
+        final String key = String.format("repodata/%s.xml", type);
+        final Path gzip = Files.createTempFile("x", ".gz");
+        return res
+            .andThen(Repomd.gzip(file, gzip))
+            .andThen(res.andThen(act.update(file)))
+            .andThen(
+                Single.just(new Directives()
+                    .xpath("/repomd")
+                    .addIf("revision").set("1")
+                    .xpath(String.format("/repomd/data[type='%s']", type))
+                    .remove()
+                    .xpath("/repomd")
+                    .add("data")
+                    .attr("type", type)
+                    .add("location")
+                    .attr("href", String.format("%s.gz", key))
+                    .up())
+                    .zipWith(
+                        Single.fromCallable(() -> Files.size(file)),
+                        (directives, size) -> directives.add("open-size")
+                            .set(Files.size(file))
+                            .up()
+                    )
+                    .flatMap(
+                        directives ->
+                            Single.just(directives.add("size")
+                                .set(Files.size(gzip))
+                                .up())
+                                .flatMap(directivesWithSize ->
+                                    new Checksum(gzip).sha()
+                                        .map(checksum ->
+                                        directivesWithSize
+                                            .add("checksum")
+                                            .attr("type", "sha256")
+                                            .set(checksum)
+                                    )
+                            )
+                    )
+                    .zipWith(
+                        new Checksum(file).sha(),
+                        (directives, open) -> directives.add("open-checksum")
+                            .attr("type", "sha256")
+                            .set(open)
+                    )
+                    .map(directives -> directives
+                    .add("timestamp")
+                    // @checkstyle MagicNumberCheck (1 line)
+                    .set(System.currentTimeMillis() / 1000L)
+                    .up()
+                )
+            )
+            .flatMapCompletable(directives -> this.storage.save(key, file)
+                .andThen(this.storage.save(String.format("%s.gz", key), gzip))
+                .andThen(new Update(temp).apply(directives))
+                .andThen(this.storage.save("repodata/repomd.xml", temp)));
     }
 
     /**
      * Gzip a file.
      *
-     * @param input  Source file
+     * @param input Source file
      * @param output Target file
      * @return Completion or error signal.
      */
     private static Completable gzip(final Path input, final Path output) {
-        return Completable.fromAction(() -> {
-            try (InputStream fis = Files.newInputStream(input);
-                 OutputStream fos = Files.newOutputStream(output);
-                 GZIPOutputStream gzos = new GZIPOutputStream(fos)) {
-                // @checkstyle MagicNumberCheck (1 line)
-                final byte[] buffer = new byte[65_536];
-                while (true) {
-                    final int length = fis.read(buffer);
-                    if (length < 0) {
-                        break;
+        return Completable.fromAction(
+            () -> {
+                try (InputStream fis = Files.newInputStream(input);
+                     OutputStream fos = Files.newOutputStream(output);
+                     GZIPOutputStream gzos = new GZIPOutputStream(fos)) {
+                    // @checkstyle MagicNumberCheck (1 line)
+                    final byte[] buffer = new byte[65_536];
+                    while (true) {
+                        final int length = fis.read(buffer);
+                        if (length < 0) {
+                            break;
+                        }
+                        gzos.write(buffer, 0, length);
                     }
-                    gzos.write(buffer, 0, length);
+                    gzos.finish();
                 }
-                gzos.finish();
-            }
-        });
+            });
     }
 
     /**
