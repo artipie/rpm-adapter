@@ -26,10 +26,7 @@ package com.yegor256.rpm;
 import com.yegor256.asto.Storage;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
-import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.concurrent.locks.Lock;
 
 /**
  * The RPM front.
@@ -44,7 +41,7 @@ import java.util.concurrent.locks.Lock;
  * and update all the necessary meta-data files. Right after this,
  * your clients will be able to use the package, via {@code yum}:
  *
- * <pre> rpm.update("nginx.rpm");</pre>
+ * <pre> rpm.update("nginx.rpm").subscribe();</pre>
  *
  * That's it.
  *
@@ -60,17 +57,17 @@ public final class Rpm {
     /**
      * Access lock for primary.xml file.
      */
-    private final ReactiveLock primary = new ReactiveLock();
+    private final ReactiveLock primary;
 
     /**
      * Access lock for filelists.xml file.
      */
-    private final ReactiveLock filelists = new ReactiveLock();
+    private final ReactiveLock filelists;
 
     /**
      * Access lock for other.xml file.
      */
-    private final ReactiveLock other = new ReactiveLock();
+    private final ReactiveLock other;
 
     /**
      * Ctor.
@@ -78,6 +75,9 @@ public final class Rpm {
      */
     public Rpm(final Storage stg) {
         this.storage = stg;
+        this.other = new ReactiveLock();
+        this.filelists = new ReactiveLock();
+        this.primary = new ReactiveLock();
     }
 
     /**

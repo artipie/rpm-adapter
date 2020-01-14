@@ -29,7 +29,6 @@ import com.yegor256.asto.Storage;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.CompletableSource;
 import io.reactivex.rxjava3.core.Single;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -121,11 +120,11 @@ final class Repomd {
                         String.format("/ns:repomd/data[type='%s']", type)
                     );
                     final Completable res;
-                    if (!nodes.isEmpty()) {
+                    if (nodes.isEmpty()) {
+                        res = Completable.complete();
+                    } else {
                         final String location = nodes.get(0).xpath("location/@href").get(0);
                         res = this.storage.load(location, file);
-                    } else {
-                        res = Completable.complete();
                     }
                     final String key = String.format("repodata/%s.xml", type);
                     final Path gzip = Files.createTempFile("x", ".gz");

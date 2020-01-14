@@ -57,9 +57,10 @@ final class Checksum {
     public Single<String> sha() {
         return Single.fromCallable(
             () -> Files.readAllBytes(this.file)
-        ).map(bytes -> DatatypeConverter.printHexBinary(
-            MessageDigest.getInstance("SHA-256").digest(bytes)
-        ).toLowerCase(Locale.ENGLISH));
+        ).map(
+            bytes -> DatatypeConverter.printHexBinary(
+                MessageDigest.getInstance("SHA-256").digest(bytes)
+            ).toLowerCase(Locale.ENGLISH));
     }
 
 }

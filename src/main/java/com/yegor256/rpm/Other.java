@@ -23,10 +23,8 @@
  */
 package com.yegor256.rpm;
 
-import java.io.IOException;
-import java.nio.file.Path;
-
 import io.reactivex.rxjava3.core.Completable;
+import java.nio.file.Path;
 import org.redline_rpm.header.Header;
 import org.xembly.Directives;
 

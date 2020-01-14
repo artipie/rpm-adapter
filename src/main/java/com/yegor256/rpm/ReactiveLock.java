@@ -37,6 +37,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 class ReactiveLock {
 
     /**
+     * Unlock and emit sync object.
+     */
+    private final Object sync = new Object();
+
+    /**
      * Current state of the lock.
      */
     private final AtomicBoolean locked = new AtomicBoolean(false);
@@ -63,21 +68,25 @@ class ReactiveLock {
     /**
      * Unlock the lock.
      */
-    public synchronized void unlock() {
-        if (this.locked.compareAndSet(true, false)) {
-            this.tryToEmitNext();
+    public void unlock() {
+        synchronized (this.sync) {
+            if (this.locked.compareAndSet(true, false)) {
+                this.tryToEmitNext();
+            }
         }
     }
 
     /**
      * Give a lock to another awaiter.
      */
-    private synchronized void tryToEmitNext() {
-        if (!this.locked.get()) {
-            final CompletableEmitter emitter = this.acquires.poll();
-            if (emitter != null) {
-                this.locked.set(true);
-                emitter.onComplete();
+    private void tryToEmitNext() {
+        synchronized (this.sync) {
+            if (!this.locked.get()) {
+                final CompletableEmitter emitter = this.acquires.poll();
+                if (emitter != null) {
+                    this.locked.set(true);
+                    emitter.onComplete();
+                }
             }
         }
     }
