@@ -117,9 +117,7 @@ public final class RpmITCase {
                     "\n",
                     "set -e",
                     "set -x",
-                    "cat /repo/repodata/primary.xml",
-                    "cat /repo/repodata/filelists.xml",
-                    "cat /repo/repodata/other.xml",
+                    "cat /repo/repodata/repomd.xml",
                     "dnf config-manager --add-repo=file:///repo",
                     "echo 'gpgcheck=0' >> /etc/yum.repos.d/repo.repo",
                     // @checkstyle LineLength (2 lines)

@@ -134,24 +134,28 @@ final class Repomd {
                     .up())
                     .zipWith(
                         Single.fromCallable(() -> Files.size(file)),
-                        (directives, size) -> directives.add("open-size")
-                            .set(Files.size(file))
-                            .up()
+                        (directives, size) ->
+                            directives.add("open-size")
+                                .set(Files.size(file))
+                                .up()
                     )
                     .flatMap(
                         directives ->
-                            Single.just(directives.add("size")
-                                .set(Files.size(gzip))
-                                .up())
-                                .flatMap(directivesWithSize ->
-                                    new Checksum(gzip).sha()
-                                        .map(checksum ->
-                                        directivesWithSize
-                                            .add("checksum")
-                                            .attr("type", "sha256")
-                                            .set(checksum)
-                                    )
+                            Single.just(
+                                directives.add("size")
+                                    .set(Files.size(gzip))
+                                    .up()
                             )
+                                .flatMap(
+                                    directivesWithSize ->
+                                        new Checksum(gzip).sha()
+                                            .map(checksum ->
+                                                directivesWithSize
+                                                    .add("checksum")
+                                                    .attr("type", "sha256")
+                                                    .set(checksum)
+                                            )
+                                )
                     )
                     .zipWith(
                         new Checksum(file).sha(),
@@ -160,11 +164,11 @@ final class Repomd {
                             .set(open)
                     )
                     .map(directives -> directives
-                    .add("timestamp")
-                    // @checkstyle MagicNumberCheck (1 line)
-                    .set(System.currentTimeMillis() / 1000L)
-                    .up()
-                )
+                        .add("timestamp")
+                        // @checkstyle MagicNumberCheck (1 line)
+                        .set(System.currentTimeMillis() / 1000L)
+                        .up()
+                    )
             )
             .flatMapCompletable(directives -> this.storage.save(key, file)
                 .andThen(this.storage.save(String.format("%s.gz", key), gzip))
