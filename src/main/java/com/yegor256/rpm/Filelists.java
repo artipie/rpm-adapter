@@ -54,33 +54,37 @@ final class Filelists {
      * @return Completion or error signal.
      */
     public Completable update(final Pkg pkg) {
-       return new Checksum(pkg.path()).sha().flatMapCompletable(sha -> new Update(this.xml).apply(
-          new Directives()
-              .xpath("/")
-              .addIf("filelists")
-              .xpath(
-                  String.format(
-                      "/metadata/package[name='%s']",
-                      pkg.tag(Header.HeaderTag.NAME)
-                  )
-              )
-              .remove()
-              .xpath("/filelists")
-              .attr("xmlns", "http://linux.duke.edu/metadata/filelists")
-              .attr("packages", 1)
-              .add("package")
-              .attr("pkgid", sha)
-              .attr("name", pkg.tag(Header.HeaderTag.NAME))
-              .attr("arch", pkg.tag(Header.HeaderTag.ARCH))
-              .add("version")
-              .attr("epoch", pkg.num(Header.HeaderTag.EPOCH))
-              .attr("ver", pkg.tag(Header.HeaderTag.VERSION))
-              .attr("rel", pkg.tag(Header.HeaderTag.RELEASE))
-              .up()
-              .add("file")
-              .set("/test")
-              .up()
-      ));
+        return new Checksum(pkg.path()).sha()
+            .flatMapCompletable(
+                sha ->
+                    new Update(this.xml).apply(
+                        new Directives()
+                            .xpath("/")
+                            .addIf("filelists")
+                            .xpath(
+                                String.format(
+                                    "/metadata/package[name='%s']",
+                                    pkg.tag(Header.HeaderTag.NAME)
+                                )
+                            )
+                            .remove()
+                            .xpath("/filelists")
+                            .attr("xmlns", "http://linux.duke.edu/metadata/filelists")
+                            .attr("packages", 1)
+                            .add("package")
+                            .attr("pkgid", sha)
+                            .attr("name", pkg.tag(Header.HeaderTag.NAME))
+                            .attr("arch", pkg.tag(Header.HeaderTag.ARCH))
+                            .add("version")
+                            .attr("epoch", pkg.num(Header.HeaderTag.EPOCH))
+                            .attr("ver", pkg.tag(Header.HeaderTag.VERSION))
+                            .attr("rel", pkg.tag(Header.HeaderTag.RELEASE))
+                            .up()
+                            .add("file")
+                            .set("/test")
+                            .up()
+                    )
+            );
     }
 
 }

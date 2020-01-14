@@ -25,7 +25,6 @@ package com.yegor256.rpm;
 
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.CompletableEmitter;
-
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -53,10 +52,12 @@ class ReactiveLock {
      * @return Completion when lock is acquired.
      */
     public Completable lock() {
-        return Completable.create(emitter -> {
-            this.acquires.add(emitter);
-            this.tryToEmitNext();
-        });
+        return Completable.create(
+            emitter -> {
+                this.acquires.add(emitter);
+                this.tryToEmitNext();
+            }
+        );
     }
 
     /**

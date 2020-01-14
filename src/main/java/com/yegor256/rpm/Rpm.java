@@ -89,23 +89,34 @@ public final class Rpm {
     public Completable update(final String key) {
         return Single.fromCallable(() -> Files.createTempFile("rpm", ".rpm"))
             .flatMap(temp -> this.storage.load(key, temp).andThen(Single.just(new Pkg(temp))))
-            .flatMapCompletable(pkg -> {
-                final Repomd repomd = new Repomd(this.storage);
-                return Completable.concatArray(
-                    repomd.update(
-                        "primary",
-                        new SynchronousAct(file -> new Primary(file).update(key, pkg), primary)
-                    ),
-                    repomd.update(
-                        "filelists",
-                        new SynchronousAct(file -> new Filelists(file).update(pkg), filelists)
-                    ),
-                    repomd.update(
-                        "other",
-                        new SynchronousAct(file -> new Other(file).update(pkg), other)
-                    )
-                );
-            }); 
+            .flatMapCompletable(
+                pkg -> {
+                    final Repomd repomd = new Repomd(this.storage);
+                    return Completable.concatArray(
+                        repomd.update(
+                            "primary",
+                            new SynchronousAct(
+                                file -> new Primary(file).update(key, pkg),
+                                this.primary
+                            )
+                        ),
+                        repomd.update(
+                            "filelists",
+                            new SynchronousAct(
+                                file -> new Filelists(file).update(pkg),
+                                this.filelists
+                            )
+                        ),
+                        repomd.update(
+                            "other",
+                            new SynchronousAct(
+                                file -> new Other(file).update(pkg),
+                                this.other
+                            )
+                        )
+                    );
+                }
+            );
     }
 
 }
