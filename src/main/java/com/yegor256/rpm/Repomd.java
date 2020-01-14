@@ -29,7 +29,6 @@ import com.yegor256.asto.Storage;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.CompletableSource;
 import io.reactivex.rxjava3.core.Single;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -62,9 +61,25 @@ final class Repomd {
     }
 
     /**
+     * Update.
+     *
+     * @param type The type
+     * @param act The act
+     * @return Completion or error signal.
+     */
+    public Completable update(final String type, final Repomd.Act act) {
+        return Single.fromCallable(() -> Files.createTempFile("repomd", ".xml"))
+            .flatMapCompletable(
+                temp -> this.loadRepomd(temp)
+                    .andThen(Single.fromCallable(() -> Files.createTempFile("x", ".data")))
+                    .flatMapCompletable(file -> this.performUpdate(type, act, temp, file))
+            );
+    }
+
+    /**
      * Load or create repomd.xml file.
      *
-     * @param file file to load it to.
+     * @param file File to load it to.
      * @return Completion or error signal.
      */
     private Completable loadRepomd(final Path file) {
@@ -87,22 +102,6 @@ final class Repomd {
                 });
     }
 
-    /**
-     * Update.
-     *
-     * @param type The type
-     * @param act  The act
-     * @return Completion or error signal.
-     */
-    public Completable update(final String type, final Repomd.Act act) {
-        return Single.fromCallable(() -> Files.createTempFile("repomd", ".xml"))
-            .flatMapCompletable(
-                temp -> loadRepomd(temp)
-                    .andThen(Single.fromCallable(() -> Files.createTempFile("x", ".data")))
-                    .flatMapCompletable(file -> this.performUpdate(type, act, temp, file))
-            );
-    }
-
     private CompletableSource performUpdate(String type, Act act, Path temp, Path file) throws IOException {
         final XML xml = new XMLDocument(temp.toFile())
             .registerNs("ns", "http://linux.duke.edu/metadata/repo");
@@ -121,47 +120,49 @@ final class Repomd {
         return res.andThen(act.update(file))
             .andThen(Repomd.gzip(file, gzip))
             .andThen(
-                Single.just(new Directives()
-                    .xpath("/repomd")
-                    .addIf("revision").set("1")
-                    .xpath(String.format("/repomd/data[type='%s']", type))
-                    .remove()
-                    .xpath("/repomd")
-                    .add("data")
-                    .attr("type", type)
-                    .add("location")
-                    .attr("href", String.format("%s.gz", key))
-                    .up())
+                Single.just(
+                    new Directives()
+                        .xpath("/repomd")
+                        .addIf("revision").set("1")
+                        .xpath(String.format("/repomd/data[type='%s']", type))
+                        .remove()
+                        .xpath("/repomd")
+                        .add("data")
+                        .attr("type", type)
+                        .add("location")
+                        .attr("href", String.format("%s.gz", key))
+                        .up()
+                )
                     .zipWith(
                         Single.fromCallable(() -> Files.size(file)),
                         (directives, size) ->
                             directives.add("open-size")
-                                .set(Files.size(file))
+                                .set(size)
                                 .up()
                     )
-                    .flatMap(
-                        directives ->
-                            Single.just(
-                                directives.add("size")
-                                    .set(Files.size(gzip))
-                                    .up()
-                            )
-                                .flatMap(
-                                    directivesWithSize ->
-                                        new Checksum(gzip).sha()
-                                            .map(checksum ->
-                                                directivesWithSize
-                                                    .add("checksum")
-                                                    .attr("type", "sha256")
-                                                    .set(checksum)
-                                            )
-                                )
+                    .zipWith(
+                        Single.fromCallable(() -> Files.size(gzip)),
+                        (directives, size) ->
+                            directives.add("size")
+                                .set(size)
+                                .up()
+
                     )
+                    .flatMap(directives ->
+                        new Checksum(gzip).sha()
+                            .map(checksum ->
+                                directives
+                                    .add("checksum")
+                                    .attr("type", "sha256")
+                                    .set(checksum)
+                                    .up()
+                            ))
                     .zipWith(
                         new Checksum(file).sha(),
                         (directives, open) -> directives.add("open-checksum")
                             .attr("type", "sha256")
                             .set(open)
+                            .up()
                     )
                     .map(directives -> directives
                         .add("timestamp")
