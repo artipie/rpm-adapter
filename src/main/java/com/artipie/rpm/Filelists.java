@@ -21,51 +21,66 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.yegor256.rpm;
+package com.artipie.rpm;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Locale;
-import javax.xml.bind.DatatypeConverter;
+import org.redline_rpm.header.Header;
+import org.xembly.Directives;
 
 /**
- * SHA-256 checksum of a file.
+ * The filelists XML file.
  *
  * @since 0.1
  */
-final class Checksum {
+final class Filelists {
 
     /**
      * The XML.
      */
-    private final Path file;
+    private final Path xml;
 
     /**
      * Ctor.
      * @param path The path
      */
-    Checksum(final Path path) {
-        this.file = path;
+    Filelists(final Path path) {
+        this.xml = path;
     }
 
     /**
-     * Calculate it.
-     * @return The SHA-256 of the file content
+     * Update.
+     * @param pkg The package
      * @throws IOException If fails
      */
-    public String sha() throws IOException {
-        try {
-            return DatatypeConverter.printHexBinary(
-                MessageDigest.getInstance("SHA-256").digest(
-                    Files.readAllBytes(this.file)
+    public void update(final Pkg pkg) throws IOException {
+        new Update(this.xml).apply(
+            new Directives()
+                .xpath("/")
+                .addIf("filelists")
+                .xpath(
+                    String.format(
+                        "/metadata/package[name='%s']",
+                        pkg.tag(Header.HeaderTag.NAME)
+                    )
                 )
-            ).toLowerCase(Locale.ENGLISH);
-        } catch (final NoSuchAlgorithmException ex) {
-            throw new IllegalStateException(ex);
-        }
+                .remove()
+                .xpath("/filelists")
+                .attr("xmlns", "http://linux.duke.edu/metadata/filelists")
+                .attr("packages", 1)
+                .add("package")
+                .attr("pkgid", new Checksum(pkg.path()).sha())
+                .attr("name", pkg.tag(Header.HeaderTag.NAME))
+                .attr("arch", pkg.tag(Header.HeaderTag.ARCH))
+                .add("version")
+                .attr("epoch", pkg.num(Header.HeaderTag.EPOCH))
+                .attr("ver", pkg.tag(Header.HeaderTag.VERSION))
+                .attr("rel", pkg.tag(Header.HeaderTag.RELEASE))
+                .up()
+                .add("file")
+                .set("/test")
+                .up()
+        );
     }
 
 }

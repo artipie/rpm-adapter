@@ -21,56 +21,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.yegor256.rpm;
+package com.artipie.rpm;
 
-import com.jcabi.log.Logger;
-import com.jcabi.xml.XMLDocument;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.w3c.dom.Node;
-import org.xembly.Directives;
-import org.xembly.Xembler;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Locale;
+import javax.xml.bind.DatatypeConverter;
 
 /**
- * One update to an XML file.
+ * SHA-256 checksum of a file.
  *
  * @since 0.1
  */
-final class Update {
+final class Checksum {
 
     /**
-     * The path of XML.
+     * The XML.
      */
-    private final Path xml;
+    private final Path file;
 
     /**
      * Ctor.
-     * @param path The path of XML file
+     * @param path The path
      */
-    Update(final Path path) {
-        this.xml = path;
+    Checksum(final Path path) {
+        this.file = path;
     }
 
     /**
-     * Apply an update.
-     *
-     * @param dirs Directives
+     * Calculate it.
+     * @return The SHA-256 of the file content
      * @throws IOException If fails
      */
-    public void apply(final Directives dirs) throws IOException {
-        final Node output;
-        if (this.xml.toFile().exists() && this.xml.toFile().length() > 0L) {
-            output = new Xembler(dirs).applyQuietly(
-                new XMLDocument(this.xml.toFile()).node()
-            );
-        } else {
-            output = new Xembler(dirs).domQuietly();
+    public String sha() throws IOException {
+        try {
+            return DatatypeConverter.printHexBinary(
+                MessageDigest.getInstance("SHA-256").digest(
+                    Files.readAllBytes(this.file)
+                )
+            ).toLowerCase(Locale.ENGLISH);
+        } catch (final NoSuchAlgorithmException ex) {
+            throw new IllegalStateException(ex);
         }
-        final String doc = new XMLDocument(output).toString();
-        Files.write(this.xml, doc.getBytes(StandardCharsets.UTF_8));
-        Logger.debug(this, "Saved:\n%s", doc);
     }
 
 }

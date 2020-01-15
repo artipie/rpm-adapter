@@ -21,23 +21,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.yegor256.rpm;
+package com.artipie.rpm;
 
 import com.jcabi.matchers.XhtmlMatchers;
+import com.jcabi.xml.XMLDocument;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.xembly.Directives;
 
 /**
- * Test case for {@link Update}.
+ * Test case for {@link Primary}.
  *
  * @since 0.1
  */
-public final class UpdateTest {
+public final class PrimaryTest {
 
     /**
      * Temp folder for all tests.
@@ -51,12 +52,24 @@ public final class UpdateTest {
      * @throws Exception If some problem inside
      */
     @Test
-    public void makesUpdateToXmlFile() throws Exception {
-        final Path xml = this.folder.newFile("a.xml").toPath();
-        new Update(xml).apply(new Directives().add("test").add("foo"));
+    public void addsSingleHeader() throws Exception {
+        final Path bin = this.folder.newFile("x.rpm").toPath();
+        Files.copy(
+            RpmITCase.class.getResourceAsStream(
+                "/nginx-1.16.1-1.el8.ngx.x86_64.rpm"
+            ),
+            bin,
+            StandardCopyOption.REPLACE_EXISTING
+        );
+        final Path xml = this.folder.newFile("primary.xml").toPath();
+        final Primary primary = new Primary(xml);
+        primary.update("test.rpm", new Pkg(bin));
         MatcherAssert.assertThat(
-            new String(Files.readAllBytes(xml)),
-            XhtmlMatchers.hasXPath("/test/foo")
+            new XMLDocument(new String(Files.readAllBytes(xml))),
+            XhtmlMatchers.hasXPath(
+                "/ns1:metadata/ns1:package",
+                "http://linux.duke.edu/metadata/common"
+            )
         );
     }
 

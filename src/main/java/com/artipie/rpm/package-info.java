@@ -23,9 +23,9 @@
  */
 
 /**
- * Rpm files, tests.
+ * Rpm files.
  *
  * @since 0.1
  */
-package com.yegor256.rpm;
+package com.artipie.rpm;
 

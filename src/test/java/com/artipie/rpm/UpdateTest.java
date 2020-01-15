@@ -21,11 +21,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.artipie.rpm;
+
+import com.jcabi.matchers.XhtmlMatchers;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.hamcrest.MatcherAssert;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.xembly.Directives;
 
 /**
- * Rpm files.
+ * Test case for {@link Update}.
  *
  * @since 0.1
  */
-package com.yegor256.rpm;
+public final class UpdateTest {
 
+    /**
+     * Temp folder for all tests.
+     */
+    @Rule
+    @SuppressWarnings("PMD.BeanMembersShouldSerialize")
+    public TemporaryFolder folder = new TemporaryFolder();
+
+    /**
+     * Fake storage works.
+     * @throws Exception If some problem inside
+     */
+    @Test
+    public void makesUpdateToXmlFile() throws Exception {
+        final Path xml = this.folder.newFile("a.xml").toPath();
+        new Update(xml).apply(new Directives().add("test").add("foo"));
+        MatcherAssert.assertThat(
+            new String(Files.readAllBytes(xml)),
+            XhtmlMatchers.hasXPath("/test/foo")
+        );
+    }
+
+}

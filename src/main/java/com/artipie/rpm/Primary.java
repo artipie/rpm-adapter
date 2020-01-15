@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.yegor256.rpm;
+package com.artipie.rpm;
 
 import java.io.IOException;
 import java.nio.file.Files;

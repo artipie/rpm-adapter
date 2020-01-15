@@ -21,56 +21,56 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.yegor256.rpm;
+package com.artipie.rpm;
 
-import com.jcabi.matchers.XhtmlMatchers;
+import com.jcabi.log.Logger;
 import com.jcabi.xml.XMLDocument;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import org.hamcrest.MatcherAssert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.w3c.dom.Node;
+import org.xembly.Directives;
+import org.xembly.Xembler;
 
 /**
- * Test case for {@link Primary}.
+ * One update to an XML file.
  *
  * @since 0.1
  */
-public final class PrimaryTest {
+final class Update {
 
     /**
-     * Temp folder for all tests.
+     * The path of XML.
      */
-    @Rule
-    @SuppressWarnings("PMD.BeanMembersShouldSerialize")
-    public TemporaryFolder folder = new TemporaryFolder();
+    private final Path xml;
 
     /**
-     * Fake storage works.
-     * @throws Exception If some problem inside
+     * Ctor.
+     * @param path The path of XML file
      */
-    @Test
-    public void addsSingleHeader() throws Exception {
-        final Path bin = this.folder.newFile("x.rpm").toPath();
-        Files.copy(
-            RpmITCase.class.getResourceAsStream(
-                "/nginx-1.16.1-1.el8.ngx.x86_64.rpm"
-            ),
-            bin,
-            StandardCopyOption.REPLACE_EXISTING
-        );
-        final Path xml = this.folder.newFile("primary.xml").toPath();
-        final Primary primary = new Primary(xml);
-        primary.update("test.rpm", new Pkg(bin));
-        MatcherAssert.assertThat(
-            new XMLDocument(new String(Files.readAllBytes(xml))),
-            XhtmlMatchers.hasXPath(
-                "/ns1:metadata/ns1:package",
-                "http://linux.duke.edu/metadata/common"
-            )
-        );
+    Update(final Path path) {
+        this.xml = path;
+    }
+
+    /**
+     * Apply an update.
+     *
+     * @param dirs Directives
+     * @throws IOException If fails
+     */
+    public void apply(final Directives dirs) throws IOException {
+        final Node output;
+        if (this.xml.toFile().exists() && this.xml.toFile().length() > 0L) {
+            output = new Xembler(dirs).applyQuietly(
+                new XMLDocument(this.xml.toFile()).node()
+            );
+        } else {
+            output = new Xembler(dirs).domQuietly();
+        }
+        final String doc = new XMLDocument(output).toString();
+        Files.write(this.xml, doc.getBytes(StandardCharsets.UTF_8));
+        Logger.debug(this, "Saved:\n%s", doc);
     }
 
 }

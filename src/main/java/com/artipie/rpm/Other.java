@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.yegor256.rpm;
+package com.artipie.rpm;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -29,11 +29,11 @@ import org.redline_rpm.header.Header;
 import org.xembly.Directives;
 
 /**
- * The filelists XML file.
+ * The other XML file.
  *
  * @since 0.1
  */
-final class Filelists {
+final class Other {
 
     /**
      * The XML.
@@ -44,7 +44,7 @@ final class Filelists {
      * Ctor.
      * @param path The path
      */
-    Filelists(final Path path) {
+    Other(final Path path) {
         this.xml = path;
     }
 
@@ -57,16 +57,16 @@ final class Filelists {
         new Update(this.xml).apply(
             new Directives()
                 .xpath("/")
-                .addIf("filelists")
+                .addIf("otherdata")
                 .xpath(
                     String.format(
-                        "/metadata/package[name='%s']",
+                        "/otherdata/package[name='%s']",
                         pkg.tag(Header.HeaderTag.NAME)
                     )
                 )
                 .remove()
-                .xpath("/filelists")
-                .attr("xmlns", "http://linux.duke.edu/metadata/filelists")
+                .xpath("/otherdata")
+                .attr("xmlns", "http://linux.duke.edu/metadata/other")
                 .attr("packages", 1)
                 .add("package")
                 .attr("pkgid", new Checksum(pkg.path()).sha())
@@ -77,8 +77,8 @@ final class Filelists {
                 .attr("ver", pkg.tag(Header.HeaderTag.VERSION))
                 .attr("rel", pkg.tag(Header.HeaderTag.RELEASE))
                 .up()
-                .add("file")
-                .set("/test")
+                .add("changelog")
+                .set("?")
                 .up()
         );
     }
