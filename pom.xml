@@ -128,6 +128,11 @@ SOFTWARE.
       <version>2.6.3</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.reactivex.rxjava3</groupId>
+      <artifactId>rxjava</artifactId>
+      <version>3.0.0-RC6</version>
+    </dependency>
   </dependencies>
   <build>
     <testResources>
