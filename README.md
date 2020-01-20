@@ -1,13 +1,15 @@
+<img src="https://www.artipie.com/logo.svg" width="64px" height="64px"/>
+
 [![EO principles respected here](https://www.elegantobjects.org/badge.svg)](https://www.elegantobjects.org)
-[![DevOps By Rultor.com](http://www.rultor.com/b/yegor256/rpm-files)](http://www.rultor.com/p/yegor256/rpm-files)
+[![DevOps By Rultor.com](http://www.rultor.com/b/artipie/rpm-adapter)](http://www.rultor.com/p/artipie/rpm-adapter)
 [![We recommend IntelliJ IDEA](https://www.elegantobjects.org/intellij-idea.svg)](https://www.jetbrains.com/idea/)
 
 [![Build Status](https://img.shields.io/travis/yegor256/rpm-files/master.svg)](https://travis-ci.org/yegor256/rpm-files)
-[![Javadoc](http://www.javadoc.io/badge/com.yegor256/rpm-files.svg)](http://www.javadoc.io/doc/com.yegor256/rpm-files)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/yegor256/rpm-files/blob/master/LICENSE.txt)
-[![Hits-of-Code](https://hitsofcode.com/github/yegor256/rpm-files)](https://hitsofcode.com/view/github/yegor256/rpm-files)
-[![Maven Central](https://img.shields.io/maven-central/v/com.yegor256/rpm-files.svg)](https://maven-badges.herokuapp.com/maven-central/com.yegor256/rpm-files)
-[![PDD status](http://www.0pdd.com/svg?name=yegor256/rpm-files)](http://www.0pdd.com/p?name=yegor256/rpm-files)
+[![Javadoc](http://www.javadoc.io/badge/com.artipie/rpm-adapter.svg)](http://www.javadoc.io/doc/com.artipie/rpm-adapter)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/com.artipie/rpm-adapter/blob/master/LICENSE.txt)
+[![Hits-of-Code](https://hitsofcode.com/github/artipie/rpm-adapter)](https://hitsofcode.com/view/github/artipie/rpm-adapter)
+[![Maven Central](https://img.shields.io/maven-central/v/com.artipie/rpm-adapter.svg)](https://maven-badges.herokuapp.com/maven-central/com.artipie/rpm-adapter)
+[![PDD status](http://www.0pdd.com/svg?name=artipie/rpm-adapter)](http://www.0pdd.com/p?name=artipie/rpm-adapter)
 
 This Java library turns your binary storage
 (files, S3 objects, anything) into an RPM repository.
@@ -33,8 +35,8 @@ This is the dependency you need:
 
 ```xml
 <dependency>
-  <groupId>com.yegor256</groupId>
-  <artifactId>rpm-files</artifactId>
+  <groupId>com.artipie</groupId>
+  <artifactId>rpm-adapter</artifactId>
   <version>[...]</version>
 </dependency>
 ```
@@ -46,7 +48,7 @@ as an argument. Finally, you put your artifacts to the storage
 and instruct `Rpm` to update the meta info:
 
 ```java
-import com.yegor256.rpm.Rpm;
+import com.artipie.rpm.Rpm;
 Rpm rpm = new Rpm(storage);
 rpm.update("test/my.rpm");
 ```

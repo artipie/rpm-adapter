@@ -21,11 +21,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.artipie.rpm;
+
+import io.reactivex.rxjava3.core.Single;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.util.Locale;
+import javax.xml.bind.DatatypeConverter;
 
 /**
- * Rpm files.
+ * SHA-256 checksum of a file.
  *
  * @since 0.1
  */
-package com.yegor256.rpm;
+final class Checksum {
 
+    /**
+     * The XML.
+     */
+    private final Path file;
+
+    /**
+     * Ctor.
+     * @param path The path
+     */
+    Checksum(final Path path) {
+        this.file = path;
+    }
+
+    /**
+     * Calculate it.
+     * @return The SHA-256 of the file content or error.
+     */
+    public Single<String> sha() {
+        return Single.fromCallable(
+            () -> Files.readAllBytes(this.file)
+        ).map(
+            bytes -> DatatypeConverter.printHexBinary(
+                MessageDigest.getInstance("SHA-256").digest(bytes)
+            ).toLowerCase(Locale.ENGLISH));
+    }
+
+}

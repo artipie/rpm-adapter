@@ -21,46 +21,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.yegor256.rpm;
+package com.artipie.rpm;
 
-import io.reactivex.rxjava3.core.Single;
-import java.nio.file.Files;
+import io.reactivex.rxjava3.core.Completable;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.util.Locale;
-import javax.xml.bind.DatatypeConverter;
 
 /**
- * SHA-256 checksum of a file.
+ * Synchronous act wrapper.
  *
  * @since 0.1
  */
-final class Checksum {
+class SynchronousAct implements Repomd.Act {
 
     /**
-     * The XML.
+     * The lock to synchronize on.
      */
-    private final Path file;
+    private final ReactiveLock lock;
 
     /**
-     * Ctor.
-     * @param path The path
+     * Wrapped act.
      */
-    Checksum(final Path path) {
-        this.file = path;
+    private final Repomd.Act act;
+
+    /**
+     * Create an act with synchronization on a lock.
+     *
+     * @param act Act to synchronize.
+     * @param lock The lock to sync on.
+     */
+    SynchronousAct(final Repomd.Act act, final ReactiveLock lock) {
+        this.act = act;
+        this.lock = lock;
     }
 
-    /**
-     * Calculate it.
-     * @return The SHA-256 of the file content or error.
-     */
-    public Single<String> sha() {
-        return Single.fromCallable(
-            () -> Files.readAllBytes(this.file)
-        ).map(
-            bytes -> DatatypeConverter.printHexBinary(
-                MessageDigest.getInstance("SHA-256").digest(bytes)
-            ).toLowerCase(Locale.ENGLISH));
+    @Override
+    public Completable update(final Path file) {
+        return this.lock.lock()
+            .andThen(this.act.update(file))
+            .doOnTerminate(this.lock::unlock);
     }
-
 }

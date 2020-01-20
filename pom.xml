@@ -29,18 +29,18 @@ SOFTWARE.
     <artifactId>parent</artifactId>
     <version>0.49.5</version>
   </parent>
-  <groupId>com.yegor256</groupId>
-  <artifactId>rpm-files</artifactId>
+  <groupId>com.artipie</groupId>
+  <artifactId>rpm-adapter</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>rpm-files</name>
   <description>Turns your files/objects into RPM artifacts</description>
-  <url>https://github.com/yegor256/rpm-files</url>
+  <url>https://github.com/artipie/rpm-adapter</url>
   <inceptionYear>2019</inceptionYear>
   <licenses>
     <license>
       <name>MIT</name>
-      <url>https://github.com/yegor256/rpm-files/blob/master/LICENSE.txt</url>
+      <url>https://github.com/artipie/rpm-adapter/blob/master/LICENSE.txt</url>
     </license>
   </licenses>
   <developers>
@@ -59,21 +59,21 @@ SOFTWARE.
   </developers>
   <issueManagement>
     <system>GitHub</system>
-    <url>https://github.com/yegor256/rpm-files/issues</url>
+    <url>https://github.com/artipie/rpm-adapter/issues</url>
   </issueManagement>
   <scm>
-    <connection>scm:git:git@github.com:yegor256/rpm-files.git</connection>
-    <developerConnection>scm:git:git@github.com:yegor256/rpm-files.git</developerConnection>
-    <url>https://github.com/yegor256/rpm-files</url>
+    <connection>scm:git:git@github.com:artipie/rpm-adapter.git</connection>
+    <developerConnection>scm:git:git@github.com:artipie/rpm-adapter.git</developerConnection>
+    <url>https://github.com/artipie/rpm-adapter</url>
   </scm>
   <ciManagement>
     <system>rultor</system>
-    <url>https://www.rultor.com/s/rpm-files</url>
+    <url>https://www.rultor.com/s/rpm-adapter</url>
   </ciManagement>
   <distributionManagement>
     <site>
       <id>github-pages</id>
-      <url>https://github.com/yegor256/rpm-files</url>
+      <url>https://github.com/artipie/rpm-adapter</url>
     </site>
   </distributionManagement>
   <dependencies>
