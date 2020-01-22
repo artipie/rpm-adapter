@@ -72,6 +72,8 @@ class ReactiveLock {
         synchronized (this.sync) {
             if (this.locked.compareAndSet(true, false)) {
                 this.tryToEmitNext();
+            } else {
+                throw new IllegalStateException("Attempt to unlock non-locked lock");
             }
         }
     }
