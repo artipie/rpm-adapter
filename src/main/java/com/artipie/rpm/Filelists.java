@@ -23,7 +23,7 @@
  */
 package com.artipie.rpm;
 
-import java.io.IOException;
+import io.reactivex.rxjava3.core.Completable;
 import java.nio.file.Path;
 import org.redline_rpm.header.Header;
 import org.xembly.Directives;
@@ -51,36 +51,40 @@ final class Filelists {
     /**
      * Update.
      * @param pkg The package
-     * @throws IOException If fails
+     * @return Completion or error signal.
      */
-    public void update(final Pkg pkg) throws IOException {
-        new Update(this.xml).apply(
-            new Directives()
-                .xpath("/")
-                .addIf("filelists")
-                .xpath(
-                    String.format(
-                        "/metadata/package[name='%s']",
-                        pkg.tag(Header.HeaderTag.NAME)
+    public Completable update(final Pkg pkg) {
+        return new Checksum(pkg.path()).sha()
+            .flatMapCompletable(
+                sha ->
+                    new Update(this.xml).apply(
+                        new Directives()
+                            .xpath("/")
+                            .addIf("filelists")
+                            .xpath(
+                                String.format(
+                                    "/metadata/package[name='%s']",
+                                    pkg.tag(Header.HeaderTag.NAME)
+                                )
+                            )
+                            .remove()
+                            .xpath("/filelists")
+                            .attr("xmlns", "http://linux.duke.edu/metadata/filelists")
+                            .attr("packages", 1)
+                            .add("package")
+                            .attr("pkgid", sha)
+                            .attr("name", pkg.tag(Header.HeaderTag.NAME))
+                            .attr("arch", pkg.tag(Header.HeaderTag.ARCH))
+                            .add("version")
+                            .attr("epoch", pkg.num(Header.HeaderTag.EPOCH))
+                            .attr("ver", pkg.tag(Header.HeaderTag.VERSION))
+                            .attr("rel", pkg.tag(Header.HeaderTag.RELEASE))
+                            .up()
+                            .add("file")
+                            .set("/test")
+                            .up()
                     )
-                )
-                .remove()
-                .xpath("/filelists")
-                .attr("xmlns", "http://linux.duke.edu/metadata/filelists")
-                .attr("packages", 1)
-                .add("package")
-                .attr("pkgid", new Checksum(pkg.path()).sha())
-                .attr("name", pkg.tag(Header.HeaderTag.NAME))
-                .attr("arch", pkg.tag(Header.HeaderTag.ARCH))
-                .add("version")
-                .attr("epoch", pkg.num(Header.HeaderTag.EPOCH))
-                .attr("ver", pkg.tag(Header.HeaderTag.VERSION))
-                .attr("rel", pkg.tag(Header.HeaderTag.RELEASE))
-                .up()
-                .add("file")
-                .set("/test")
-                .up()
-        );
+            );
     }
 
 }

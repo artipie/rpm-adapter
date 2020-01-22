@@ -24,9 +24,9 @@
 package com.artipie.rpm;
 
 import com.yegor256.asto.Storage;
-import java.io.IOException;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
 import java.nio.file.Files;
-import java.nio.file.Path;
 
 /**
  * The RPM front.
@@ -41,7 +41,7 @@ import java.nio.file.Path;
  * and update all the necessary meta-data files. Right after this,
  * your clients will be able to use the package, via {@code yum}:
  *
- * <pre> rpm.update("nginx.rpm");</pre>
+ * <pre> rpm.update("nginx.rpm").subscribe();</pre>
  *
  * That's it.
  *
@@ -55,38 +55,68 @@ public final class Rpm {
     private final Storage storage;
 
     /**
+     * Access lock for primary.xml file.
+     */
+    private final ReactiveLock primary;
+
+    /**
+     * Access lock for filelists.xml file.
+     */
+    private final ReactiveLock filelists;
+
+    /**
+     * Access lock for other.xml file.
+     */
+    private final ReactiveLock other;
+
+    /**
      * Ctor.
      * @param stg The storage
      */
     public Rpm(final Storage stg) {
         this.storage = stg;
+        this.other = new ReactiveLock();
+        this.filelists = new ReactiveLock();
+        this.primary = new ReactiveLock();
     }
 
     /**
      * Update the meta info by this artifact.
      *
      * @param key The name of the file just updated
-     * @throws IOException If fails
+     * @return Completion or error signal.
      */
-    public void update(final String key) throws IOException {
-        synchronized (this.storage) {
-            final Path temp = Files.createTempFile("rpm", ".rpm");
-            this.storage.load(key, temp);
-            final Pkg pkg = new Pkg(temp);
-            final Repomd repomd = new Repomd(this.storage);
-            repomd.update(
-                "primary",
-                file -> new Primary(file).update(key, pkg)
+    public Completable update(final String key) {
+        return Single.fromCallable(() -> Files.createTempFile("rpm", ".rpm"))
+            .flatMap(temp -> this.storage.load(key, temp).andThen(Single.just(new Pkg(temp))))
+            .flatMapCompletable(
+                pkg -> {
+                    final Repomd repomd = new Repomd(this.storage);
+                    return Completable.concatArray(
+                        repomd.update(
+                            "primary",
+                            new SynchronousAct(
+                                file -> new Primary(file).update(key, pkg),
+                                this.primary
+                            )
+                        ),
+                        repomd.update(
+                            "filelists",
+                            new SynchronousAct(
+                                file -> new Filelists(file).update(pkg),
+                                this.filelists
+                            )
+                        ),
+                        repomd.update(
+                            "other",
+                            new SynchronousAct(
+                                file -> new Other(file).update(pkg),
+                                this.other
+                            )
+                        )
+                    );
+                }
             );
-            repomd.update(
-                "filelists",
-                file -> new Filelists(file).update(pkg)
-            );
-            repomd.update(
-                "other",
-                file -> new Other(file).update(pkg)
-            );
-        }
     }
 
 }

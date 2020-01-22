@@ -23,7 +23,8 @@
  */
 package com.artipie.rpm;
 
-import java.io.IOException;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -57,12 +58,13 @@ final class Primary {
 
     /**
      * Update.
+     *
      * @param key The key
      * @param pkg The package
-     * @throws IOException If fails
+     * @return Completion or error signal.
      */
-    public void update(final String key, final Pkg pkg) throws IOException {
-        new Update(this.xml).apply(
+    public Completable update(final String key, final Pkg pkg) {
+        return Single.just(
             new Directives()
                 .xpath("/")
                 .addIf("metadata")
@@ -90,60 +92,51 @@ final class Primary {
                 .attr("ver", pkg.tag(Header.HeaderTag.VERSION))
                 .attr("rel", pkg.tag(Header.HeaderTag.RELEASE))
                 .up()
-                .add("checksum")
-                .attr("type", "sha256")
-                .attr("pkgid", "YES")
-                .set(new Checksum(pkg.path()).sha())
-                .up()
-                .add("summary")
-                .set(pkg.tag(Header.HeaderTag.SUMMARY))
-                .up()
-                .add("description")
-                .set(pkg.tag(Header.HeaderTag.DESCRIPTION))
-                .up()
-                .add("packager")
-                .set(pkg.tag(Header.HeaderTag.PACKAGER))
-                .up()
-                .add("url")
-                .set(pkg.tag(Header.HeaderTag.URL))
-                .up()
-                .add("time")
-                .attr("file", pkg.num(Header.HeaderTag.FILEMTIMES))
-                .attr("build", pkg.num(Header.HeaderTag.BUILDTIME))
-                .up()
-                .add("size")
-                .attr("package", Files.size(pkg.path()))
-                .attr("installed", pkg.num(Header.HeaderTag.SIZE))
-                .attr("archive", pkg.num(Header.HeaderTag.ARCHIVESIZE))
-                .up()
-                .add("location")
-                .attr("href", key)
-                .up()
-                .add("format")
-                .add("rpm:license")
-                .set(pkg.tag(Header.HeaderTag.LICENSE))
-                .up()
-                .add("rpm:vendor")
-                .set(pkg.tag(Header.HeaderTag.VENDOR))
-                .up()
-                .add("rpm:group")
-                .set(pkg.tag(Header.HeaderTag.GROUP))
-                .up()
-                .add("rpm:buildhost")
-                .set(pkg.tag(Header.HeaderTag.BUILDHOST))
-                .up()
-                .add("rpm:sourcerpm")
-                .set(pkg.tag(Header.HeaderTag.SOURCERPM))
-                .up()
-                .add("rpm:header-range")
-                .attr("start", pkg.header().getStartPos())
-                .attr("end", pkg.header().getEndPos())
-                .up()
-                .append(rpmProvides(pkg))
-                .append(rpmRequires(pkg))
-                .append(files(pkg))
-                .up()
-        );
+        )
+            .zipWith(
+                new Checksum(pkg.path()).sha(),
+                (directives, checksum) ->
+                    directives
+                        .add("checksum")
+                        .attr("type", "sha256")
+                        .attr("pkgid", "YES")
+                        .set(checksum)
+                        .up()
+                        .add("summary").set(pkg.tag(Header.HeaderTag.SUMMARY)).up()
+                        .add("description").set(pkg.tag(Header.HeaderTag.DESCRIPTION)).up()
+                        .add("packager").set(pkg.tag(Header.HeaderTag.PACKAGER)).up()
+                        .add("url").set(pkg.tag(Header.HeaderTag.URL)).up()
+                        .add("time")
+                        .attr("file", pkg.num(Header.HeaderTag.FILEMTIMES))
+                        .attr("build", pkg.num(Header.HeaderTag.BUILDTIME))
+                        .up()
+            )
+            .zipWith(
+                Single.fromCallable(() -> Files.size(pkg.path())),
+                (directives, size) ->
+                    directives
+                        .add("size")
+                        .attr("package", size)
+                        .attr("installed", pkg.num(Header.HeaderTag.SIZE))
+                        .attr("archive", pkg.num(Header.HeaderTag.ARCHIVESIZE))
+                        .up()
+                        .add("location").attr("href", key).up()
+                        .add("format")
+                        .add("rpm:license").set(pkg.tag(Header.HeaderTag.LICENSE)).up()
+                        .add("rpm:vendor").set(pkg.tag(Header.HeaderTag.VENDOR)).up()
+                        .add("rpm:group").set(pkg.tag(Header.HeaderTag.GROUP)).up()
+                        .add("rpm:buildhost").set(pkg.tag(Header.HeaderTag.BUILDHOST)).up()
+                        .add("rpm:sourcerpm").set(pkg.tag(Header.HeaderTag.SOURCERPM)).up()
+                        .add("rpm:header-range")
+                        .attr("start", pkg.header().getStartPos())
+                        .attr("end", pkg.header().getEndPos())
+                        .up()
+                        .append(rpmProvides(pkg))
+                        .append(rpmRequires(pkg))
+                        .append(files(pkg))
+                        .up()
+            )
+            .flatMapCompletable(directives -> new Update(this.xml).apply(directives));
     }
 
     /**

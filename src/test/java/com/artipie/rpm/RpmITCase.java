@@ -100,8 +100,8 @@ public final class RpmITCase {
             bin,
             StandardCopyOption.REPLACE_EXISTING
         );
-        storage.save(key, bin);
-        rpm.update(key);
+        storage.save(key, bin).blockingAwait();
+        rpm.update(key).blockingAwait();
         final Path stdout = this.folder.newFile("stdout.txt").toPath();
         new ProcessBuilder()
             .command(
@@ -117,14 +117,13 @@ public final class RpmITCase {
                     "\n",
                     "set -e",
                     "set -x",
-                    "cat /repo/repodata/primary.xml",
-                    "cat /repo/repodata/filelists.xml",
-                    "cat /repo/repodata/other.xml",
+                    "cat /repo/repodata/repomd.xml",
                     "dnf config-manager --add-repo=file:///repo",
                     "echo 'gpgcheck=0' >> /etc/yum.repos.d/repo.repo",
                     // @checkstyle LineLength (2 lines)
                     "dnf repolist --verbose --disablerepo='*' --enablerepo='repo'",
                     "ls -la /etc/yum.repos.d/",
+                    "ls -lhS /repo/repodata",
                     "cat /etc/yum.repos.d/repo.repo",
                     "dnf install -y --verbose --disablerepo='*' --enablerepo='repo' nginx"
                 )
@@ -161,9 +160,9 @@ public final class RpmITCase {
             bin,
             StandardCopyOption.REPLACE_EXISTING
         );
-        storage.save(key, bin);
+        storage.save(key, bin).blockingAwait();
         final Rpm rpm = new Rpm(storage);
-        rpm.update(key);
+        rpm.update(key).blockingAwait();
         final String expected = this.etalon(bin);
         final String actual = primary(repo);
         comparePrimaryFiles(expected, actual);

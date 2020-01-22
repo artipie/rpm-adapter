@@ -25,7 +25,7 @@ package com.artipie.rpm;
 
 import com.jcabi.log.Logger;
 import com.jcabi.xml.XMLDocument;
-import java.io.IOException;
+import io.reactivex.rxjava3.core.Completable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,20 +57,23 @@ final class Update {
      * Apply an update.
      *
      * @param dirs Directives
-     * @throws IOException If fails
+     * @return Completion or error signal.
      */
-    public void apply(final Directives dirs) throws IOException {
-        final Node output;
-        if (this.xml.toFile().exists() && this.xml.toFile().length() > 0L) {
-            output = new Xembler(dirs).applyQuietly(
-                new XMLDocument(this.xml.toFile()).node()
-            );
-        } else {
-            output = new Xembler(dirs).domQuietly();
-        }
-        final String doc = new XMLDocument(output).toString();
-        Files.write(this.xml, doc.getBytes(StandardCharsets.UTF_8));
-        Logger.debug(this, "Saved:\n%s", doc);
+    public Completable apply(final Directives dirs) {
+        return Completable.fromAction(
+            () -> {
+                final Node output;
+                if (this.xml.toFile().exists() && this.xml.toFile().length() > 0L) {
+                    output = new Xembler(dirs).applyQuietly(
+                        new XMLDocument(this.xml.toFile()).node()
+                    );
+                } else {
+                    output = new Xembler(dirs).domQuietly();
+                }
+                final String doc = new XMLDocument(output).toString();
+                Files.write(this.xml, doc.getBytes(StandardCharsets.UTF_8));
+                Logger.debug(this, "Saved:\n%s", doc);
+            });
     }
 
 }

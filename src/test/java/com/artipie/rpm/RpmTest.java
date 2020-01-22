@@ -82,7 +82,7 @@ public final class RpmTest {
             bin,
             StandardCopyOption.REPLACE_EXISTING
         );
-        storage.save(key, bin);
+        storage.save(key, bin).blockingAwait();
         final Rpm rpm = new Rpm(storage);
         final int threads = 10;
         MatcherAssert.assertThat(
@@ -91,7 +91,7 @@ public final class RpmTest {
                 new Repeated<Scalar<Boolean>>(
                     threads,
                     () -> {
-                        rpm.update(key);
+                        rpm.update(key).blockingAwait();
                         return true;
                     }
                 )
@@ -99,7 +99,7 @@ public final class RpmTest {
             Matchers.iterableWithSize(threads)
         );
         final Path primary = this.folder.newFile("primary.xml").toPath();
-        storage.load("repodata/primary.xml", primary);
+        storage.load("repodata/primary.xml", primary).blockingAwait();
         MatcherAssert.assertThat(
             new XMLDocument(new String(Files.readAllBytes(primary))),
             XhtmlMatchers.hasXPath(

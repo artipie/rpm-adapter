@@ -23,41 +23,41 @@
  */
 package com.artipie.rpm;
 
-import com.jcabi.matchers.XhtmlMatchers;
-import java.nio.file.Files;
+import io.reactivex.rxjava3.core.Completable;
 import java.nio.file.Path;
-import org.hamcrest.MatcherAssert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.xembly.Directives;
 
 /**
- * Test case for {@link Update}.
+ * Synchronous act wrapper.
  *
  * @since 0.1
  */
-public final class UpdateTest {
+class SynchronousAct implements Repomd.Act {
 
     /**
-     * Temp folder for all tests.
+     * The lock to synchronize on.
      */
-    @Rule
-    @SuppressWarnings("PMD.BeanMembersShouldSerialize")
-    public TemporaryFolder folder = new TemporaryFolder();
+    private final ReactiveLock lock;
 
     /**
-     * Fake storage works.
-     * @throws Exception If some problem inside
+     * Wrapped act.
      */
-    @Test
-    public void makesUpdateToXmlFile() throws Exception {
-        final Path xml = this.folder.newFile("a.xml").toPath();
-        new Update(xml).apply(new Directives().add("test").add("foo")).blockingAwait();
-        MatcherAssert.assertThat(
-            new String(Files.readAllBytes(xml)),
-            XhtmlMatchers.hasXPath("/test/foo")
-        );
+    private final Repomd.Act act;
+
+    /**
+     * Create an act with synchronization on a lock.
+     *
+     * @param act Act to synchronize.
+     * @param lock The lock to sync on.
+     */
+    SynchronousAct(final Repomd.Act act, final ReactiveLock lock) {
+        this.act = act;
+        this.lock = lock;
     }
 
+    @Override
+    public Completable update(final Path file) {
+        return this.lock.lock()
+            .andThen(this.act.update(file))
+            .doOnTerminate(this.lock::unlock);
+    }
 }
