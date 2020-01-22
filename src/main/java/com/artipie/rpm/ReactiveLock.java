@@ -42,7 +42,7 @@ class ReactiveLock {
     private final Object sync = new Object();
 
     /**
-     * Current state of the lock.
+     * Current state of the lock. {@link AtomicBoolean} is used here for the purpose of readability.
      */
     private final AtomicBoolean locked = new AtomicBoolean(false);
 
