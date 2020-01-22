@@ -102,18 +102,14 @@ final class Primary {
                         .attr("pkgid", "YES")
                         .set(checksum)
                         .up()
-            )
-            .map(
-                directives ->
-                directives
-                    .add("summary").set(pkg.tag(Header.HeaderTag.SUMMARY)).up()
-                    .add("description").set(pkg.tag(Header.HeaderTag.DESCRIPTION)).up()
-                    .add("packager").set(pkg.tag(Header.HeaderTag.PACKAGER)).up()
-                    .add("url").set(pkg.tag(Header.HeaderTag.URL)).up()
-                    .add("time")
-                    .attr("file", pkg.num(Header.HeaderTag.FILEMTIMES))
-                    .attr("build", pkg.num(Header.HeaderTag.BUILDTIME))
-                    .up()
+                        .add("summary").set(pkg.tag(Header.HeaderTag.SUMMARY)).up()
+                        .add("description").set(pkg.tag(Header.HeaderTag.DESCRIPTION)).up()
+                        .add("packager").set(pkg.tag(Header.HeaderTag.PACKAGER)).up()
+                        .add("url").set(pkg.tag(Header.HeaderTag.URL)).up()
+                        .add("time")
+                        .attr("file", pkg.num(Header.HeaderTag.FILEMTIMES))
+                        .attr("build", pkg.num(Header.HeaderTag.BUILDTIME))
+                        .up()
             )
             .zipWith(
                 Single.fromCallable(() -> Files.size(pkg.path())),
@@ -124,10 +120,6 @@ final class Primary {
                         .attr("installed", pkg.num(Header.HeaderTag.SIZE))
                         .attr("archive", pkg.num(Header.HeaderTag.ARCHIVESIZE))
                         .up()
-            )
-            .map(
-                directives ->
-                    directives
                         .add("location").attr("href", key).up()
                         .add("format")
                         .add("rpm:license").set(pkg.tag(Header.HeaderTag.LICENSE)).up()
