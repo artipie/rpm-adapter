@@ -90,7 +90,6 @@ final class Repomd {
                         res = Completable.fromAction(
                             () -> Files.write(
                                 file,
-                                // @checkstyle LineLength (1 line)
                                 "<repomd xmlns='http://linux.duke.edu/metadata/repo'/>".getBytes()
                             )
                         );

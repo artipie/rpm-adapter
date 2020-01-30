@@ -71,7 +71,6 @@ final class Pkg {
                             Files.newInputStream(Pkg.this.file)) {
                             final Format format = new Scanner(
                                 new PrintStream(Logger.stream(Level.INFO, this))
-                            // @checkstyle LineLength (1 line)
                             ).run(new ReadableChannelWrapper(Channels.newChannel(fios)));
                             final Header header = format.getHeader();
                             Logger.debug(this, "header: %s", header.toString());
