@@ -120,7 +120,6 @@ public final class RpmITCase {
                     "cat /repo/repodata/repomd.xml",
                     "dnf config-manager --add-repo=file:///repo",
                     "echo 'gpgcheck=0' >> /etc/yum.repos.d/repo.repo",
-                    // @checkstyle LineLength (2 lines)
                     "dnf repolist --verbose --disablerepo='*' --enablerepo='repo'",
                     "ls -la /etc/yum.repos.d/",
                     "ls -lhS /repo/repodata",
