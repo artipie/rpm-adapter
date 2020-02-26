@@ -23,9 +23,12 @@
  */
 package com.artipie.rpm;
 
-import com.yegor256.asto.Storage;
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Single;
+import com.artipie.asto.Key;
+import com.artipie.asto.Storage;
+import com.artipie.asto.fs.RxFile;
+import com.artipie.asto.rx.RxStorageWrapper;
+import io.reactivex.Completable;
+import io.reactivex.Single;
 import java.nio.file.Files;
 
 /**
@@ -46,6 +49,7 @@ import java.nio.file.Files;
  * That's it.
  *
  * @since 0.1
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class Rpm {
 
@@ -88,7 +92,13 @@ public final class Rpm {
      */
     public Completable update(final String key) {
         return Single.fromCallable(() -> Files.createTempFile("rpm", ".rpm"))
-            .flatMap(temp -> this.storage.load(key, temp).andThen(Single.just(new Pkg(temp))))
+            .flatMap(
+                temp -> new RxFile(temp)
+                    .save(
+                        new RxStorageWrapper(this.storage).value(new Key.From(key))
+                            .flatMapPublisher(pub -> pub)
+                    )
+                    .andThen(Single.just(new Pkg(temp))))
             .flatMapCompletable(
                 pkg -> {
                     final Repomd repomd = new Repomd(this.storage);
@@ -118,5 +128,4 @@ public final class Rpm {
                 }
             );
     }
-
 }

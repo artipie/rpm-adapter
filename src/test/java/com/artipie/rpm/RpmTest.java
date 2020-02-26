@@ -23,9 +23,13 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.asto.Key;
+import com.artipie.asto.Storage;
+import com.artipie.asto.fs.FileStorage;
+import com.artipie.asto.fs.RxFile;
+import com.artipie.asto.rx.RxStorageWrapper;
 import com.jcabi.matchers.XhtmlMatchers;
 import com.jcabi.xml.XMLDocument;
-import com.yegor256.asto.Storage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,6 +48,7 @@ import org.junit.rules.TemporaryFolder;
  * Test case for {@link Rpm}.
  *
  * @since 0.0.3
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class RpmTest {
 
@@ -72,7 +77,7 @@ public final class RpmTest {
         );
         FileUtils.deleteDirectory(home.toFile());
         home.toFile().mkdirs();
-        final Storage storage = new Storage.Simple(home);
+        final Storage storage = new FileStorage(home);
         final Path bin = this.folder.newFile("x.rpm").toPath();
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
         Files.copy(
@@ -82,7 +87,7 @@ public final class RpmTest {
             bin,
             StandardCopyOption.REPLACE_EXISTING
         );
-        storage.save(key, bin).blockingAwait();
+        storage.save(new Key.From(key), new RxFile(bin).flow()).get();
         final Rpm rpm = new Rpm(storage);
         final int threads = 10;
         MatcherAssert.assertThat(
@@ -99,7 +104,11 @@ public final class RpmTest {
             Matchers.iterableWithSize(threads)
         );
         final Path primary = this.folder.newFile("primary.xml").toPath();
-        storage.load("repodata/primary.xml", primary).blockingAwait();
+        new RxFile(primary).save(
+            new RxStorageWrapper(storage)
+                .value(new Key.From("repodata/primary.xml"))
+                .flatMapPublisher(pub -> pub)
+        ).blockingAwait();
         MatcherAssert.assertThat(
             new XMLDocument(new String(Files.readAllBytes(primary))),
             XhtmlMatchers.hasXPath(
@@ -123,5 +132,4 @@ public final class RpmTest {
             );
         }
     }
-
 }

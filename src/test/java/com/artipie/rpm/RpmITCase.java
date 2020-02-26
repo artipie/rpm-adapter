@@ -23,8 +23,11 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.asto.Key;
+import com.artipie.asto.Storage;
+import com.artipie.asto.fs.FileStorage;
+import com.artipie.asto.fs.RxFile;
 import com.jcabi.log.Logger;
-import com.yegor256.asto.Storage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -89,7 +92,7 @@ public final class RpmITCase {
     @Test
     public void savesAndLoads() throws Exception {
         final Path repo = this.folder.newFolder("repo").toPath();
-        final Storage storage = new Storage.Simple(repo);
+        final Storage storage = new FileStorage(repo);
         final Rpm rpm = new Rpm(storage);
         final Path bin = this.folder.newFile("x.rpm").toPath();
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
@@ -100,7 +103,7 @@ public final class RpmITCase {
             bin,
             StandardCopyOption.REPLACE_EXISTING
         );
-        storage.save(key, bin).blockingAwait();
+        storage.save(new Key.From(key), new RxFile(bin).flow()).get();
         rpm.update(key).blockingAwait();
         final Path stdout = this.folder.newFile("stdout.txt").toPath();
         new ProcessBuilder()
@@ -151,7 +154,7 @@ public final class RpmITCase {
     @Test
     public void primaryFileIsTheSameAsCreateRepoGenerates() throws Exception {
         final Path repo = this.folder.newFolder("rpm-files-repo").toPath();
-        final Storage storage = new Storage.Simple(repo);
+        final Storage storage = new FileStorage(repo);
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
         final Path bin = this.folder.newFile(key).toPath();
         Files.copy(
@@ -159,7 +162,7 @@ public final class RpmITCase {
             bin,
             StandardCopyOption.REPLACE_EXISTING
         );
-        storage.save(key, bin).blockingAwait();
+        storage.save(new Key.From(key), new RxFile(bin).flow()).get();
         final Rpm rpm = new Rpm(storage);
         rpm.update(key).blockingAwait();
         final String expected = this.etalon(bin);

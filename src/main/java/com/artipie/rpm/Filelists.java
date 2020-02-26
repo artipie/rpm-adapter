@@ -23,7 +23,7 @@
  */
 package com.artipie.rpm;
 
-import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.Completable;
 import java.nio.file.Path;
 import org.redline_rpm.header.Header;
 import org.xembly.Directives;
@@ -86,5 +86,4 @@ final class Filelists {
                     )
             );
     }
-
 }

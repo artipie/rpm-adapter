@@ -23,8 +23,8 @@
  */
 package com.artipie.rpm;
 
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.CompletableEmitter;
+import io.reactivex.Completable;
+import io.reactivex.CompletableEmitter;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;

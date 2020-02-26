@@ -25,14 +25,12 @@ SOFTWARE.
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>com.jcabi</groupId>
-    <artifactId>parent</artifactId>
-    <version>0.49.5</version>
+    <groupId>com.artipie</groupId>
+    <artifactId>ppom</artifactId>
+    <version>0.3</version>
   </parent>
-  <groupId>com.artipie</groupId>
   <artifactId>rpm-adapter</artifactId>
   <version>1.0-SNAPSHOT</version>
-  <packaging>jar</packaging>
   <name>rpm-files</name>
   <description>Turns your files/objects into RPM artifacts</description>
   <url>https://github.com/artipie/rpm-adapter</url>
@@ -88,11 +86,6 @@ SOFTWARE.
       <version>0.22</version>
     </dependency>
     <dependency>
-      <groupId>org.cactoos</groupId>
-      <artifactId>cactoos</artifactId>
-      <version>0.42</version>
-    </dependency>
-    <dependency>
       <groupId>com.jcabi</groupId>
       <artifactId>jcabi-xml</artifactId>
       <version>0.22.1</version>
@@ -104,12 +97,13 @@ SOFTWARE.
     </dependency>
     <dependency>
       <groupId>com.jcabi</groupId>
-      <artifactId>jcabi-log</artifactId>
-      <version>0.18.1</version>
+      <artifactId>jcabi-matchers</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.jcabi</groupId>
-      <artifactId>jcabi-matchers</artifactId>
+      <groupId>org.junit.vintage</groupId>
+      <artifactId>junit-vintage-engine</artifactId>
+      <version>${junit-platform.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -118,20 +112,15 @@ SOFTWARE.
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.yegor256</groupId>
+      <groupId>com.artipie</groupId>
       <artifactId>asto</artifactId>
-      <version>0.2.0</version>
+      <version>0.14.2</version>
     </dependency>
     <dependency>
       <groupId>org.xmlunit</groupId>
       <artifactId>xmlunit-core</artifactId>
       <version>2.6.3</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.reactivex.rxjava3</groupId>
-      <artifactId>rxjava</artifactId>
-      <version>3.0.0-RC6</version>
     </dependency>
   </dependencies>
   <build>
@@ -145,59 +134,18 @@ SOFTWARE.
         <filtering>false</filtering>
       </testResource>
     </testResources>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <systemPropertyVariables>
-            <testDirectory>${build.directory}/tests</testDirectory>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
-        </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <parallel>none</parallel>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>com.qulice</groupId>
+          <artifactId>qulice-maven-plugin</artifactId>
+          <configuration>
+            <excludes combine.children="append">
+              <exclude>checkstyle:/src/test/resources-binary/.*</exclude>
+            </excludes>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
-  <profiles>
-    <profile>
-      <id>qulice</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.qulice</groupId>
-            <artifactId>qulice-maven-plugin</artifactId>
-            <version>0.18.19</version>
-            <configuration>
-              <excludes combine.children="append">
-                <exclude>findbugs:.*</exclude>
-                <exclude>duplicatefinder:.*</exclude>
-                <exclude>xml:/src/it/settings.xml</exclude>
-                <exclude>checkstyle:/src/test/resources-binary/.*</exclude>
-              </excludes>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>

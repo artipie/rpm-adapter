@@ -23,8 +23,8 @@
  */
 package com.artipie.rpm;
 
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Single;
+import io.reactivex.Completable;
+import io.reactivex.Single;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -211,5 +211,4 @@ final class Primary {
         }
         return provides.up();
     }
-
 }
