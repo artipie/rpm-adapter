@@ -25,7 +25,7 @@ package com.artipie.rpm;
 
 import com.jcabi.log.Logger;
 import com.jcabi.xml.XMLDocument;
-import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.Completable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -75,5 +75,4 @@ final class Update {
                 Logger.debug(this, "Saved:\n%s", doc);
             });
     }
-
 }

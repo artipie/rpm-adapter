@@ -23,12 +23,16 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.asto.Key;
+import com.artipie.asto.Storage;
+import com.artipie.asto.fs.RxFile;
+import com.artipie.asto.rx.RxStorageWrapper;
 import com.jcabi.xml.XML;
 import com.jcabi.xml.XMLDocument;
-import com.yegor256.asto.Storage;
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.CompletableSource;
-import io.reactivex.rxjava3.core.Single;
+import hu.akarnokd.rxjava2.interop.SingleInterop;
+import io.reactivex.Completable;
+import io.reactivex.CompletableSource;
+import io.reactivex.Single;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -41,6 +45,7 @@ import org.xembly.Directives;
  * Repomd XML file.
  *
  * @since 0.1
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 final class Repomd {
@@ -80,22 +85,27 @@ final class Repomd {
      * @return Completion or error signal.
      */
     private Completable loadRepomd(final Path file) {
-        return this.storage.exists("repodata/repomd.xml")
-            .flatMapCompletable(
-                exists -> {
-                    final Completable res;
-                    if (exists) {
-                        res = this.storage.load("repodata/repomd.xml", file);
-                    } else {
-                        res = Completable.fromAction(
-                            () -> Files.write(
-                                file,
-                                "<repomd xmlns='http://linux.duke.edu/metadata/repo'/>".getBytes()
-                            )
-                        );
-                    }
-                    return res;
-                });
+        return SingleInterop.fromFuture(
+            this.storage.exists(new Key.From("repodata/repomd.xml"))
+        ).flatMapCompletable(
+            exists -> {
+                final Completable res;
+                if (exists) {
+                    res = new RxFile(file).save(
+                        new RxStorageWrapper(this.storage)
+                            .value(new Key.From("repodata/repomd.xml"))
+                            .flatMapPublisher(pub -> pub)
+                    );
+                } else {
+                    res = Completable.fromAction(
+                        () -> Files.write(
+                            file,
+                            "<repomd xmlns='http://linux.duke.edu/metadata/repo'/>".getBytes()
+                        )
+                    );
+                }
+                return res;
+            });
     }
 
     /**
@@ -105,6 +115,7 @@ final class Repomd {
      * @param temp The temp
      * @return Completion or error signal
      */
+    @SuppressWarnings("PMD.ExcessiveMethodLength")
     private CompletableSource performUpdate(
         final String type,
         final Act act,
@@ -119,11 +130,15 @@ final class Repomd {
                         String.format("/ns:repomd/data[type='%s']", type)
                     );
                     final Completable res;
+                    final RxStorageWrapper rxsto = new RxStorageWrapper(this.storage);
                     if (nodes.isEmpty()) {
                         res = Completable.complete();
                     } else {
                         final String location = nodes.get(0).xpath("location/@href").get(0);
-                        res = this.storage.load(location, file);
+                        res = new RxFile(file).save(
+                            rxsto.value(new Key.From(location))
+                                .flatMapPublisher(pub -> pub)
+                        );
                     }
                     final String key = String.format("repodata/%s.xml", type);
                     final Path gzip = Files.createTempFile("x", ".gz");
@@ -187,10 +202,21 @@ final class Repomd {
                         )
                         .flatMapCompletable(
                             directives ->
-                                this.storage.save(key, file)
-                                    .andThen(this.storage.save(String.format("%s.gz", key), gzip))
+                                rxsto.save(new Key.From(key), new RxFile(file).flow())
+                                    .andThen(
+                                        rxsto.save(
+                                            new Key.From(String.format("%s.gz", key)),
+                                            new RxFile(gzip).flow()
+                                        )
+                                    )
                                     .andThen(new Update(temp).apply(directives))
-                                    .andThen(this.storage.save("repodata/repomd.xml", temp)));
+                                    .andThen(
+                                        rxsto.save(
+                                            new Key.From("repodata/repomd.xml"),
+                                            new RxFile(temp).flow()
+                                        )
+                                    )
+                        );
                 });
     }
 
@@ -227,6 +253,7 @@ final class Repomd {
      * @since 0.1
      */
     public interface Act {
+
         /**
          * Update.
          *
@@ -235,5 +262,4 @@ final class Repomd {
          */
         Completable update(Path file);
     }
-
 }
