@@ -64,7 +64,7 @@ final class Repomd {
      * Ctor.
      *
      * @param stg The storage
-     * @param naming
+     * @param naming Naming policy
      */
     Repomd(final Storage stg, final NamingPolicy naming) {
         this.storage = stg;
@@ -147,8 +147,9 @@ final class Repomd {
                     );
                 }
                 final Path gzip = Files.createTempFile("x", ".gz");
-                return res.andThen(SingleInterop.fromFuture(this.naming.name(type, new RxFile(file).flow())))
-                    .map(target -> String.format("repodata/%s.xml", target))
+                return res.andThen(
+                    SingleInterop.fromFuture(this.naming.name(type, new RxFile(file).flow()))
+                ).map(target -> String.format("repodata/%s.xml", target))
                     .flatMapCompletable(
                         key -> act.update(file)
                             .andThen(Repomd.gzip(file, gzip))
@@ -240,8 +241,8 @@ final class Repomd {
         return Completable.fromAction(
             () -> {
                 try (InputStream fis = Files.newInputStream(input);
-                     OutputStream fos = Files.newOutputStream(output);
-                     GZIPOutputStream gzos = new GZIPOutputStream(fos)) {
+                    OutputStream fos = Files.newOutputStream(output);
+                    GZIPOutputStream gzos = new GZIPOutputStream(fos)) {
                     // @checkstyle MagicNumberCheck (1 line)
                     final byte[] buffer = new byte[65_536];
                     while (true) {
