@@ -36,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
@@ -167,6 +168,7 @@ public final class RpmITCase {
         rpm.update(key).blockingAwait();
         final String expected = this.etalon(bin);
         final String actual = primary(repo);
+        System.out.printf("EXPECTED:\n\n%s\n\nACTUAL:\n\n%s\n", expected, actual);
         comparePrimaryFiles(expected, actual);
     }
 

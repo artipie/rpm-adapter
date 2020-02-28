@@ -74,14 +74,29 @@ public final class Rpm {
     private final ReactiveLock other;
 
     /**
+     * RPM files naming policy.
+     */
+    private final NamingPolicy naming;
+
+    /**
      * Ctor.
-     * @param stg The storage
+     * @param stg Storage
      */
     public Rpm(final Storage stg) {
+        this(stg, NamingPolicy.DEFAULT);
+    }
+
+    /**
+     * Ctor.
+     * @param stg The storage
+     * @param naming RPM files naming policy
+     */
+    public Rpm(final Storage stg, final NamingPolicy naming) {
         this.storage = stg;
         this.other = new ReactiveLock();
         this.filelists = new ReactiveLock();
         this.primary = new ReactiveLock();
+        this.naming = naming;
     }
 
     /**
@@ -101,7 +116,7 @@ public final class Rpm {
                     .andThen(Single.just(new Pkg(temp))))
             .flatMapCompletable(
                 pkg -> {
-                    final Repomd repomd = new Repomd(this.storage);
+                    final Repomd repomd = new Repomd(this.storage, this.naming);
                     return Completable.concatArray(
                         repomd.update(
                             "primary",
