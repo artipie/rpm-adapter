@@ -70,7 +70,6 @@ public final class RpmTest {
      * @throws Exception If some problem inside
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void addsSingleRpm() throws Exception {
         final Path home = Paths.get(
             System.getProperty("testDirectory", "target/tests")
