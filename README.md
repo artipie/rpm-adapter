@@ -56,6 +56,13 @@ rpm.update("test/my.rpm");
 Read the [Javadoc](http://www.javadoc.io/doc/com.yegor256/rpm-files)
 for more technical details.
 
+### Naming policy
+
+RPM may use different names to store metadata files in the package,
+by default `NamingPolicy.DEFAULT` will be used, to change naming policy use
+secondary constructor of `Rpm` to configure it. For instance to add `SHA1` prefixes for metadata files
+use `new Rpm(storage, new NamingPolicy.Sha1Prefixed())`.
+
 ## How it works?
 
 First, you upload your `.rpm` artifact to the repository. Then,
