@@ -25,6 +25,7 @@ package com.artipie.rpm;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.fs.RxFile;
 import com.artipie.asto.rx.RxStorageWrapper;
 import com.jcabi.xml.XML;
@@ -220,9 +221,11 @@ final class Repomd {
                                         )
                                         .andThen(new Update(temp).apply(directives))
                                         .andThen(
-                                            rxsto.save(
-                                                new Key.From("repodata/repomd.xml"),
-                                                new RxFile(temp).flow()
+                                            Completable.fromAction(
+                                                () -> new BlockingStorage(this.storage).save(
+                                                    new Key.From("repodata/repomd.xml"),
+                                                    Files.readAllBytes(temp)
+                                                )
                                             )
                                         )
                             )
