@@ -82,6 +82,9 @@ public final class RpmITCase {
                 .waitFor(),
             Matchers.equalTo(0)
         );
+        Assume.assumeFalse(
+            System.getProperty("os.name").matches("Windows.*")
+        );
     }
 
     /**
