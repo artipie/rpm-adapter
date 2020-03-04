@@ -72,7 +72,7 @@ final class Update {
                 }
                 final String doc = new XMLDocument(output).toString();
                 Files.write(this.xml, doc.getBytes(StandardCharsets.UTF_8));
-                Logger.debug(this, "Saved:\n%s", doc);
+                Logger.debug(this, "Saved: %s\n%s", this.xml, doc);
             });
     }
 }
