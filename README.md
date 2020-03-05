@@ -53,6 +53,13 @@ Rpm rpm = new Rpm(storage);
 rpm.update("test/my.rpm");
 ```
 
+To update the whole repository with all RPM files use `batchUpdate` method of `Rpm` class:
+```java
+import com.artipie.rpm.Rpm;
+Rpm rpm = new Rpm(storage);
+rpm.batchUpdate("test");
+```
+
 Read the [Javadoc](http://www.javadoc.io/doc/com.yegor256/rpm-files)
 for more technical details.
 
