@@ -107,7 +107,7 @@ public final class RpmITCase {
             StandardCopyOption.REPLACE_EXISTING
         );
         storage.save(new Key.From(key), new RxFile(bin).flow()).get();
-        rpm.update(key).blockingAwait();
+        rpm.batchUpdate("").blockingAwait();
         final Path stdout = this.folder.newFile("stdout.txt").toPath();
         new ProcessBuilder()
             .command(

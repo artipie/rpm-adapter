@@ -27,7 +27,9 @@ import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.RxFile;
 import com.artipie.asto.rx.RxStorageWrapper;
+import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Completable;
+import io.reactivex.Observable;
 import io.reactivex.Single;
 import java.nio.file.Files;
 
@@ -51,6 +53,7 @@ import java.nio.file.Files;
  * @since 0.1
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class Rpm {
 
     /**
@@ -100,7 +103,7 @@ public final class Rpm {
     }
 
     /**
-     * Update the meta info by this artifact.
+     * Update the meta info for single artifact.
      *
      * @param key The name of the file just updated
      * @return Completion or error signal.
@@ -142,5 +145,18 @@ public final class Rpm {
                     );
                 }
             );
+    }
+
+    /**
+     * Batch update RPM files for repository.
+     * @param repo Repository key
+     * @return Completable action
+     */
+    public Completable batchUpdate(final String repo) {
+        return SingleInterop.fromFuture(this.storage.list(new Key.From(repo)))
+            .flatMapObservable(Observable::fromIterable)
+            .map(Key::string)
+            .filter(key -> key.endsWith(".rpm"))
+            .flatMapCompletable(this::update);
     }
 }
