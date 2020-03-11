@@ -34,6 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.cactoos.Scalar;
 import org.cactoos.experimental.Threads;
@@ -48,8 +49,14 @@ import org.junit.rules.TemporaryFolder;
  * Test case for {@link Rpm}.
  *
  * @since 0.0.3
+ * @todo #30:30min Refactor this test. Convert it to Junit5 and use `TempDir`
+ *  extension, refactor same logic for extracting rpm file from resources,
+ *  get rid of multi-threading in matcher, simplify the test,
+ *  test only one thing in each unit test (split test to multiple if needed).
+ *  Also, remove supressed PMD warning.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class RpmTest {
 
     /**
@@ -58,6 +65,40 @@ public final class RpmTest {
     @Rule
     @SuppressWarnings("PMD.BeanMembersShouldSerialize")
     public TemporaryFolder folder = new TemporaryFolder();
+
+    @Test
+    public void updateAarchRpm() throws Exception {
+        final Path home = Paths.get(
+            System.getProperty("testDirectory", "target/tests")
+        );
+        FileUtils.deleteDirectory(home.toFile());
+        home.toFile().mkdirs();
+        final Storage storage = new FileStorage(home);
+        final Path bin = this.folder.newFile("x.rpm").toPath();
+        final String key = "aom-1.0.0-8.20190810git9666276.el8.aarch64.rpm";
+        Files.copy(
+            RpmITCase.class.getResourceAsStream(
+                String.format("/%s", key)
+            ),
+            bin,
+            StandardCopyOption.REPLACE_EXISTING
+        );
+        storage.save(new Key.From(key), new RxFile(bin).flow()).get();
+        new Rpm(storage).update(key).blockingAwait();
+        MatcherAssert.assertThat(
+            storage.list(new Key.From("repodata"))
+                .get().stream().map(Key::string).collect(Collectors.toList()),
+            Matchers.containsInAnyOrder(
+                "repodata/repomd.xml",
+                "repodata/filelists.xml",
+                "repodata/other.xml",
+                "repodata/primary.xml",
+                "repodata/filelists.xml.gz",
+                "repodata/other.xml.gz",
+                "repodata/primary.xml.gz"
+            )
+        );
+    }
 
     /**
      * Rpm storage works, in many threads.
