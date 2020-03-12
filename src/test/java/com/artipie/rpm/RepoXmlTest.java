@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Artipie
+ * Copyright (c) 2019 Yegor Bugayenko
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,10 +24,36 @@
 
 package com.artipie.rpm;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.junit.Test;
+import org.xembly.Directive;
+
 /**
  * RepoXmlTest.
  *
- * @since 0.1
+ * @since 0.3
  */
 public class RepoXmlTest {
+
+    /**
+     * RPM xml works.
+     */
+    @Test
+    public void directivesConstructedProperly() throws IOException {
+        for (final Directive directive : new RepoXml(
+            "type",
+            Files.createTempFile("x", ".gz"),
+            Files.createTempFile("x", ".data")
+        ).xmlDirectives("path").blockingGet()) {
+            if (directive.toString().contains("ATTR \"href\"")) {
+                MatcherAssert.assertThat(
+                    directive.toString(),
+                    Matchers.equalTo("ATTR \"href\", \"path.gz\"")
+                );
+            }
+        }
+    }
 }

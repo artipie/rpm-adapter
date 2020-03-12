@@ -25,7 +25,6 @@
 package com.artipie.rpm;
 
 import io.reactivex.Single;
-import io.reactivex.SingleSource;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.xembly.Directives;
@@ -33,7 +32,7 @@ import org.xembly.Directives;
 /**
  * RepoXml.
  *
- * @since 0.1
+ * @since 0.3
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class RepoXml {
@@ -75,7 +74,7 @@ public class RepoXml {
      * @param key Key as file name.
      * @return Xml directives as SingleSource
      */
-    public SingleSource<Directives> xmlDirectives(final String key) {
+    public Single<Directives> xmlDirectives(final String key) {
         return Single.just(
             new Directives()
                 .xpath("/repomd")
