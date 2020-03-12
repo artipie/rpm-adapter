@@ -31,7 +31,7 @@ import org.xembly.Directives;
 /**
  * RepoXml.
  *
- * @since 0.1
+ * @since 0.3
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 final class RepoXml implements Iterable<Directive> {
@@ -144,5 +144,10 @@ final class RepoXml implements Iterable<Directive> {
     @Override
     public Iterator<Directive> iterator() {
         return this.directives.iterator();
+    }
+
+    @Override
+    public String toString() {
+        return this.directives.toString();
     }
 }
