@@ -30,7 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.w3c.dom.Node;
-import org.xembly.Directives;
+import org.xembly.Directive;
 import org.xembly.Xembler;
 
 /**
@@ -59,7 +59,7 @@ final class Update {
      * @param dirs Directives
      * @return Completion or error signal.
      */
-    public Completable apply(final Directives dirs) {
+    public Completable apply(final Iterable<Directive> dirs) {
         return Completable.fromAction(
             () -> {
                 final Node output;
