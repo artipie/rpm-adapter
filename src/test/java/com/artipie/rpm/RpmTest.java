@@ -42,6 +42,8 @@ import org.cactoos.experimental.Threads;
 import org.cactoos.iterable.Repeated;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
+import org.hamcrest.collection.IsIterableWithSize;
+import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -99,7 +101,6 @@ public final class RpmTest {
         throws Exception {
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
         final Storage storage = RpmTest.save(folder, store, key);
-        final Rpm rpm = new Rpm(storage);
         final int threads = 10;
         MatcherAssert.assertThat(
             new Threads<>(
@@ -107,12 +108,12 @@ public final class RpmTest {
                 new Repeated<Scalar<Boolean>>(
                     threads,
                     () -> {
-                        rpm.update(key).blockingAwait();
+                        new Rpm(storage).update(key).blockingAwait();
                         return true;
                     }
                 )
             ),
-            Matchers.iterableWithSize(threads)
+            new IsIterableWithSize<>(new IsEqual<>(threads))
         );
         final Path primary = folder.resolve("primary.xml");
         new RxFile(primary).save(
