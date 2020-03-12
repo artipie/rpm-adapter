@@ -40,7 +40,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
-import org.xembly.Directives;
 
 /**
  * Repomd XML file.
@@ -59,17 +58,17 @@ final class Repomd {
     /**
      * Naming policy.
      */
-    private final NamingPolicy naming;
+    private final NamingPolicy policy;
 
     /**
      * Ctor.
      *
      * @param stg The storage
-     * @param naming Naming policy
+     * @param policy Naming policy
      */
-    Repomd(final Storage stg, final NamingPolicy naming) {
+    Repomd(final Storage stg, final NamingPolicy policy) {
         this.storage = stg;
-        this.naming = naming;
+        this.policy = policy;
     }
 
     /**
@@ -118,6 +117,7 @@ final class Repomd {
 
     /**
      * Perform the actual update.
+     *
      * @param type The file type
      * @param act The action to perform
      * @param temp The temp
@@ -136,82 +136,35 @@ final class Repomd {
                 final List<XML> nodes = xml.nodes(
                     String.format("/ns:repomd/data[type='%s']", type)
                 );
-                final Completable res;
                 final RxStorageWrapper rxsto = new RxStorageWrapper(this.storage);
-                if (nodes.isEmpty()) {
-                    res = Completable.complete();
-                } else {
-                    final String location = nodes.get(0).xpath("location/@href").get(0);
-                    res = new RxFile(file).save(
-                        rxsto.value(new Key.From(location))
-                            .flatMapPublisher(pub -> pub)
-                    );
-                }
+                final Completable res = this.metaFile(nodes, file);
                 final Path gzip = Files.createTempFile("x", ".gz");
                 return res.andThen(
-                    SingleInterop.fromFuture(this.naming.name(type, new RxFile(file).flow()))
+                    SingleInterop.fromFuture(this.policy.name(type, new RxFile(file).flow()))
                 ).map(target -> String.format("repodata/%s.xml", target))
                     .flatMapCompletable(
                         key -> act.update(file)
                             .andThen(Repomd.gzip(file, gzip))
                             .andThen(
                                 Single.just(
-                                    new Directives()
-                                        .xpath("/repomd")
-                                        .addIf("revision").set("1")
-                                        .xpath(String.format("/repomd/data[type='%s']", type))
-                                        .remove()
-                                        .xpath("/repomd")
-                                        .add("data")
-                                        .attr("type", type)
-                                        .add("location")
-                                        .attr("href", String.format("%s.gz", key))
-                                        .up()
-                                )
-                                    .zipWith(
-                                        Single.fromCallable(() -> Files.size(file)),
-                                        (directives, size) ->
-                                            directives.add("open-size")
-                                                .set(size)
-                                                .up()
-                                    )
-                                    .zipWith(
-                                        Single.fromCallable(() -> Files.size(gzip)),
-                                        (directives, size) ->
-                                            directives.add("size")
-                                                .set(size)
-                                                .up()
-                                    )
-                                    .flatMap(
-                                        directives ->
-                                            new Checksum(gzip).sha()
-                                                .map(
-                                                    checksum ->
-                                                        directives
-                                                            .add("checksum")
-                                                            .attr("type", "sha256")
-                                                            .set(checksum)
-                                                            .up()
-                                                )
-                                    )
-                                    .zipWith(
-                                        new Checksum(file).sha(),
-                                        (directives, open) -> directives.add("open-checksum")
-                                            .attr("type", "sha256")
-                                            .set(open)
-                                            .up()
-                                    )
-                                    .map(
-                                        directives ->
-                                            directives
-                                                .add("timestamp")
-                                                // @checkstyle MagicNumberCheck (1 line)
-                                                .set(System.currentTimeMillis() / 1000L)
-                                                .up()
-                                    )
+                                    new RepoXml()
+                                ).doOnSuccess(
+                                    rxml -> rxml.base(type, key)
+                                ).zipWith(
+                                    Single.fromCallable(() -> Files.size(file)),
+                                    RepoXml::openSize
+                                ).zipWith(
+                                    Single.fromCallable(() -> Files.size(gzip)),
+                                    RepoXml::size
+                                ).flatMap(
+                                    rxml -> new Checksum(gzip).sha().map(rxml::checksum)
+                                ).zipWith(
+                                    new Checksum(file).sha(),
+                                    RepoXml::openChecksum
+                                ).map(RepoXml::timestamp)
                             )
                             .flatMapCompletable(
-                                directives ->
+                                rxml ->
                                     rxsto.save(new Key.From(key), new RxFile(file).flow())
                                         .andThen(
                                             rxsto.save(
@@ -219,7 +172,7 @@ final class Repomd {
                                                 new RxFile(gzip).flow()
                                             )
                                         )
-                                        .andThen(new Update(temp).apply(directives))
+                                        .andThen(new Update(temp).apply(rxml))
                                         .andThen(
                                             Completable.fromAction(
                                                 () -> new BlockingStorage(this.storage).save(
@@ -258,6 +211,29 @@ final class Repomd {
                     gzos.finish();
                 }
             });
+    }
+
+    /**
+     * Result from storage.
+     *
+     * @param nodes XML node
+     * @param file Path of file
+     * @return Result from storage
+     */
+    private Completable metaFile(
+        final List<XML> nodes,
+        final Path file) {
+        final Completable res;
+        if (nodes.isEmpty()) {
+            res = Completable.complete();
+        } else {
+            final String location = nodes.get(0).xpath("location/@href").get(0);
+            res = new RxFile(file).save(
+                new RxStorageWrapper(this.storage).value(new Key.From(location))
+                    .flatMapPublisher(pub -> pub)
+            );
+        }
+        return res;
     }
 
     /**
