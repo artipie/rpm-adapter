@@ -137,7 +137,7 @@ final class Repomd {
                     String.format("/ns:repomd/data[type='%s']", type)
                 );
                 final RxStorageWrapper rxsto = new RxStorageWrapper(this.storage);
-                final Completable res = resultFromStorage(nodes, file, rxsto);
+                final Completable res = this.metaFile(nodes, file);
                 final Path gzip = Files.createTempFile("x", ".gz");
                 return res.andThen(
                     SingleInterop.fromFuture(this.policy.name(type, new RxFile(file).flow()))
@@ -146,10 +146,25 @@ final class Repomd {
                         key -> act.update(file)
                             .andThen(Repomd.gzip(file, gzip))
                             .andThen(
-                                new RepoXml(type, gzip, file).xmlDirectives(key)
+                                Single.just(
+                                    new RepoXml()
+                                ).doOnSuccess(
+                                    rxml -> rxml.base(type, key)
+                                ).zipWith(
+                                    Single.fromCallable(() -> Files.size(file)),
+                                    RepoXml::openSize
+                                ).zipWith(
+                                    Single.fromCallable(() -> Files.size(gzip)),
+                                    RepoXml::size
+                                ).flatMap(
+                                    rxml -> new Checksum(gzip).sha().map(rxml::checksum)
+                                ).zipWith(
+                                    new Checksum(file).sha(),
+                                    RepoXml::openChecksum
+                                ).map(RepoXml::timestamp)
                             )
                             .flatMapCompletable(
-                                directives ->
+                                rxml ->
                                     rxsto.save(new Key.From(key), new RxFile(file).flow())
                                         .andThen(
                                             rxsto.save(
@@ -157,7 +172,7 @@ final class Repomd {
                                                 new RxFile(gzip).flow()
                                             )
                                         )
-                                        .andThen(new Update(temp).apply(directives))
+                                        .andThen(new Update(temp).apply(rxml))
                                         .andThen(
                                             Completable.fromAction(
                                                 () -> new BlockingStorage(this.storage).save(
@@ -203,20 +218,18 @@ final class Repomd {
      *
      * @param nodes XML node
      * @param file Path of file
-     * @param rxsto RXTO wrapper
      * @return Result from storage
      */
-    private static Completable resultFromStorage(
+    private Completable metaFile(
         final List<XML> nodes,
-        final Path file,
-        final RxStorageWrapper rxsto) {
+        final Path file) {
         final Completable res;
         if (nodes.isEmpty()) {
             res = Completable.complete();
         } else {
             final String location = nodes.get(0).xpath("location/@href").get(0);
             res = new RxFile(file).save(
-                rxsto.value(new Key.From(location))
+                new RxStorageWrapper(this.storage).value(new Key.From(location))
                     .flatMapPublisher(pub -> pub)
             );
         }

@@ -66,7 +66,7 @@ for more technical details.
 ### Naming policy
 
 RPM may use different names to store metadata files in the package,
-by default `NamingPolicy.DEFAULT` will be used, to change policy policy use
+by default `NamingPolicy.DEFAULT` will be used, to change naming policy use
 secondary constructor of `Rpm` to configure it. For instance to add `SHA1` prefixes for metadata files
 use `new Rpm(storage, new NamingPolicy.Sha1Prefixed())`.
 

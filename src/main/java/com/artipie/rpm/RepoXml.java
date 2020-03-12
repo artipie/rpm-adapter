@@ -24,10 +24,8 @@
 
 package com.artipie.rpm;
 
-import io.reactivex.Single;
-import io.reactivex.SingleSource;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.Iterator;
+import org.xembly.Directive;
 import org.xembly.Directives;
 
 /**
@@ -36,99 +34,115 @@ import org.xembly.Directives;
  * @since 0.1
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-public class RepoXml {
+final class RepoXml implements Iterable<Directive> {
 
     /**
-     * The file type.
+     * Directives in xml.
      */
-    private final String type;
+    private final Directives directives;
 
     /**
-     * Gzip of the temp file.
+     * Ctor.
      */
-    private final Path gzip;
-
-    /**
-     * The temp file.
-     */
-    private final Path temp;
+    RepoXml() {
+        this(new Directives());
+    }
 
     /**
      * Ctor.
      *
-     * @param type The file type
-     * @param gzip Gzip of the temp file
-     * @param temp The temp file
+     * @param directives Directives in xml
      */
-    public RepoXml(
-        final String type,
-        final Path gzip,
-        final Path temp) {
-        this.type = type;
-        this.gzip = gzip;
-        this.temp = temp;
+    RepoXml(final Directives directives) {
+        this.directives = directives;
     }
 
     /**
-     * XML directives for repo.
+     * Creates base of xml.
      *
-     * @param key Key as file name.
-     * @return Xml directives as SingleSource
+     * @param type Type of file
+     * @param key Key for xml
+     * @return Base of xml
      */
-    public SingleSource<Directives> xmlDirectives(final String key) {
-        return Single.just(
-            new Directives()
-                .xpath("/repomd")
-                .addIf("revision").set("1")
-                .xpath(String.format("/repomd/data[type='%s']", this.type))
-                .remove()
-                .xpath("/repomd")
-                .add("data")
-                .attr("type", this.type)
-                .add("location")
-                .attr("href", String.format("%s.gz", key))
-                .up()
-        )
-            .zipWith(
-                Single.fromCallable(() -> Files.size(this.temp)),
-                (directives, size) ->
-                    directives.add("open-size")
-                        .set(size)
-                        .up()
-            )
-            .zipWith(
-                Single.fromCallable(() -> Files.size(this.gzip)),
-                (directives, size) ->
-                    directives.add("size")
-                        .set(size)
-                        .up()
-            )
-            .flatMap(
-                directives ->
-                    new Checksum(this.gzip).sha()
-                        .map(
-                            checksum ->
-                                directives
-                                    .add("checksum")
-                                    .attr("type", "sha256")
-                                    .set(checksum)
-                                    .up()
-                        )
-            )
-            .zipWith(
-                new Checksum(this.temp).sha(),
-                (directives, open) -> directives.add("open-checksum")
-                    .attr("type", "sha256")
-                    .set(open)
-                    .up()
-            )
-            .map(
-                directives ->
-                    directives
-                        .add("timestamp")
-                        // @checkstyle MagicNumberCheck (1 line)
-                        .set(System.currentTimeMillis() / 1000L)
-                        .up()
-            );
+    public RepoXml base(final String type, final String key) {
+        return new RepoXml(
+            this.directives.xpath("/repomd")
+            .addIf("revision").set("1")
+            .xpath(String.format("/repomd/data[type='%s']", type))
+            .remove()
+            .xpath("/repomd")
+            .add("data")
+            .attr("type", type)
+            .add("location")
+            .attr("href", String.format("%s.gz", key))
+            .up()
+        );
+    }
+
+    /**
+     * Adds open size.
+     *
+     * @param size Size of file
+     * @return RepoXml with open size
+     */
+    public RepoXml openSize(final long size) {
+        return new RepoXml(this.directives.add("open-size").set(size).up());
+    }
+
+    /**
+     * Adds size.
+     *
+     * @param size Size of file
+     * @return RepoXml with size
+     */
+    public RepoXml size(final long size) {
+        return new RepoXml(this.directives.add("size").set(size).up());
+    }
+
+    /**
+     * Checksum.
+     *
+     * @param checksum Chucksum of file
+     * @return RepoXml with checksum
+     */
+    public RepoXml checksum(final String checksum) {
+        return new RepoXml(this.directives.add("checksum")
+            .attr("type", "sha256")
+            .set(checksum)
+            .up()
+        );
+    }
+
+    /**
+     * Open checksum.
+     *
+     * @param open Open checksum
+     * @return RepoXml with open checksum
+     */
+    public RepoXml openChecksum(final String open) {
+        return new RepoXml(this.directives.add("open-checksum")
+            .attr("type", "sha256")
+            .set(open)
+            .up()
+        );
+    }
+
+    /**
+     * Timestamp.
+     *
+     * @return RepoXml with timestamp
+     */
+    public RepoXml timestamp() {
+        return new RepoXml(
+            this.directives.add("timestamp")
+            // @checkstyle MagicNumberCheck (1 line)
+            .set(System.currentTimeMillis() / 1000L)
+            .up()
+        );
+    }
+
+    @Override
+    public Iterator<Directive> iterator() {
+        return this.directives.iterator();
     }
 }
