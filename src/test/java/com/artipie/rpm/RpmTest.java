@@ -101,6 +101,7 @@ public final class RpmTest {
         throws Exception {
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
         final Storage storage = RpmTest.save(folder, store, key);
+        final Rpm rpm = new Rpm(storage);
         final int threads = 10;
         MatcherAssert.assertThat(
             new Threads<>(
@@ -108,7 +109,7 @@ public final class RpmTest {
                 new Repeated<Scalar<Boolean>>(
                     threads,
                     () -> {
-                        new Rpm(storage).update(key).blockingAwait();
+                        rpm.update(key).blockingAwait();
                         return true;
                     }
                 )
