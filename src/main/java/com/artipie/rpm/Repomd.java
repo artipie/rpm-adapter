@@ -163,6 +163,11 @@ final class Repomd {
      * @param srcname Source key name
      * @param gzipname Gzip key name
      * @return Completion or error signal
+     * @todo #29:30min Refactor Repomd.performUpdate method.
+     *  It was hot-fixed by adding additional required parameters,
+     *  it's hard to read and understand without reading the whole code.
+     *  Most probably this method can be split into multiple methods
+     *  or some parts can be moved to another class.
      * @checkstyle ParameterNumberCheck (10 lines)
      */
     @SuppressWarnings("PMD.ExcessiveMethodLength")
