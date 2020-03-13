@@ -119,71 +119,100 @@ final class Repomd {
      * Perform the actual update.
      *
      * @param type The file type
-     * @param act The action to perform
-     * @param temp The temp
+     * @param act Action
+     * @param repomd The temp
      * @return Completion or error signal
+     */
+    private CompletableSource performUpdate(
+        final String type,
+        final Act act,
+        final Path repomd
+    ) {
+        return Single.fromCallable(() -> Files.createTempFile(type, ".xml"))
+            .doOnSuccess(
+                file -> this.metaFile(
+                    new XMLDocument(repomd.toFile())
+                        .registerNs("ns", "http://linux.duke.edu/metadata/repo").nodes(
+                        String.format("/ns:repomd/data[type='%s']", type)
+                    ),
+                    file
+                )
+            )
+            .flatMap(file -> act.update(file).andThen(Single.just(file)))
+            .zipWith(
+                Single.fromCallable(() -> Files.createTempFile(type, ".xml.gz")),
+                (src, gzip) -> Repomd.gzip(src, gzip).andThen(
+                    Single.zip(
+                        SingleInterop.fromFuture(this.policy.name(type, new RxFile(src).flow())),
+                        SingleInterop.fromFuture(this.policy.name(type, new RxFile(gzip).flow())),
+                        (srcname, gzipname) -> this.performUpdate(
+                            type, repomd, src, gzip, srcname, gzipname
+                        )
+                    ).flatMapCompletable(self -> self)
+                )
+            ).flatMapCompletable(self -> self);
+    }
+
+    /**
+     * Perform the actual update.
+     *
+     * @param type The file type
+     * @param repomd The temp
+     * @param src Source metadata file
+     * @param gzip Gzipped metadata file
+     * @param srcname Source key name
+     * @param gzipname Gzip key name
+     * @return Completion or error signal
+     * @todo #29:30min Refactor Repomd.performUpdate method.
+     *  It was hot-fixed by adding additional required parameters,
+     *  it's hard to read and understand without reading the whole code.
+     *  Most probably this method can be split into multiple methods
+     *  or some parts can be moved to another class.
+     * @checkstyle ParameterNumberCheck (10 lines)
      */
     @SuppressWarnings("PMD.ExcessiveMethodLength")
     private CompletableSource performUpdate(
         final String type,
-        final Act act,
-        final Path temp
+        final Path repomd,
+        final Path src, final Path gzip,
+        final String srcname, final String gzipname
     ) {
-        return Single.fromCallable(() -> Files.createTempFile("x", ".data")).flatMapCompletable(
-            file -> {
-                final XML xml = new XMLDocument(temp.toFile())
-                    .registerNs("ns", "http://linux.duke.edu/metadata/repo");
-                final List<XML> nodes = xml.nodes(
-                    String.format("/ns:repomd/data[type='%s']", type)
-                );
-                final RxStorageWrapper rxsto = new RxStorageWrapper(this.storage);
-                final Completable res = this.metaFile(nodes, file);
-                final Path gzip = Files.createTempFile("x", ".gz");
-                return res.andThen(
-                    SingleInterop.fromFuture(this.policy.name(type, new RxFile(file).flow()))
-                ).map(target -> String.format("repodata/%s.xml", target))
-                    .flatMapCompletable(
-                        key -> act.update(file)
-                            .andThen(Repomd.gzip(file, gzip))
-                            .andThen(
-                                Single.just(
-                                    new RepoXml()
-                                ).doOnSuccess(
-                                    rxml -> rxml.base(type, key)
-                                ).zipWith(
-                                    Single.fromCallable(() -> Files.size(file)),
-                                    RepoXml::openSize
-                                ).zipWith(
-                                    Single.fromCallable(() -> Files.size(gzip)),
-                                    RepoXml::size
-                                ).flatMap(
-                                    rxml -> new Checksum(gzip).sha().map(rxml::checksum)
-                                ).zipWith(
-                                    new Checksum(file).sha(),
-                                    RepoXml::openChecksum
-                                ).map(RepoXml::timestamp)
-                            )
-                            .flatMapCompletable(
-                                rxml ->
-                                    rxsto.save(new Key.From(key), new RxFile(file).flow())
-                                        .andThen(
-                                            rxsto.save(
-                                                new Key.From(String.format("%s.gz", key)),
-                                                new RxFile(gzip).flow()
+        final RxStorageWrapper rxsto = new RxStorageWrapper(this.storage);
+        return Single.just(String.format("repodata/%s.xml", srcname))
+            .flatMapCompletable(
+                key ->
+                    Single.just(new RepoXml()).doOnSuccess(
+                        rxml -> rxml.base(type, key)
+                    ).zipWith(
+                        Single.fromCallable(() -> Files.size(src)), RepoXml::openSize
+                    ).zipWith(
+                        Single.fromCallable(() -> Files.size(gzip)), RepoXml::size
+                    ).zipWith(
+                        new Checksum(gzip).sha(), RepoXml::checksum
+                    ).zipWith(
+                        new Checksum(src).sha(), RepoXml::openChecksum
+                    ).map(RepoXml::timestamp)
+                        .flatMapCompletable(
+                            rxml ->
+                                Completable.mergeArray(
+                                    rxsto.save(new Key.From(key), new RxFile(src).flow()),
+                                    rxsto.save(
+                                        new Key.From(
+                                            String.format("repodata/%s.xml.gz", gzipname)
+                                        ),
+                                        new RxFile(gzip).flow()
+                                    )
+                                ).andThen(new Update(repomd).apply(rxml))
+                                    .andThen(
+                                        Completable.fromAction(
+                                            () -> new BlockingStorage(this.storage).save(
+                                                new Key.From("repodata/repomd.xml"),
+                                                Files.readAllBytes(repomd)
                                             )
                                         )
-                                        .andThen(new Update(temp).apply(rxml))
-                                        .andThen(
-                                            Completable.fromAction(
-                                                () -> new BlockingStorage(this.storage).save(
-                                                    new Key.From("repodata/repomd.xml"),
-                                                    Files.readAllBytes(temp)
-                                                )
-                                            )
-                                        )
-                            )
-                    );
-            });
+                                    )
+                        )
+            );
     }
 
     /**
@@ -210,7 +239,8 @@ final class Repomd {
                     }
                     gzos.finish();
                 }
-            });
+            }
+        );
     }
 
     /**
