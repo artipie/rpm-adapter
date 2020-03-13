@@ -30,60 +30,44 @@ import com.artipie.asto.fs.RxFile;
 import com.artipie.asto.rx.RxStorageWrapper;
 import com.jcabi.matchers.XhtmlMatchers;
 import com.jcabi.xml.XMLDocument;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-import org.apache.commons.io.FileUtils;
 import org.cactoos.Scalar;
 import org.cactoos.experimental.Threads;
 import org.cactoos.iterable.Repeated;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.hamcrest.collection.IsIterableWithSize;
+import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Test case for {@link Rpm}.
  *
  * @since 0.0.3
- * @todo #30:30min Refactor this test. Convert it to Junit5 and use `TempDir`
- *  extension, refactor same logic for extracting rpm file from resources,
- *  get rid of multi-threading in matcher, simplify the test,
- *  test only one thing in each unit test (split test to multiple if needed).
- *  Also, remove supressed PMD warning.
+ * @todo #32:30min This test class needs refactoring. What is still need to be done
+ *  is to get rid of multi-threading in matcher, to simplify the test,
+ *  and to test only one thing in each unit test (split test to multiple if needed).
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class RpmTest {
 
     /**
-     * Temp folder for all tests.
+     * Storage key for primary xml.
      */
-    @Rule
-    @SuppressWarnings("PMD.BeanMembersShouldSerialize")
-    public TemporaryFolder folder = new TemporaryFolder();
+    private static final String PRIMARY_XML_KEY = "repodata/primary.xml";
 
     @Test
-    public void updateAarchRpm() throws Exception {
-        final Path home = Paths.get(
-            System.getProperty("testDirectory", "target/tests")
-        );
-        FileUtils.deleteDirectory(home.toFile());
-        home.toFile().mkdirs();
-        final Storage storage = new FileStorage(home);
-        final Path bin = this.folder.newFile("x.rpm").toPath();
+    public void updateAarchRpm(@TempDir final Path folder, @TempDir final Path store)
+        throws Exception {
         final String key = "aom-1.0.0-8.20190810git9666276.el8.aarch64.rpm";
-        Files.copy(
-            RpmITCase.class.getResourceAsStream(
-                String.format("/%s", key)
-            ),
-            bin,
-            StandardCopyOption.REPLACE_EXISTING
-        );
-        storage.save(new Key.From(key), new RxFile(bin).flow()).get();
+        final Storage storage = RpmTest.save(folder, store, key);
         new Rpm(storage).update(key).blockingAwait();
         MatcherAssert.assertThat(
             storage.list(new Key.From("repodata"))
@@ -92,7 +76,7 @@ public final class RpmTest {
                 "repodata/repomd.xml",
                 "repodata/filelists.xml",
                 "repodata/other.xml",
-                "repodata/primary.xml",
+                RpmTest.PRIMARY_XML_KEY,
                 "repodata/filelists.xml.gz",
                 "repodata/other.xml.gz",
                 "repodata/primary.xml.gz"
@@ -108,26 +92,15 @@ public final class RpmTest {
      * the content of the "target/tests" directory. It must contain
      * the files generated.
      *
+     * @param folder Temporary source folder
+     * @param store Temporary storage folder
      * @throws Exception If some problem inside
      */
     @Test
-    public void addsSingleRpm() throws Exception {
-        final Path home = Paths.get(
-            System.getProperty("testDirectory", "target/tests")
-        );
-        FileUtils.deleteDirectory(home.toFile());
-        home.toFile().mkdirs();
-        final Storage storage = new FileStorage(home);
-        final Path bin = this.folder.newFile("x.rpm").toPath();
+    public void addsSingleRpm(@TempDir final Path folder, @TempDir final Path store)
+        throws Exception {
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
-        Files.copy(
-            RpmITCase.class.getResourceAsStream(
-                String.format("/%s", key)
-            ),
-            bin,
-            StandardCopyOption.REPLACE_EXISTING
-        );
-        storage.save(new Key.From(key), new RxFile(bin).flow()).get();
+        final Storage storage = RpmTest.save(folder, store, key);
         final Rpm rpm = new Rpm(storage);
         final int threads = 10;
         MatcherAssert.assertThat(
@@ -141,12 +114,12 @@ public final class RpmTest {
                     }
                 )
             ),
-            Matchers.iterableWithSize(threads)
+            new IsIterableWithSize<>(new IsEqual<>(threads))
         );
-        final Path primary = this.folder.newFile("primary.xml").toPath();
+        final Path primary = folder.resolve("primary.xml");
         new RxFile(primary).save(
             new RxStorageWrapper(storage)
-                .value(new Key.From("repodata/primary.xml"))
+                .value(new Key.From(RpmTest.PRIMARY_XML_KEY))
                 .flatMapPublisher(pub -> pub)
         ).blockingAwait();
         MatcherAssert.assertThat(
@@ -165,11 +138,26 @@ public final class RpmTest {
         for (final String file : files) {
             MatcherAssert.assertThat(
                 Paths.get(
-                    home.toString(),
+                    store.toString(),
                     String.format("repodata/%s", file)
                 ).toFile().exists(),
                 Matchers.equalTo(true)
             );
         }
+    }
+
+    private static Storage save(final Path folder, final Path store, final String key)
+        throws IOException, InterruptedException, ExecutionException {
+        final Storage storage = new FileStorage(store);
+        final Path bin = folder.resolve("x.rpm");
+        Files.copy(
+            RpmITCase.class.getResourceAsStream(
+                String.format("/%s", key)
+            ),
+            bin,
+            StandardCopyOption.REPLACE_EXISTING
+        );
+        storage.save(new Key.From(key), new RxFile(bin).flow()).get();
+        return storage;
     }
 }
