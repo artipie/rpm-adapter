@@ -52,8 +52,14 @@ import java.nio.file.Files;
  *
  * @since 0.1
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
+ * @todo #17:30min Create filelist update option
+ *  Rpm should not create filelists.xml and filelists.xml.gz if filelistsGen
+ *  parameter is not true. Then remove the supressions for PMD.UnusedPrivateField
+ *  and PMD.SingularField, and enable the test in RpmTest.
  */
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+@SuppressWarnings(
+    {"PMD.AvoidDuplicateLiterals", "PMD.UnusedPrivateField", "PMD.SingularField"}
+    )
 public final class Rpm {
 
     /**
@@ -82,24 +88,31 @@ public final class Rpm {
     private final NamingPolicy naming;
 
     /**
+     * Flag for filelists file generation.
+     */
+    private final boolean filelistsgen;
+
+    /**
      * Ctor.
      * @param stg Storage
      */
     public Rpm(final Storage stg) {
-        this(stg, NamingPolicy.DEFAULT);
+        this(stg, NamingPolicy.DEFAULT, true);
     }
 
     /**
      * Ctor.
      * @param stg The storage
      * @param naming RPM files naming policy
+     * @param filelistsgen Flag to generate the filelist.
      */
-    public Rpm(final Storage stg, final NamingPolicy naming) {
+    public Rpm(final Storage stg, final NamingPolicy naming, final boolean filelistsgen) {
         this.storage = stg;
         this.other = new ReactiveLock();
         this.filelists = new ReactiveLock();
         this.primary = new ReactiveLock();
         this.naming = naming;
+        this.filelistsgen = filelistsgen;
     }
 
     /**

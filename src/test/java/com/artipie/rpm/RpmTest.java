@@ -40,10 +40,13 @@ import java.util.stream.Collectors;
 import org.cactoos.Scalar;
 import org.cactoos.experimental.Threads;
 import org.cactoos.iterable.Repeated;
+import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
+import org.hamcrest.collection.IsIterableContainingInAnyOrder;
 import org.hamcrest.collection.IsIterableWithSize;
 import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -63,23 +66,58 @@ public final class RpmTest {
      */
     private static final String PRIMARY_XML_KEY = "repodata/primary.xml";
 
+    /**
+     * Path of filelists.xml file.
+     */
+    private static final String FILELISTS_XML = "repodata/filelists.xml";
+
+    /**
+     * Path of filelists.xml.gz file.
+     */
+    private static final String FILELISTS_XML_GZ = "repodata/filelists.xml.gz";
+
+    /**
+     * Key for repodata .
+     */
+    private static final String REPODATA = "repodata";
+
     @Test
     public void updateAarchRpm(@TempDir final Path folder, @TempDir final Path store)
         throws Exception {
         final String key = "aom-1.0.0-8.20190810git9666276.el8.aarch64.rpm";
         final Storage storage = RpmTest.save(folder, store, key);
-        new Rpm(storage).update(key).blockingAwait();
+        new Rpm(storage, NamingPolicy.DEFAULT, false).update(key).blockingAwait();
         MatcherAssert.assertThat(
-            storage.list(new Key.From("repodata"))
+            storage.list(new Key.From(RpmTest.REPODATA))
                 .get().stream().map(Key::string).collect(Collectors.toList()),
             Matchers.containsInAnyOrder(
                 "repodata/repomd.xml",
-                "repodata/filelists.xml",
+                RpmTest.FILELISTS_XML,
                 "repodata/other.xml",
                 RpmTest.PRIMARY_XML_KEY,
-                "repodata/filelists.xml.gz",
+                RpmTest.FILELISTS_XML_GZ,
                 "repodata/other.xml.gz",
                 "repodata/primary.xml.gz"
+            )
+        );
+    }
+
+    @Test
+    @Disabled
+    public void dontCreateFileListOnRpmUpdate(
+        @TempDir final Path folder, @TempDir final Path store
+    ) throws Exception {
+        final String key = "no-fileList.aarch64.rpm";
+        final Storage storage = RpmTest.save(folder, store, key);
+        new Rpm(storage).update(key).blockingAwait();
+        MatcherAssert.assertThat(
+            storage.list(new Key.From(RpmTest.REPODATA))
+                .get().stream().map(Key::string).collect(Collectors.toList()),
+            new IsIterableContainingInAnyOrder<>(
+                new ListOf<>(
+                    new IsEqual<>(RpmTest.FILELISTS_XML),
+                    new IsEqual<>(RpmTest.FILELISTS_XML_GZ)
+                )
             )
         );
     }
