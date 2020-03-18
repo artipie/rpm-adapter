@@ -41,6 +41,7 @@ import org.cactoos.Scalar;
 import org.cactoos.experimental.Threads;
 import org.cactoos.iterable.Repeated;
 import org.cactoos.list.ListOf;
+import org.hamcrest.Matcher;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.collection.IsIterableContainingInAnyOrder;
@@ -114,9 +115,9 @@ public final class RpmTest {
             storage.list(new Key.From(RpmTest.REPODATA))
                 .get().stream().map(Key::string).collect(Collectors.toList()),
             new IsIterableContainingInAnyOrder<>(
-                new ListOf<>(
-                    new IsEqual<>(RpmTest.FILELISTS_XML),
-                    new IsEqual<>(RpmTest.FILELISTS_XML_GZ)
+                new ListOf<Matcher<? super String>>(
+                    new IsEqual<String>(RpmTest.FILELISTS_XML),
+                    new IsEqual<String>(RpmTest.FILELISTS_XML_GZ)
                 )
             )
         );
