@@ -37,6 +37,8 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
+import org.apache.commons.io.IOUtils;
 import org.cactoos.Scalar;
 import org.cactoos.experimental.Threads;
 import org.cactoos.iterable.Repeated;
@@ -56,12 +58,13 @@ import org.junit.jupiter.api.io.TempDir;
  *  and to test only one thing in each unit test (split test to multiple if needed).
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class RpmTest {
 
     /**
-     * Storage key for primary xml.
+     * Storage key for gzipped primary xml.
      */
-    private static final String PRIMARY_XML_KEY = "repodata/primary.xml";
+    private static final String PRIMARY_GZ_KEY = "repodata/primary.xml.gz";
 
     @Test
     public void updateAarchRpm(@TempDir final Path folder, @TempDir final Path store)
@@ -74,12 +77,9 @@ public final class RpmTest {
                 .get().stream().map(Key::string).collect(Collectors.toList()),
             Matchers.containsInAnyOrder(
                 "repodata/repomd.xml",
-                "repodata/filelists.xml",
-                "repodata/other.xml",
-                RpmTest.PRIMARY_XML_KEY,
                 "repodata/filelists.xml.gz",
                 "repodata/other.xml.gz",
-                "repodata/primary.xml.gz"
+                RpmTest.PRIMARY_GZ_KEY
             )
         );
     }
@@ -116,14 +116,22 @@ public final class RpmTest {
             ),
             new IsIterableWithSize<>(new IsEqual<>(threads))
         );
-        final Path primary = folder.resolve("primary.xml");
+        final Path primary = folder.resolve("primary.xml.gz");
         new RxFile(primary).save(
             new RxStorageWrapper(storage)
-                .value(new Key.From(RpmTest.PRIMARY_XML_KEY))
+                .value(new Key.From(RpmTest.PRIMARY_GZ_KEY))
                 .flatMapPublisher(pub -> pub)
         ).blockingAwait();
         MatcherAssert.assertThat(
-            new XMLDocument(new String(Files.readAllBytes(primary))),
+            new XMLDocument(
+                new String(
+                    IOUtils.toByteArray(
+                        new GZIPInputStream(
+                            Files.newInputStream(primary)
+                        )
+                    )
+                )
+            ),
             XhtmlMatchers.hasXPath(
                 "/ns1:metadata/ns1:package[ns1:name='nginx']",
                 "http://linux.duke.edu/metadata/common"
