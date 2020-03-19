@@ -27,9 +27,8 @@ import com.jcabi.matchers.XhtmlMatchers;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.xembly.Directives;
 
 /**
@@ -38,21 +37,14 @@ import org.xembly.Directives;
  * @since 0.1
  */
 public final class UpdateTest {
-
-    /**
-     * Temp folder for all tests.
-     */
-    @Rule
-    @SuppressWarnings("PMD.BeanMembersShouldSerialize")
-    public TemporaryFolder folder = new TemporaryFolder();
-
     /**
      * Fake storage works.
+     * @param folder Temporary folder for the test
      * @throws Exception If some problem inside
      */
     @Test
-    public void makesUpdateToXmlFile() throws Exception {
-        final Path xml = this.folder.newFile("a.xml").toPath();
+    public void makesUpdateToXmlFile(@TempDir final Path folder) throws Exception {
+        final Path xml = folder.resolve("a.xml");
         new Update(xml).apply(new Directives().add("test").add("foo")).blockingAwait();
         MatcherAssert.assertThat(
             new String(Files.readAllBytes(xml)),

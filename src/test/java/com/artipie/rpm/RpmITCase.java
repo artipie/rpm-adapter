@@ -42,11 +42,10 @@ import java.util.zip.GZIPInputStream;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
@@ -63,29 +62,7 @@ public final class RpmITCase {
     /**
      * Temp folder for all tests.
      */
-    @Rule
-    @SuppressWarnings("PMD.BeanMembersShouldSerialize")
-    public TemporaryFolder folder = new TemporaryFolder();
-
-    /**
-     * Make sure Docker is here.
-     *
-     * @throws Exception If fails
-     */
-    @Before
-    public void dockerExists() throws Exception {
-        Assume.assumeThat(
-            "Docker is NOT present at the build machine",
-            new ProcessBuilder()
-                .command("which", "docker")
-                .start()
-                .waitFor(),
-            Matchers.equalTo(0)
-        );
-        Assume.assumeFalse(
-            System.getProperty("os.name").matches("Windows.*")
-        );
-    }
+    private static Path folder;
 
     /**
      * RPM works.
@@ -94,10 +71,10 @@ public final class RpmITCase {
      */
     @Test
     public void savesAndLoads() throws Exception {
-        final Path repo = this.folder.newFolder("repo").toPath();
+        final Path repo = RpmITCase.folder.resolve("repo");
         final Storage storage = new FileStorage(repo);
         final Rpm rpm = new Rpm(storage);
-        final Path bin = this.folder.newFile("x.rpm").toPath();
+        final Path bin = RpmITCase.folder.resolve("x.rpm");
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
         Files.copy(
             RpmITCase.class.getResourceAsStream(
@@ -108,7 +85,7 @@ public final class RpmITCase {
         );
         storage.save(new Key.From(key), new RxFile(bin).flow()).get();
         rpm.batchUpdate("").blockingAwait();
-        final Path stdout = this.folder.newFile("stdout.txt").toPath();
+        final Path stdout = RpmITCase.folder.resolve("stdout.txt");
         new ProcessBuilder()
             .command(
                 "docker",
@@ -156,10 +133,10 @@ public final class RpmITCase {
      */
     @Test
     public void primaryFileIsTheSameAsCreateRepoGenerates() throws Exception {
-        final Path repo = this.folder.newFolder("rpm-files-repo").toPath();
+        final Path repo = RpmITCase.folder.resolve("rpm-files-repo");
         final Storage storage = new FileStorage(repo);
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
-        final Path bin = this.folder.newFile(key).toPath();
+        final Path bin = RpmITCase.folder.resolve(key);
         Files.copy(
             RpmITCase.class.getResourceAsStream(String.format("/%s", key)),
             bin,
@@ -171,6 +148,26 @@ public final class RpmITCase {
         final String expected = this.etalon(bin);
         final String actual = primary(repo);
         comparePrimaryFiles(expected, actual);
+    }
+
+    /**
+     * Make sure Docker is here.
+     * @param tempdir Temporary folder fot tests
+     * @throws Exception If fails
+     */
+    @BeforeAll
+    static void dockerExists(@TempDir final Path tempdir) throws Exception {
+        RpmITCase.folder = tempdir;
+        Assumptions.assumeTrue(
+            new ProcessBuilder()
+                .command("which", "docker")
+                .start()
+                .waitFor() == 0,
+            "Docker is NOT present at the build machine"
+        );
+        Assumptions.assumeFalse(
+            System.getProperty("os.name").matches("Windows.*")
+        );
     }
 
     private static void comparePrimaryFiles(
@@ -215,9 +212,8 @@ public final class RpmITCase {
 
     private String etalon(
         final Path rpm) throws IOException, InterruptedException {
-        final Path repo =
-            this.folder.newFolder("createrepo-repo").toPath();
-        final Path stdout = this.folder.newFile("stdout.txt").toPath();
+        final Path repo = Files.createDirectory(RpmITCase.folder.resolve("createrepo-repo"));
+        final Path stdout = RpmITCase.folder.resolve("stdout.txt");
         final File originalprkg = new File(
             String.format(
                 "%s/%s",
@@ -254,10 +250,10 @@ public final class RpmITCase {
     }
 
     private static String primary(final Path repo) throws IOException {
-        final File folder =
+        final File repodata =
             new File(String.format("%s/repodata", repo.toString()));
         final File[] primarygzip = Objects.requireNonNull(
-            folder.listFiles((dir, name) -> name.endsWith("primary.xml.gz"))
+            repodata.listFiles((dir, name) -> name.endsWith("primary.xml.gz"))
         );
         if (primarygzip.length == 1) {
             return readGzFile(primarygzip[0]);

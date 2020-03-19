@@ -29,9 +29,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import org.hamcrest.MatcherAssert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Test case for {@link Primary}.
@@ -39,21 +38,14 @@ import org.junit.rules.TemporaryFolder;
  * @since 0.1
  */
 public final class PrimaryTest {
-
-    /**
-     * Temp folder for all tests.
-     */
-    @Rule
-    @SuppressWarnings("PMD.BeanMembersShouldSerialize")
-    public TemporaryFolder folder = new TemporaryFolder();
-
     /**
      * Fake storage works.
+     * @param folder Temporary folder for the test
      * @throws Exception If some problem inside
      */
     @Test
-    public void addsSingleHeader() throws Exception {
-        final Path bin = this.folder.newFile("x.rpm").toPath();
+    public void addsSingleHeader(@TempDir final Path folder) throws Exception {
+        final Path bin = folder.resolve("x.rpm");
         Files.copy(
             RpmITCase.class.getResourceAsStream(
                 "/nginx-1.16.1-1.el8.ngx.x86_64.rpm"
@@ -61,7 +53,7 @@ public final class PrimaryTest {
             bin,
             StandardCopyOption.REPLACE_EXISTING
         );
-        final Path xml = this.folder.newFile("primary.xml").toPath();
+        final Path xml = folder.resolve("primary.xml");
         final Primary primary = new Primary(xml);
         primary.update("test.rpm", new Pkg(bin)).blockingAwait();
         MatcherAssert.assertThat(
