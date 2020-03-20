@@ -39,13 +39,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import org.apache.commons.io.IOUtils;
-import org.cactoos.Scalar;
-import org.cactoos.experimental.Threads;
-import org.cactoos.iterable.Repeated;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.hamcrest.collection.IsIterableWithSize;
-import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -102,20 +97,7 @@ public final class RpmTest {
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
         final Storage storage = RpmTest.save(folder, store, key);
         final Rpm rpm = new Rpm(storage);
-        final int threads = 10;
-        MatcherAssert.assertThat(
-            new Threads<>(
-                threads,
-                new Repeated<Scalar<Boolean>>(
-                    threads,
-                    () -> {
-                        rpm.update(key).blockingAwait();
-                        return true;
-                    }
-                )
-            ),
-            new IsIterableWithSize<>(new IsEqual<>(threads))
-        );
+        rpm.update(key).blockingAwait();
         final Path primary = folder.resolve("primary.xml.gz");
         new RxFile(primary).save(
             new RxStorageWrapper(storage)
