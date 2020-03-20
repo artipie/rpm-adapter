@@ -42,6 +42,8 @@ import org.apache.commons.io.IOUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
@@ -92,6 +94,7 @@ public final class RpmTest {
      * @throws Exception If some problem inside
      */
     @Test
+    @DisabledOnOs(OS.WINDOWS)
     public void addsSingleRpm(@TempDir final Path folder, @TempDir final Path store)
         throws Exception {
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
