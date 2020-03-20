@@ -160,7 +160,7 @@ public final class RpmITCase {
      * @throws Exception If fails
      */
     @BeforeAll
-    static void dockerExists(@TempDir final Path tempdir) throws Exception {
+    static void startContainer(@TempDir final Path tempdir) throws Exception {
         RpmITCase.folder = tempdir;
         RpmITCase.repodir = Files.createDirectory(RpmITCase.folder.resolve("repo"));
         RpmITCase.createrepodir = Files.createDirectory(
