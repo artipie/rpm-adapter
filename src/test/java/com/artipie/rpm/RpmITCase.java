@@ -40,12 +40,15 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import org.cactoos.list.ListOf;
+import org.cactoos.text.Joined;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.testcontainers.containers.Container;
+import org.testcontainers.containers.GenericContainer;
 import org.xmlunit.builder.DiffBuilder;
 import org.xmlunit.builder.Input;
 import org.xmlunit.diff.Diff;
@@ -58,11 +61,26 @@ import org.xmlunit.diff.Difference;
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class RpmITCase {
-
     /**
      * Temp folder for all tests.
      */
     private static Path folder;
+
+    /**
+     * Yum repository dir. Used to verify yum is able to install stored package.
+     */
+    private static Path repodir;
+
+    /**
+     * Createrepo repository dir. Used to compare adapter generated metadata
+     * with createrepo tool generated metadata
+     */
+    private static Path createrepodir;
+
+    /**
+     * Docker container to execute createrepo command.
+     */
+    private static YumUtilsContainer yumutils;
 
     /**
      * RPM works.
@@ -71,8 +89,7 @@ public final class RpmITCase {
      */
     @Test
     public void savesAndLoads() throws Exception {
-        final Path repo = RpmITCase.folder.resolve("repo");
-        final Storage storage = new FileStorage(repo);
+        final Storage storage = new FileStorage(RpmITCase.repodir);
         final Rpm rpm = new Rpm(storage);
         final Path bin = RpmITCase.folder.resolve("x.rpm");
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
@@ -85,36 +102,20 @@ public final class RpmITCase {
         );
         storage.save(new Key.From(key), new RxFile(bin).flow()).get();
         rpm.batchUpdate("").blockingAwait();
-        final Path stdout = RpmITCase.folder.resolve("stdout.txt");
-        new ProcessBuilder()
-            .command(
-                "docker",
-                "run",
-                "--rm",
-                "--volume",
-                String.format("%s:/repo", repo),
-                "yegor256/yum-utils",
-                "/bin/bash",
-                "-c",
-                String.join(
-                    "\n",
-                    "set -e",
-                    "set -x",
-                    "cat /repo/repodata/repomd.xml",
-                    "dnf config-manager --add-repo=file:///repo",
-                    "echo 'gpgcheck=0' >> /etc/yum.repos.d/repo.repo",
-                    "dnf repolist --verbose --disablerepo='*' --enablerepo='repo'",
-                    "ls -la /etc/yum.repos.d/",
-                    "ls -lhS /repo/repodata",
-                    "cat /etc/yum.repos.d/repo.repo",
-                    "dnf install -y --verbose --disablerepo='*' --enablerepo='repo' nginx"
-                )
+        final Container.ExecResult result = RpmITCase.yumutils.execInContainer(
+            "/bin/bash",
+            "-c",
+            String.join(
+                "\n",
+                "set -e",
+                "set -x",
+                "dnf config-manager --add-repo=file:///repo",
+                "echo 'gpgcheck=0' >> /etc/yum.repos.d/repo.repo",
+                "dnf repolist --verbose --disablerepo='*' --enablerepo='repo'",
+                "dnf install -y --verbose --disablerepo='*' --enablerepo='repo' nginx"
             )
-            .redirectOutput(stdout.toFile())
-            .redirectErrorStream(true)
-            .start()
-            .waitFor();
-        final String log = new String(Files.readAllBytes(stdout));
+        );
+        final String log = new Joined("\n", result.getStdout(), result.getStderr()).asString();
         Logger.debug(this, "Full stdout/stderr:\n%s", log);
         MatcherAssert.assertThat(
             log,
@@ -148,26 +149,36 @@ public final class RpmITCase {
         final String expected = this.etalon(bin);
         final String actual = primary(repo);
         comparePrimaryFiles(expected, actual);
+        RpmITCase.yumutils.execInContainer(
+            "rm", "-fr", "/createrepo-repo/repodata"
+        );
     }
 
     /**
-     * Make sure Docker is here.
+     * Prepare temporary folders for repositories and start docker container with yum utils.
      * @param tempdir Temporary folder fot tests
      * @throws Exception If fails
      */
     @BeforeAll
-    static void dockerExists(@TempDir final Path tempdir) throws Exception {
+    static void startContainer(@TempDir final Path tempdir) throws Exception {
         RpmITCase.folder = tempdir;
-        Assumptions.assumeTrue(
-            new ProcessBuilder()
-                .command("which", "docker")
-                .start()
-                .waitFor() == 0,
-            "Docker is NOT present at the build machine"
+        RpmITCase.repodir = Files.createDirectory(RpmITCase.folder.resolve("repo"));
+        RpmITCase.createrepodir = Files.createDirectory(
+            RpmITCase.folder.resolve("createrepo-repo")
         );
-        Assumptions.assumeFalse(
-            System.getProperty("os.name").matches("Windows.*")
-        );
+        RpmITCase.yumutils = new YumUtilsContainer()
+            .withFileSystemBind(RpmITCase.repodir.toString(), "/repo")
+            .withFileSystemBind(RpmITCase.createrepodir.toString(), "/createrepo-repo")
+            .withCommand("tail", "-f", "/dev/null");
+        RpmITCase.yumutils.start();
+    }
+
+    /**
+     * Stop docker container with yum utils.
+     */
+    @AfterAll
+    static void stopContainer() throws Exception {
+        RpmITCase.yumutils.stop();
     }
 
     private static void comparePrimaryFiles(
@@ -212,41 +223,28 @@ public final class RpmITCase {
 
     private String etalon(
         final Path rpm) throws IOException, InterruptedException {
-        final Path repo = Files.createDirectory(RpmITCase.folder.resolve("createrepo-repo"));
-        final Path stdout = RpmITCase.folder.resolve("stdout.txt");
         final File originalprkg = new File(
             String.format(
                 "%s/%s",
-                repo.toAbsolutePath().toString(),
+                RpmITCase.createrepodir.toAbsolutePath().toString(),
                 rpm.getFileName()
             )
         );
         Files.copy(rpm, originalprkg.toPath());
-        new ProcessBuilder()
-            .command(
-                "docker",
-                "run",
-                "--rm",
-                "--volume",
-                String.format("%s:/createrepo-repo", repo),
-                "yegor256/yum-utils",
-                "/bin/bash",
-                "-c",
-                String.join(
-                    "\n",
-                    "set -e",
-                    "set -x",
-                    "createrepo /createrepo-repo",
-                    "createrepo --update /createrepo-repo"
-                )
+        final Container.ExecResult result = RpmITCase.yumutils.execInContainer(
+            "/bin/bash",
+            "-c",
+            String.join(
+                "\n",
+                "set -e",
+                "set -x",
+                "createrepo /createrepo-repo",
+                "createrepo --update /createrepo-repo"
             )
-            .redirectOutput(stdout.toFile())
-            .redirectErrorStream(true)
-            .start()
-            .waitFor();
-        final String log = new String(Files.readAllBytes(stdout));
+        );
+        final String log = new Joined("\n", result.getStdout(), result.getStderr()).asString();
         Logger.debug(this, "Full stdout/stderr:\n%s", log);
-        return primary(repo);
+        return primary(RpmITCase.createrepodir);
     }
 
     private static String primary(final Path repo) throws IOException {
@@ -278,6 +276,16 @@ public final class RpmITCase {
                 line = stream.readLine();
             }
             return res.toString();
+        }
+    }
+
+    /**
+     * Inner subclass to instantiate yum-utils container.
+     * @since 0.3.3
+     */
+    private static class YumUtilsContainer extends GenericContainer<YumUtilsContainer> {
+        YumUtilsContainer() {
+            super("yegor256/yum-utils");
         }
     }
 }
