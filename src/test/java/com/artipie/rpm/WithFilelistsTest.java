@@ -51,7 +51,7 @@ import org.junit.jupiter.api.io.TempDir;
 public class WithFilelistsTest {
     @Test
     @Disabled
-    public void dontCreateFileListOnRpmUpdate(
+    public void createFileListOnRpmUpdate(
         @TempDir final Path folder, @TempDir final Path store
     ) throws Exception {
         final String key = "with-fileList.aarch64.rpm";
