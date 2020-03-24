@@ -116,6 +116,12 @@ SOFTWARE.
       <version>2.6.3</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <version>1.13.0</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <testResources>
