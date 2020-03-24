@@ -23,33 +23,40 @@
  */
 package com.artipie.rpm;
 
-import com.jcabi.matchers.XhtmlMatchers;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import org.hamcrest.MatcherAssert;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.xembly.Directives;
+import io.reactivex.Completable;
 
 /**
- * Test case for {@link Update}.
+ * Rpm decorator which provide filelist creation on update.
  *
  * @since 0.1
+ * @todo #17:30min Implement WithFilelists decorator.
+ *  WithFilelists decorator create filelists.xml and filelists.xml.gz files on
+ *  upload. Implement this behavior and then enable the test in
+ *  WithFilelistsTest.
  */
-public final class UpdateTest {
+public final class WithFilelists implements Rpm {
+
     /**
-     * Fake storage works.
-     * @param folder Temporary folder for the test
-     * @throws Exception If some problem inside
+     * Original Rpm.
      */
-    @Test
-    public void makesUpdateToXmlFile(@TempDir final Path folder) throws Exception {
-        final Path xml = folder.resolve("a.xml");
-        new Update(xml).apply(new Directives().add("test").add("foo")).blockingAwait();
-        MatcherAssert.assertThat(
-            new String(Files.readAllBytes(xml)),
-            XhtmlMatchers.hasXPath("/test/foo")
-        );
+    private final Rpm origin;
+
+    /**
+     * Constructor.
+     *
+     * @param rpm Rpm to be wrapped.
+     */
+    public WithFilelists(final Rpm rpm) {
+        this.origin = rpm;
     }
 
+    @Override
+    public Completable update(final String key) {
+        return this.origin.update(key);
+    }
+
+    @Override
+    public Completable batchUpdate(final String repo) {
+        return this.origin.batchUpdate(repo);
+    }
 }

@@ -37,18 +37,13 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-import org.cactoos.Scalar;
-import org.cactoos.experimental.Threads;
-import org.cactoos.iterable.Repeated;
-import org.cactoos.list.ListOf;
-import org.hamcrest.Matcher;
+import java.util.zip.GZIPInputStream;
+import org.apache.commons.io.IOUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.hamcrest.collection.IsIterableContainingInAnyOrder;
-import org.hamcrest.collection.IsIterableWithSize;
-import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
@@ -60,65 +55,28 @@ import org.junit.jupiter.api.io.TempDir;
  *  and to test only one thing in each unit test (split test to multiple if needed).
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class RpmTest {
 
     /**
-     * Storage key for primary xml.
+     * Storage key for gzipped primary xml.
      */
-    private static final String PRIMARY_XML_KEY = "repodata/primary.xml";
-
-    /**
-     * Path of filelists.xml file.
-     */
-    private static final String FILELISTS_XML = "repodata/filelists.xml";
-
-    /**
-     * Path of filelists.xml.gz file.
-     */
-    private static final String FILELISTS_XML_GZ = "repodata/filelists.xml.gz";
-
-    /**
-     * Key for repodata .
-     */
-    private static final String REPODATA = "repodata";
+    private static final String PRIMARY_GZ_KEY = "repodata/primary.xml.gz";
 
     @Test
     public void updateAarchRpm(@TempDir final Path folder, @TempDir final Path store)
         throws Exception {
         final String key = "aom-1.0.0-8.20190810git9666276.el8.aarch64.rpm";
         final Storage storage = RpmTest.save(folder, store, key);
-        new Rpm(storage, NamingPolicy.DEFAULT, false).update(key).blockingAwait();
+        new Rpm.Base(storage).update(key).blockingAwait();
         MatcherAssert.assertThat(
-            storage.list(new Key.From(RpmTest.REPODATA))
+            storage.list(new Key.From("repodata"))
                 .get().stream().map(Key::string).collect(Collectors.toList()),
             Matchers.containsInAnyOrder(
                 "repodata/repomd.xml",
-                RpmTest.FILELISTS_XML,
-                "repodata/other.xml",
-                RpmTest.PRIMARY_XML_KEY,
-                RpmTest.FILELISTS_XML_GZ,
+                "repodata/filelists.xml.gz",
                 "repodata/other.xml.gz",
-                "repodata/primary.xml.gz"
-            )
-        );
-    }
-
-    @Test
-    @Disabled
-    public void dontCreateFileListOnRpmUpdate(
-        @TempDir final Path folder, @TempDir final Path store
-    ) throws Exception {
-        final String key = "no-fileList.aarch64.rpm";
-        final Storage storage = RpmTest.save(folder, store, key);
-        new Rpm(storage).update(key).blockingAwait();
-        MatcherAssert.assertThat(
-            storage.list(new Key.From(RpmTest.REPODATA))
-                .get().stream().map(Key::string).collect(Collectors.toList()),
-            new IsIterableContainingInAnyOrder<>(
-                new ListOf<Matcher<? super String>>(
-                    new IsEqual<String>(RpmTest.FILELISTS_XML),
-                    new IsEqual<String>(RpmTest.FILELISTS_XML_GZ)
-                )
+                RpmTest.PRIMARY_GZ_KEY
             )
         );
     }
@@ -136,33 +94,29 @@ public final class RpmTest {
      * @throws Exception If some problem inside
      */
     @Test
+    @DisabledOnOs(OS.WINDOWS)
     public void addsSingleRpm(@TempDir final Path folder, @TempDir final Path store)
         throws Exception {
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
         final Storage storage = RpmTest.save(folder, store, key);
-        final Rpm rpm = new Rpm(storage);
-        final int threads = 10;
-        MatcherAssert.assertThat(
-            new Threads<>(
-                threads,
-                new Repeated<Scalar<Boolean>>(
-                    threads,
-                    () -> {
-                        rpm.update(key).blockingAwait();
-                        return true;
-                    }
-                )
-            ),
-            new IsIterableWithSize<>(new IsEqual<>(threads))
-        );
-        final Path primary = folder.resolve("primary.xml");
+        final Rpm rpm = new Rpm.Base(storage);
+        rpm.update(key).blockingAwait();
+        final Path primary = folder.resolve("primary.xml.gz");
         new RxFile(primary).save(
             new RxStorageWrapper(storage)
-                .value(new Key.From(RpmTest.PRIMARY_XML_KEY))
+                .value(new Key.From(RpmTest.PRIMARY_GZ_KEY))
                 .flatMapPublisher(pub -> pub)
         ).blockingAwait();
         MatcherAssert.assertThat(
-            new XMLDocument(new String(Files.readAllBytes(primary))),
+            new XMLDocument(
+                new String(
+                    IOUtils.toByteArray(
+                        new GZIPInputStream(
+                            Files.newInputStream(primary)
+                        )
+                    )
+                )
+            ),
             XhtmlMatchers.hasXPath(
                 "/ns1:metadata/ns1:package[ns1:name='nginx']",
                 "http://linux.duke.edu/metadata/common"

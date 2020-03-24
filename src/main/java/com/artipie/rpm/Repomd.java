@@ -195,7 +195,6 @@ final class Repomd {
                         .flatMapCompletable(
                             rxml ->
                                 Completable.mergeArray(
-                                    rxsto.save(new Key.From(key), new RxFile(src).flow()),
                                     rxsto.save(
                                         new Key.From(
                                             String.format("repodata/%s.xml.gz", gzipname)
