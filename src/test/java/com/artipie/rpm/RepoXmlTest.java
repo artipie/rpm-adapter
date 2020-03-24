@@ -44,8 +44,8 @@ public class RepoXmlTest {
         MatcherAssert.assertThat(
             new RepoXml()
                 .base("type", "key")
-                .openChecksum("open")
-                .checksum("sum")
+                .openChecksum("open", Digest.SHA256.type())
+                .checksum("sum", Digest.SHA256.type())
                 .size(size)
                 .openSize(size).toString(),
             Matchers.equalTo(
@@ -54,7 +54,7 @@ public class RepoXmlTest {
                     "XPATH \"/repomd\";ADDIF \"revision\";SET \"1\";XPATH \"",
                     "/repomd/data[type=&apos;type&apos;]\";\n",
                     "4:REMOVE;XPATH \"/repomd\";ADD \"data\";ATTR \"type\", ",
-                    "\"type\";ADD \"location\";ATTR \"href\", \"key.gz\";\n",
+                    "\"type\";ADD \"location\";ATTR \"href\", \"key\";\n",
                     "10:UP;ADD \"open-checksum\";ATTR \"type\", \"sha256\";SET \"open\"",
                     ";UP;ADD \"checksum\";ATTR \"type\", \"sha256\";\n",
                     "17:SET \"sum\";UP;ADD \"size\";SET \"10\";UP;ADD \"open-size\"",

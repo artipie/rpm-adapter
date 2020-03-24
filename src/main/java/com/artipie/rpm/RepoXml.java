@@ -103,11 +103,12 @@ final class RepoXml implements Iterable<Directive> {
      * Checksum.
      *
      * @param checksum Chucksum of file
+     * @param type Hashing algorithm
      * @return RepoXml with checksum
      */
-    public RepoXml checksum(final String checksum) {
+    public RepoXml checksum(final String checksum, final String type) {
         return new RepoXml(this.directives.add("checksum")
-            .attr("type", "sha256")
+            .attr("type", type)
             .set(checksum)
             .up()
         );
@@ -117,11 +118,12 @@ final class RepoXml implements Iterable<Directive> {
      * Open checksum.
      *
      * @param open Open checksum
+     * @param type Hashing algorithm
      * @return RepoXml with open checksum
      */
-    public RepoXml openChecksum(final String open) {
+    public RepoXml openChecksum(final String open, final String type) {
         return new RepoXml(this.directives.add("open-checksum")
-            .attr("type", "sha256")
+            .attr("type", type)
             .set(open)
             .up()
         );

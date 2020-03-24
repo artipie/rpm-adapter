@@ -61,14 +61,21 @@ final class Repomd {
     private final NamingPolicy policy;
 
     /**
+     * Hashing sum computation algorithm.
+     */
+    private final Digest dgst;
+
+    /**
      * Ctor.
      *
      * @param stg The storage
      * @param policy Naming policy
+     * @param dgst Hashing sum computation algorithm
      */
-    Repomd(final Storage stg, final NamingPolicy policy) {
+    Repomd(final Storage stg, final NamingPolicy policy, final Digest dgst) {
         this.storage = stg;
         this.policy = policy;
+        this.dgst = dgst;
     }
 
     /**
@@ -185,17 +192,17 @@ final class Repomd {
             ).zipWith(
                 Single.fromCallable(() -> Files.size(gzip)), RepoXml::size
             ).zipWith(
-                new Checksum(gzip).sha(), RepoXml::checksum
+                new Checksum(gzip, this.dgst).hash(),
+                (rxml, checksum) -> rxml.checksum(checksum, this.dgst.type())
             ).zipWith(
-                new Checksum(src).sha(), RepoXml::openChecksum
+                new Checksum(src, this.dgst).hash(),
+                (rxml, checksum) -> rxml.openChecksum(checksum, this.dgst.type())
             ).map(RepoXml::timestamp)
                 .flatMapCompletable(
                     rxml ->
                         Completable.mergeArray(
                             rxsto.save(
-                                new Key.From(
-                                        location
-                                ),
+                                new Key.From(location),
                                 new RxFile(gzip).flow()
                             )
                         ).andThen(new Update(repomd).apply(rxml))
