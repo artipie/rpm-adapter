@@ -61,14 +61,21 @@ final class Repomd {
     private final NamingPolicy policy;
 
     /**
+     * Hashing sum computation algorithm.
+     */
+    private final Digest dgst;
+
+    /**
      * Ctor.
      *
      * @param stg The storage
      * @param policy Naming policy
+     * @param dgst Hashing sum computation algorithm
      */
-    Repomd(final Storage stg, final NamingPolicy policy) {
+    Repomd(final Storage stg, final NamingPolicy policy, final Digest dgst) {
         this.storage = stg;
         this.policy = policy;
+        this.dgst = dgst;
     }
 
     /**
@@ -142,15 +149,14 @@ final class Repomd {
             .zipWith(
                 Single.fromCallable(() -> Files.createTempFile(type, ".xml.gz")),
                 (src, gzip) -> Repomd.gzip(src, gzip).andThen(
-                    Single.zip(
-                        SingleInterop.fromFuture(this.policy.name(type, new RxFile(src).flow())),
-                        SingleInterop.fromFuture(this.policy.name(type, new RxFile(gzip).flow())),
-                        (srcname, gzipname) -> this.performUpdate(
-                            type, repomd, src, gzip, srcname, gzipname
+                    SingleInterop.fromFuture(this.policy.name(type, new RxFile(gzip).flow()))
+                        .flatMapCompletable(
+                            gzipname -> this.performUpdate(
+                                type, repomd, src, gzip, gzipname
+                            )
                         )
-                    ).flatMapCompletable(self -> self)
-                )
-            ).flatMapCompletable(self -> self);
+                    )
+                ).flatMapCompletable(self -> self);
     }
 
     /**
@@ -160,7 +166,6 @@ final class Repomd {
      * @param repomd The temp
      * @param src Source metadata file
      * @param gzip Gzipped metadata file
-     * @param srcname Source key name
      * @param gzipname Gzip key name
      * @return Completion or error signal
      * @todo #29:30min Refactor Repomd.performUpdate method.
@@ -175,43 +180,41 @@ final class Repomd {
         final String type,
         final Path repomd,
         final Path src, final Path gzip,
-        final String srcname, final String gzipname
+        final String gzipname
     ) {
         final RxStorageWrapper rxsto = new RxStorageWrapper(this.storage);
-        return Single.just(String.format("repodata/%s.xml", srcname))
-            .flatMapCompletable(
-                key ->
-                    Single.just(new RepoXml()).doOnSuccess(
-                        rxml -> rxml.base(type, key)
-                    ).zipWith(
-                        Single.fromCallable(() -> Files.size(src)), RepoXml::openSize
-                    ).zipWith(
-                        Single.fromCallable(() -> Files.size(gzip)), RepoXml::size
-                    ).zipWith(
-                        new Checksum(gzip).sha(), RepoXml::checksum
-                    ).zipWith(
-                        new Checksum(src).sha(), RepoXml::openChecksum
-                    ).map(RepoXml::timestamp)
-                        .flatMapCompletable(
-                            rxml ->
-                                Completable.mergeArray(
-                                    rxsto.save(
-                                        new Key.From(
-                                            String.format("repodata/%s.xml.gz", gzipname)
-                                        ),
-                                        new RxFile(gzip).flow()
+        final String location = String.format("repodata/%s.xml.gz", gzipname);
+        return Single.just(new RepoXml())
+            .doOnSuccess(
+                rxml -> rxml.base(type, location)
+            ).zipWith(
+                Single.fromCallable(() -> Files.size(src)), RepoXml::openSize
+            ).zipWith(
+                Single.fromCallable(() -> Files.size(gzip)), RepoXml::size
+            ).zipWith(
+                new Checksum(gzip, this.dgst).hash(),
+                (rxml, checksum) -> rxml.checksum(checksum, this.dgst.type())
+            ).zipWith(
+                new Checksum(src, this.dgst).hash(),
+                (rxml, checksum) -> rxml.openChecksum(checksum, this.dgst.type())
+            ).map(RepoXml::timestamp)
+                .flatMapCompletable(
+                    rxml ->
+                        Completable.mergeArray(
+                            rxsto.save(
+                                new Key.From(location),
+                                new RxFile(gzip).flow()
+                            )
+                        ).andThen(new Update(repomd).apply(rxml))
+                            .andThen(
+                                Completable.fromAction(
+                                    () -> new BlockingStorage(this.storage).save(
+                                        new Key.From("repodata/repomd.xml"),
+                                        Files.readAllBytes(repomd)
                                     )
-                                ).andThen(new Update(repomd).apply(rxml))
-                                    .andThen(
-                                        Completable.fromAction(
-                                            () -> new BlockingStorage(this.storage).save(
-                                                new Key.From("repodata/repomd.xml"),
-                                                Files.readAllBytes(repomd)
-                                            )
-                                        )
-                                    )
-                        )
-            );
+                                )
+                            )
+                );
     }
 
     /**

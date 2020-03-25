@@ -41,11 +41,18 @@ final class Other {
     private final Path xml;
 
     /**
+     * Hashing sum computation algorithm.
+     */
+    private final Digest dgst;
+
+    /**
      * Ctor.
      * @param path The path
+     * @param dgst Hashing sum computation algorithm
      */
-    Other(final Path path) {
+    Other(final Path path, final Digest dgst) {
         this.xml = path;
+        this.dgst = dgst;
     }
 
     /**
@@ -69,7 +76,7 @@ final class Other {
                 .attr("xmlns", "http://linux.duke.edu/metadata/other")
                 .attr("packages", 1)
                 .add("package")
-                .attr("pkgid", new Checksum(pkg.path()).sha())
+                .attr("pkgid", new Checksum(pkg.path(), this.dgst).hash())
                 .attr("name", pkg.tag(Header.HeaderTag.NAME))
                 .attr("arch", pkg.tag(Header.HeaderTag.ARCH))
                 .add("version")

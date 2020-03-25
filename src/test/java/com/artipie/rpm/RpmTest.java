@@ -35,12 +35,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import org.apache.commons.io.IOUtils;
+import org.cactoos.io.BytesOf;
+import org.cactoos.text.HexOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
+import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -62,24 +68,6 @@ public final class RpmTest {
      * Storage key for gzipped primary xml.
      */
     private static final String PRIMARY_GZ_KEY = "repodata/primary.xml.gz";
-
-    @Test
-    public void updateAarchRpm(@TempDir final Path folder, @TempDir final Path store)
-        throws Exception {
-        final String key = "aom-1.0.0-8.20190810git9666276.el8.aarch64.rpm";
-        final Storage storage = RpmTest.save(folder, store, key);
-        new Rpm(storage).update(key).blockingAwait();
-        MatcherAssert.assertThat(
-            storage.list(new Key.From("repodata"))
-                .get().stream().map(Key::string).collect(Collectors.toList()),
-            Matchers.containsInAnyOrder(
-                "repodata/repomd.xml",
-                "repodata/filelists.xml.gz",
-                "repodata/other.xml.gz",
-                RpmTest.PRIMARY_GZ_KEY
-            )
-        );
-    }
 
     /**
      * Rpm storage works, in many threads.
@@ -152,5 +140,103 @@ public final class RpmTest {
         );
         storage.save(new Key.From(key), new RxFile(bin).flow()).get();
         return storage;
+    }
+
+    /**
+     * Netsted JUnit test to validate naming policy.
+     * @since 0.3.3
+     */
+    @Nested
+    class NamingPolicyAware {
+        /**
+         * Key to store binary RPM in the storage.
+         */
+        private static final String KEY = "aom-1.0.0-8.20190810git9666276.el8.aarch64.rpm";
+
+        // @checkstyle VisibilityModifierCheck (4 lines)
+        /**
+         * Temporary dir for upload RPM into the storage.
+         */
+        @TempDir Path folder;
+
+        // @checkstyle VisibilityModifierCheck (4 lines)
+        /**
+         * Temporary dir for the storage.
+         */
+        @TempDir Path store;
+
+        /**
+         * The storage.
+         */
+        private Storage storage;
+
+        @Test
+        public void defaultPolicy() throws Exception {
+            new Rpm(this.storage).update(NamingPolicyAware.KEY).blockingAwait();
+            MatcherAssert.assertThat(
+                this.storage.list(new Key.From("repodata"))
+                    .get().stream().map(Key::string).collect(Collectors.toList()),
+                Matchers.containsInAnyOrder(
+                    "repodata/repomd.xml",
+                    "repodata/filelists.xml.gz",
+                    "repodata/other.xml.gz",
+                    RpmTest.PRIMARY_GZ_KEY
+                )
+            );
+        }
+
+        @Test
+        // @checkstyle MethodNameCheck (1 line)
+        public void sha1PrefixesPolicy() throws Exception {
+            this.updateAarchRpmWithPrefixes(Digest.SHA1);
+        }
+
+        @Test
+        // @checkstyle MethodNameCheck (1 line)
+        public void sha256PrefixesPolicy() throws Exception {
+            this.updateAarchRpmWithPrefixes(Digest.SHA256);
+        }
+
+        @BeforeEach
+        void setUp() throws Exception {
+            this.storage = RpmTest.save(this.folder, this.store, NamingPolicyAware.KEY);
+        }
+
+        @SuppressWarnings("PMD.AvoidCatchingGenericException")
+        private void updateAarchRpmWithPrefixes(final Digest digest) throws Exception {
+            new Rpm(
+                this.storage,
+                new NamingPolicy.HashPrefixed(digest),
+                digest
+            ).update(NamingPolicyAware.KEY).blockingAwait();
+            final List<String> keys = this.storage.list(
+                new Key.From("repodata")
+            ).get().stream().map(Key::string).collect(Collectors.toList());
+            MatcherAssert.assertThat(
+                "Could not find repomd.xml",
+                keys.remove("repodata/repomd.xml")
+            );
+            keys.forEach(
+                key -> {
+                    try {
+                        final String[] components = key.split("/");
+                        final String prefix = components[components.length - 1].split("-")[0];
+                        final String hash = new HexOf(
+                            new BytesOf(
+                                digest.messageDigest().digest(
+                                    Files.readAllBytes(this.store.resolve(key))
+                                )
+                            )
+                        ).asString();
+                        MatcherAssert.assertThat(hash, new IsEqual<>(prefix));
+                    // @checkstyle IllegalCatchCheck (1 line)
+                    } catch (final Exception ex) {
+                        MatcherAssert.assertThat(
+                            String.format("Exception occurred: %s", ex.getMessage()),
+                            false
+                        );
+                    }
+                });
+        }
     }
 }

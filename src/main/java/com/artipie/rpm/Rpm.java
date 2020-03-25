@@ -82,24 +82,31 @@ public final class Rpm {
     private final NamingPolicy naming;
 
     /**
+     * Hashing sum computation algorithm.
+     */
+    private final Digest dgst;
+
+    /**
      * Ctor.
      * @param stg Storage
      */
     public Rpm(final Storage stg) {
-        this(stg, NamingPolicy.DEFAULT);
+        this(stg, NamingPolicy.DEFAULT, Digest.SHA256);
     }
 
     /**
      * Ctor.
      * @param stg The storage
      * @param naming RPM files naming policy
+     * @param dgst Hashing sum computation algorithm
      */
-    public Rpm(final Storage stg, final NamingPolicy naming) {
+    public Rpm(final Storage stg, final NamingPolicy naming, final Digest dgst) {
         this.storage = stg;
+        this.naming = naming;
+        this.dgst = dgst;
         this.other = new ReactiveLock();
         this.filelists = new ReactiveLock();
         this.primary = new ReactiveLock();
-        this.naming = naming;
     }
 
     /**
@@ -119,26 +126,26 @@ public final class Rpm {
                     .andThen(Single.just(new Pkg(temp))))
             .flatMapCompletable(
                 pkg -> {
-                    final Repomd repomd = new Repomd(this.storage, this.naming);
+                    final Repomd repomd = new Repomd(this.storage, this.naming, this.dgst);
                     return Completable.concatArray(
                         repomd.update(
                             "primary",
                             new SynchronousAct(
-                                file -> new Primary(file).update(key, pkg),
+                                file -> new Primary(file, this.dgst).update(key, pkg),
                                 this.primary
                             )
                         ),
                         repomd.update(
                             "filelists",
                             new SynchronousAct(
-                                file -> new Filelists(file).update(pkg),
+                                file -> new Filelists(file, this.dgst).update(pkg),
                                 this.filelists
                             )
                         ),
                         repomd.update(
                             "other",
                             new SynchronousAct(
-                                file -> new Other(file).update(pkg),
+                                file -> new Other(file, this.dgst).update(pkg),
                                 this.other
                             )
                         )

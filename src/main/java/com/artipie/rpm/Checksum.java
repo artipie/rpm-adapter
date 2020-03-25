@@ -26,12 +26,11 @@ package com.artipie.rpm;
 import io.reactivex.Single;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
 import java.util.Locale;
 import javax.xml.bind.DatatypeConverter;
 
 /**
- * SHA-256 checksum of a file.
+ * Hashing sum of a file.
  *
  * @since 0.1
  */
@@ -43,23 +42,30 @@ final class Checksum {
     private final Path file;
 
     /**
+     * Message digest.
+     */
+    private final Digest dgst;
+
+    /**
      * Ctor.
      * @param path The path
+     * @param dgst The hashing algorithm for checksum computation.
      */
-    Checksum(final Path path) {
+    Checksum(final Path path, final Digest dgst) {
         this.file = path;
+        this.dgst = dgst;
     }
 
     /**
      * Calculate it.
-     * @return The SHA-256 of the file content or error.
+     * @return The hash of the file content or error.
      */
-    public Single<String> sha() {
+    public Single<String> hash() {
         return Single.fromCallable(
             () -> Files.readAllBytes(this.file)
         ).map(
             bytes -> DatatypeConverter.printHexBinary(
-                MessageDigest.getInstance("SHA-256").digest(bytes)
+                this.dgst.messageDigest().digest(bytes)
             ).toLowerCase(Locale.ENGLISH));
     }
 

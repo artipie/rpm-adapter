@@ -61,10 +61,10 @@ final class RepoXml implements Iterable<Directive> {
      * Creates base of xml.
      *
      * @param type Type of file
-     * @param key Key for xml
+     * @param location Location reference for file
      * @return Base of xml
      */
-    public RepoXml base(final String type, final String key) {
+    public RepoXml base(final String type, final String location) {
         return new RepoXml(
             this.directives.xpath("/repomd")
             .addIf("revision").set("1")
@@ -74,7 +74,7 @@ final class RepoXml implements Iterable<Directive> {
             .add("data")
             .attr("type", type)
             .add("location")
-            .attr("href", String.format("%s.gz", key))
+            .attr("href", location)
             .up()
         );
     }
@@ -103,11 +103,12 @@ final class RepoXml implements Iterable<Directive> {
      * Checksum.
      *
      * @param checksum Chucksum of file
+     * @param type Hashing algorithm
      * @return RepoXml with checksum
      */
-    public RepoXml checksum(final String checksum) {
+    public RepoXml checksum(final String checksum, final String type) {
         return new RepoXml(this.directives.add("checksum")
-            .attr("type", "sha256")
+            .attr("type", type)
             .set(checksum)
             .up()
         );
@@ -117,11 +118,12 @@ final class RepoXml implements Iterable<Directive> {
      * Open checksum.
      *
      * @param open Open checksum
+     * @param type Hashing algorithm
      * @return RepoXml with open checksum
      */
-    public RepoXml openChecksum(final String open) {
+    public RepoXml openChecksum(final String open, final String type) {
         return new RepoXml(this.directives.add("open-checksum")
-            .attr("type", "sha256")
+            .attr("type", type)
             .set(open)
             .up()
         );
