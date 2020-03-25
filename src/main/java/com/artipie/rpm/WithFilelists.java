@@ -28,7 +28,7 @@ import io.reactivex.Completable;
 /**
  * Rpm decorator which provide filelist creation on update.
  *
- * @since 0.1
+ * @since 0.3.0
  * @todo #17:30min Implement WithFilelists decorator.
  *  WithFilelists decorator create filelists.xml and filelists.xml.gz files on
  *  upload. Implement this behavior and then enable the test in

@@ -45,7 +45,7 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Test for {@link WithFilelists}.
  *
- * @since 0.1
+ * @since 0.3.3
  * @checkstyle ClassDataAbstractionCouplingCheck (100 lines)
  */
 public class WithFilelistsTest {
