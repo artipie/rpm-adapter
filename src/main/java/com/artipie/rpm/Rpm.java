@@ -31,6 +31,7 @@ import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import io.vertx.reactivex.core.Vertx;
 import java.nio.file.Files;
 
 /**
@@ -42,7 +43,7 @@ import java.nio.file.Files;
  * <pre> Rpm rpm = new Rpm(storage);</pre>
  *
  * Then, you put your binary RPM artifact to the storage and call
- * {@link Rpm#update(String)}. This method will parse the RPM package
+ * {@link Rpm#update(Key)}. This method will parse the RPM package
  * and update all the necessary meta-data files. Right after this,
  * your clients will be able to use the package, via {@code yum}:
  *
@@ -60,6 +61,11 @@ public final class Rpm {
      * The storage.
      */
     private final Storage storage;
+
+    /**
+     * The vertx instance.
+     */
+    private final Vertx vertx;
 
     /**
      * Access lock for primary.xml file.
@@ -89,19 +95,23 @@ public final class Rpm {
     /**
      * Ctor.
      * @param stg Storage
+     * @param vertx The Vertx instance
      */
-    public Rpm(final Storage stg) {
-        this(stg, NamingPolicy.DEFAULT, Digest.SHA256);
+    public Rpm(final Storage stg, final Vertx vertx) {
+        this(stg, vertx, NamingPolicy.DEFAULT, Digest.SHA256);
     }
 
     /**
      * Ctor.
      * @param stg The storage
+     * @param vertx The Vertx instance
      * @param naming RPM files naming policy
      * @param dgst Hashing sum computation algorithm
+     * @checkstyle ParameterNumberCheck (10 lines)
      */
-    public Rpm(final Storage stg, final NamingPolicy naming, final Digest dgst) {
+    public Rpm(final Storage stg, final Vertx vertx, final NamingPolicy naming, final Digest dgst) {
         this.storage = stg;
+        this.vertx = vertx;
         this.naming = naming;
         this.dgst = dgst;
         this.other = new ReactiveLock();
@@ -115,18 +125,23 @@ public final class Rpm {
      * @param key The name of the file just updated
      * @return Completion or error signal.
      */
-    public Completable update(final String key) {
+    public Completable update(final Key key) {
         return Single.fromCallable(() -> Files.createTempFile("rpm", ".rpm"))
             .flatMap(
-                temp -> new RxFile(temp)
+                temp -> new RxFile(temp, this.vertx.fileSystem())
                     .save(
-                        new RxStorageWrapper(this.storage).value(new Key.From(key))
+                        new RxStorageWrapper(this.storage).value(key)
                             .flatMapPublisher(pub -> pub)
                     )
                     .andThen(Single.just(new Pkg(temp))))
             .flatMapCompletable(
                 pkg -> {
-                    final Repomd repomd = new Repomd(this.storage, this.naming, this.dgst);
+                    final Repomd repomd = new Repomd(
+                        this.storage,
+                        this.vertx,
+                        this.naming,
+                        this.dgst
+                    );
                     return Completable.concatArray(
                         repomd.update(
                             "primary",
@@ -156,14 +171,13 @@ public final class Rpm {
 
     /**
      * Batch update RPM files for repository.
-     * @param repo Repository key
+     * @param prefix Repository key prefix
      * @return Completable action
      */
-    public Completable batchUpdate(final String repo) {
-        return SingleInterop.fromFuture(this.storage.list(new Key.From(repo)))
+    public Completable batchUpdate(final Key prefix) {
+        return SingleInterop.fromFuture(this.storage.list(prefix))
             .flatMapObservable(Observable::fromIterable)
-            .map(Key::string)
-            .filter(key -> key.endsWith(".rpm"))
+            .filter(key -> key.string().endsWith(".rpm"))
             .flatMapCompletable(this::update);
     }
 }

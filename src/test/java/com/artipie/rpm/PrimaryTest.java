@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.asto.Key;
 import com.jcabi.matchers.XhtmlMatchers;
 import com.jcabi.xml.XMLDocument;
 import java.nio.file.Files;
@@ -55,7 +56,7 @@ public final class PrimaryTest {
         );
         final Path xml = folder.resolve("primary.xml");
         final Primary primary = new Primary(xml, Digest.SHA256);
-        primary.update("test.rpm", new Pkg(bin)).blockingAwait();
+        primary.update(new Key.From("test.rpm"), new Pkg(bin)).blockingAwait();
         MatcherAssert.assertThat(
             new XMLDocument(new String(Files.readAllBytes(xml))),
             XhtmlMatchers.hasXPath(
