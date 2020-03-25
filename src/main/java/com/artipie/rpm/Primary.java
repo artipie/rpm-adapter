@@ -49,11 +49,18 @@ final class Primary {
     private final Path xml;
 
     /**
+     * Hashing sum computation algorithm.
+     */
+    private final Digest dgst;
+
+    /**
      * Ctor.
      * @param path The path
+     * @param dgst Hashing sum computation algorithm
      */
-    Primary(final Path path) {
+    Primary(final Path path, final Digest dgst) {
         this.xml = path;
+        this.dgst = dgst;
     }
 
     /**
@@ -94,11 +101,11 @@ final class Primary {
                 .up()
         )
             .zipWith(
-                new Checksum(pkg.path()).sha(),
+                new Checksum(pkg.path(), this.dgst).hash(),
                 (directives, checksum) ->
                     directives
                         .add("checksum")
-                        .attr("type", "sha256")
+                        .attr("type", this.dgst.type())
                         .attr("pkgid", "YES")
                         .set(checksum)
                         .up()

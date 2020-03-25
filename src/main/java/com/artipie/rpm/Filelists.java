@@ -41,11 +41,18 @@ final class Filelists {
     private final Path xml;
 
     /**
+     * Hashing sum computation algorithm.
+     */
+    private final Digest dgst;
+
+    /**
      * Ctor.
      * @param path The path
+     * @param dgst Hashing sum computation algorithm
      */
-    Filelists(final Path path) {
+    Filelists(final Path path, final Digest dgst) {
         this.xml = path;
+        this.dgst = dgst;
     }
 
     /**
@@ -54,9 +61,9 @@ final class Filelists {
      * @return Completion or error signal.
      */
     public Completable update(final Pkg pkg) {
-        return new Checksum(pkg.path()).sha()
+        return new Checksum(pkg.path(), this.dgst).hash()
             .flatMapCompletable(
-                sha ->
+                hash ->
                     new Update(this.xml).apply(
                         new Directives()
                             .xpath("/")
@@ -72,7 +79,7 @@ final class Filelists {
                             .attr("xmlns", "http://linux.duke.edu/metadata/filelists")
                             .attr("packages", 1)
                             .add("package")
-                            .attr("pkgid", sha)
+                            .attr("pkgid", hash)
                             .attr("name", pkg.tag(Header.HeaderTag.NAME))
                             .attr("arch", pkg.tag(Header.HeaderTag.ARCH))
                             .add("version")

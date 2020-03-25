@@ -53,9 +53,7 @@ import java.nio.file.Files;
  * @since 0.1
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
-@SuppressWarnings(
-    {"PMD.AvoidDuplicateLiterals", "PMD.UnusedPrivateField", "PMD.SingularField"}
-    )
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public interface Rpm {
 
     /**
@@ -68,15 +66,16 @@ public interface Rpm {
 
     /**
      * Batch update RPM files for repository.
+     *
      * @param repo Repository key
      * @return Completable action
      */
     Completable batchUpdate(String repo);
 
     /**
-     * Base {@link Rpm} implementation.
+     * Base Implementation for Rpm.
      *
-     * @since 0.1
+     * @since 0.3.3
      */
     final class Base implements Rpm {
 
@@ -106,31 +105,33 @@ public interface Rpm {
         private final NamingPolicy naming;
 
         /**
-         * Flag for filelists file generation.
+         * Hashing sum computation algorithm.
          */
-        private final boolean filelistsgen;
+        private final Digest dgst;
 
         /**
          * Ctor.
+         *
          * @param stg Storage
          */
         public Base(final Storage stg) {
-            this(stg, NamingPolicy.DEFAULT, true);
+            this(stg, NamingPolicy.DEFAULT, Digest.SHA256);
         }
 
         /**
          * Ctor.
+         *
          * @param stg The storage
          * @param naming RPM files naming policy
-         * @param filelistsgen Flag to generate the filelist.
+         * @param dgst Hashing sum computation algorithm
          */
-        public Base(final Storage stg, final NamingPolicy naming, final boolean filelistsgen) {
+        public Base(final Storage stg, final NamingPolicy naming, final Digest dgst) {
             this.storage = stg;
+            this.naming = naming;
+            this.dgst = dgst;
             this.other = new ReactiveLock();
             this.filelists = new ReactiveLock();
             this.primary = new ReactiveLock();
-            this.naming = naming;
-            this.filelistsgen = filelistsgen;
         }
 
         @Override
@@ -145,26 +146,26 @@ public interface Rpm {
                         .andThen(Single.just(new Pkg(temp))))
                 .flatMapCompletable(
                     pkg -> {
-                        final Repomd repomd = new Repomd(this.storage, this.naming);
+                        final Repomd repomd = new Repomd(this.storage, this.naming, this.dgst);
                         return Completable.concatArray(
                             repomd.update(
                                 "primary",
                                 new SynchronousAct(
-                                    file -> new Primary(file).update(key, pkg),
+                                    file -> new Primary(file, this.dgst).update(key, pkg),
                                     this.primary
                                 )
                             ),
                             repomd.update(
                                 "filelists",
                                 new SynchronousAct(
-                                    file -> new Filelists(file).update(pkg),
+                                    file -> new Filelists(file, this.dgst).update(pkg),
                                     this.filelists
                                 )
                             ),
                             repomd.update(
                                 "other",
                                 new SynchronousAct(
-                                    file -> new Other(file).update(pkg),
+                                    file -> new Other(file, this.dgst).update(pkg),
                                     this.other
                                 )
                             )
@@ -182,5 +183,4 @@ public interface Rpm {
                 .flatMapCompletable(this::update);
         }
     }
-
 }

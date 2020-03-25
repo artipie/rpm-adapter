@@ -27,7 +27,6 @@ import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Flowable;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
@@ -55,28 +54,29 @@ public interface NamingPolicy {
     CompletionStage<String> name(String source, Publisher<ByteBuffer> content);
 
     /**
-     * Add SHA1 prefix to names.
+     * Add hash prefix to names. Uses SHA256 by default
      * @since 0.3
      */
-    final class Sha1Prefixed implements NamingPolicy {
+    final class HashPrefixed implements NamingPolicy {
 
         /**
-         * SHA1 message digest supplier.
+         * Message digest supplier.
          */
         private final Supplier<MessageDigest> dgst;
 
         /**
-         * Default ctor.
+         * Ctor.
+         * @param dgst One of the supported digest algorithms
          */
-        public Sha1Prefixed() {
-            this(Sha1Prefixed::shaOneDigest);
+        public HashPrefixed(final Digest dgst) {
+            this(dgst::messageDigest);
         }
 
         /**
          * Primary ctor.
-         * @param dgst SHA1 digest
+         * @param dgst Message digest supplier
          */
-        private Sha1Prefixed(final Supplier<MessageDigest> dgst) {
+        private HashPrefixed(final Supplier<MessageDigest> dgst) {
             this.dgst = dgst;
         }
 
@@ -95,20 +95,6 @@ public interface NamingPolicy {
                 .map(res -> new HexOf(new BytesOf(res.digest())).asString())
                 .map(hex -> String.format("%s-%s", hex, source))
                 .to(SingleInterop.get());
-        }
-
-        /**
-         * SHA1 message digest.
-         * @return Digest
-         */
-        private static MessageDigest shaOneDigest() {
-            try {
-                return MessageDigest.getInstance("SHA1");
-            } catch (final NoSuchAlgorithmException err) {
-                throw new IllegalStateException(
-                    "SHA1 is unavailable on this environment", err
-                );
-            }
         }
     }
 }

@@ -54,7 +54,7 @@ public final class PrimaryTest {
             StandardCopyOption.REPLACE_EXISTING
         );
         final Path xml = folder.resolve("primary.xml");
-        final Primary primary = new Primary(xml);
+        final Primary primary = new Primary(xml, Digest.SHA256);
         primary.update("test.rpm", new Pkg(bin)).blockingAwait();
         MatcherAssert.assertThat(
             new XMLDocument(new String(Files.readAllBytes(xml))),
