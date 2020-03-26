@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.asto.Key;
 import io.reactivex.Completable;
 import io.reactivex.Single;
 import java.nio.file.Files;
@@ -70,7 +71,7 @@ final class Primary {
      * @param pkg The package
      * @return Completion or error signal.
      */
-    public Completable update(final String key, final Pkg pkg) {
+    public Completable update(final Key key, final Pkg pkg) {
         return Single.just(
             new Directives()
                 .xpath("/")
@@ -127,7 +128,7 @@ final class Primary {
                         .attr("installed", pkg.num(Header.HeaderTag.SIZE))
                         .attr("archive", pkg.num(Header.HeaderTag.ARCHIVESIZE))
                         .up()
-                        .add("location").attr("href", key).up()
+                        .add("location").attr("href", key.string()).up()
                         .add("format")
                         .add("rpm:license").set(pkg.tag(Header.HeaderTag.LICENSE)).up()
                         .add("rpm:vendor").set(pkg.tag(Header.HeaderTag.VENDOR)).up()

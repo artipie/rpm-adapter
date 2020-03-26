@@ -23,11 +23,13 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.asto.fs.RxFile;
 import com.jcabi.log.Logger;
+import io.vertx.reactivex.core.Vertx;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -89,8 +91,9 @@ public final class RpmITCase {
      */
     @Test
     public void savesAndLoads() throws Exception {
-        final Storage storage = new FileStorage(RpmITCase.repodir);
-        final Rpm rpm = new Rpm.Base(storage);
+        final Vertx vertx = Vertx.vertx();
+        final Storage storage = new FileStorage(RpmITCase.repodir, vertx.fileSystem());
+        final Rpm rpm = new Rpm.Base(storage, vertx);
         final Path bin = RpmITCase.folder.resolve("x.rpm");
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
         Files.copy(
@@ -100,8 +103,13 @@ public final class RpmITCase {
             bin,
             StandardCopyOption.REPLACE_EXISTING
         );
-        storage.save(new Key.From(key), new RxFile(bin).flow()).get();
-        rpm.batchUpdate("").blockingAwait();
+        storage.save(
+            new Key.From(key),
+            new Content.From(
+                new RxFile(bin, vertx.fileSystem()).flow()
+            )
+        ).get();
+        rpm.batchUpdate(Key.ROOT).blockingAwait();
         final Container.ExecResult result = RpmITCase.yumutils.execInContainer(
             "/bin/bash",
             "-c",
@@ -134,8 +142,9 @@ public final class RpmITCase {
      */
     @Test
     public void primaryFileIsTheSameAsCreateRepoGenerates() throws Exception {
+        final Vertx vertx = Vertx.vertx();
         final Path repo = RpmITCase.folder.resolve("rpm-files-repo");
-        final Storage storage = new FileStorage(repo);
+        final Storage storage = new FileStorage(repo, vertx.fileSystem());
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
         final Path bin = RpmITCase.folder.resolve(key);
         Files.copy(
@@ -143,9 +152,14 @@ public final class RpmITCase {
             bin,
             StandardCopyOption.REPLACE_EXISTING
         );
-        storage.save(new Key.From(key), new RxFile(bin).flow()).get();
-        final Rpm rpm = new Rpm.Base(storage);
-        rpm.update(key).blockingAwait();
+        storage.save(
+            new Key.From(key),
+            new Content.From(
+                new RxFile(bin, vertx.fileSystem()).flow()
+            )
+        ).get();
+        final Rpm rpm = new Rpm.Base(storage, vertx);
+        rpm.update(new Key.From(key)).blockingAwait();
         final String expected = this.etalon(bin);
         final String actual = primary(repo);
         comparePrimaryFiles(expected, actual);

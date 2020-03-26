@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.asto.Key;
 import io.reactivex.Completable;
 
 /**
@@ -51,12 +52,12 @@ public final class WithFilelists implements Rpm {
     }
 
     @Override
-    public Completable update(final String key) {
+    public Completable update(final Key key) {
         return this.origin.update(key);
     }
 
     @Override
-    public Completable batchUpdate(final String repo) {
-        return this.origin.batchUpdate(repo);
+    public Completable batchUpdate(final Key prefix) {
+        return this.origin.batchUpdate(prefix);
     }
 }

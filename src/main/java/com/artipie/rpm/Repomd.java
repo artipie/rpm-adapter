@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.blocking.BlockingStorage;
@@ -34,6 +35,7 @@ import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Completable;
 import io.reactivex.CompletableSource;
 import io.reactivex.Single;
+import io.vertx.reactivex.core.Vertx;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -56,6 +58,11 @@ final class Repomd {
     private final Storage storage;
 
     /**
+     * The vertx instance.
+     */
+    private final Vertx vertx;
+
+    /**
      * Naming policy.
      */
     private final NamingPolicy policy;
@@ -69,11 +76,14 @@ final class Repomd {
      * Ctor.
      *
      * @param stg The storage
+     * @param vertx The Vertx instance
      * @param policy Naming policy
      * @param dgst Hashing sum computation algorithm
+     * @checkstyle ParameterNumberCheck (7 lines)
      */
-    Repomd(final Storage stg, final NamingPolicy policy, final Digest dgst) {
+    Repomd(final Storage stg, final Vertx vertx, final NamingPolicy policy, final Digest dgst) {
         this.storage = stg;
+        this.vertx = vertx;
         this.policy = policy;
         this.dgst = dgst;
     }
@@ -105,7 +115,7 @@ final class Repomd {
             exists -> {
                 final Completable res;
                 if (exists) {
-                    res = new RxFile(file).save(
+                    res = new RxFile(file, this.vertx.fileSystem()).save(
                         new RxStorageWrapper(this.storage)
                             .value(new Key.From("repodata/repomd.xml"))
                             .flatMapPublisher(pub -> pub)
@@ -149,14 +159,18 @@ final class Repomd {
             .zipWith(
                 Single.fromCallable(() -> Files.createTempFile(type, ".xml.gz")),
                 (src, gzip) -> Repomd.gzip(src, gzip).andThen(
-                    SingleInterop.fromFuture(this.policy.name(type, new RxFile(gzip).flow()))
-                        .flatMapCompletable(
-                            gzipname -> this.performUpdate(
-                                type, repomd, src, gzip, gzipname
-                            )
+                    SingleInterop.fromFuture(
+                        this.policy.name(
+                            type,
+                            new RxFile(gzip, this.vertx.fileSystem()).flow()
+                        )
+                    ).flatMapCompletable(
+                        gzipname -> this.performUpdate(
+                            type, repomd, src, gzip, gzipname
                         )
                     )
-                ).flatMapCompletable(self -> self);
+                )
+            ).flatMapCompletable(self -> self);
     }
 
     /**
@@ -203,7 +217,9 @@ final class Repomd {
                         Completable.mergeArray(
                             rxsto.save(
                                 new Key.From(location),
-                                new RxFile(gzip).flow()
+                                new Content.From(
+                                    new RxFile(gzip, this.vertx.fileSystem()).flow()
+                                )
                             )
                         ).andThen(new Update(repomd).apply(rxml))
                             .andThen(
@@ -260,7 +276,7 @@ final class Repomd {
             res = Completable.complete();
         } else {
             final String location = nodes.get(0).xpath("location/@href").get(0);
-            res = new RxFile(file).save(
+            res = new RxFile(file, this.vertx.fileSystem()).save(
                 new RxStorageWrapper(this.storage).value(new Key.From(location))
                     .flatMapPublisher(pub -> pub)
             );

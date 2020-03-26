@@ -23,10 +23,12 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.asto.fs.RxFile;
+import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -49,14 +51,23 @@ import org.junit.jupiter.api.io.TempDir;
  * @checkstyle ClassDataAbstractionCouplingCheck (100 lines)
  */
 public class WithFilelistsTest {
+    /**
+     * The Vertx instance.
+     */
+    private final Vertx vertx = Vertx.vertx();
+
     @Test
     @Disabled
     public void createFileListOnRpmUpdate(
         @TempDir final Path folder, @TempDir final Path store
     ) throws Exception {
         final String key = "with-fileList.aarch64.rpm";
-        final Storage storage = WithFilelistsTest.save(folder, store, key);
-        new WithFilelists(new Rpm.Base(storage)).update(key).blockingAwait();
+        final Storage storage = WithFilelistsTest.save(folder, store, key, this.vertx);
+        new WithFilelists(
+            new Rpm.Base(storage, this.vertx)
+        ).update(
+            new Key.From(key)
+        ).blockingAwait();
         MatcherAssert.assertThat(
             storage.list(new Key.From("repodata"))
                 .get().stream().map(Key::string).collect(Collectors.toList()),
@@ -69,9 +80,14 @@ public class WithFilelistsTest {
         );
     }
 
-    private static Storage save(final Path folder, final Path store, final String key)
+    // @checkstyle ParameterNumberCheck (6 lines)
+    private static Storage save(
+        final Path folder,
+        final Path store,
+        final String key,
+        final Vertx vertx)
         throws IOException, InterruptedException, ExecutionException {
-        final Storage storage = new FileStorage(store);
+        final Storage storage = new FileStorage(store, vertx.fileSystem());
         final Path bin = folder.resolve("x.rpm");
         Files.copy(
             RpmITCase.class.getResourceAsStream(
@@ -80,7 +96,12 @@ public class WithFilelistsTest {
             bin,
             StandardCopyOption.REPLACE_EXISTING
         );
-        storage.save(new Key.From(key), new RxFile(bin).flow()).get();
+        storage.save(
+            new Key.From(key),
+            new Content.From(
+                new RxFile(bin, vertx.fileSystem()).flow()
+            )
+        ).get();
         return storage;
     }
 }
