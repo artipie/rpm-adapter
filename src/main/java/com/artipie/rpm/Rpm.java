@@ -95,10 +95,32 @@ public final class Rpm {
     /**
      * Ctor.
      * @param stg Storage
+     * @deprecated use {@link #Rpm(Storage, Vertx)} instead
+     */
+    @Deprecated
+    public Rpm(final Storage stg) {
+        this(stg, Vertx.vertx());
+    }
+
+    /**
+     * Ctor.
+     * @param stg Storage
      * @param vertx The Vertx instance
      */
     public Rpm(final Storage stg, final Vertx vertx) {
         this(stg, vertx, NamingPolicy.DEFAULT, Digest.SHA256);
+    }
+
+    /**
+     * Ctor.
+     * @param stg The storage
+     * @param naming RPM files naming policy
+     * @param dgst Hashing sum computation algorithm
+     * @deprecated use {@link #Rpm(Storage, Vertx, NamingPolicy, Digest)} instead
+     */
+    @Deprecated
+    public Rpm(final Storage stg, final NamingPolicy naming, final Digest dgst) {
+        this(stg, Vertx.vertx(), naming, dgst);
     }
 
     /**
@@ -117,6 +139,18 @@ public final class Rpm {
         this.other = new ReactiveLock();
         this.filelists = new ReactiveLock();
         this.primary = new ReactiveLock();
+    }
+
+    /**
+     * Update the meta info for single artifact.
+     *
+     * @param key The name of the file just updated
+     * @return Completion or error signal.
+     * @deprecated use {@link #update(Key)} instead
+     */
+    @Deprecated
+    public Completable update(final String key) {
+        return this.update(new Key.From(key));
     }
 
     /**
@@ -167,6 +201,17 @@ public final class Rpm {
                     );
                 }
             );
+    }
+
+    /**
+     * Batch update RPM files for repository.
+     * @param prefix Repository key prefix (String)
+     * @return Completable action
+     * @deprecated use {@link #batchUpdate(Key)} instead
+     */
+    @Deprecated
+    public Completable batchUpdate(final String prefix) {
+        return this.batchUpdate(new Key.From(prefix));
     }
 
     /**
