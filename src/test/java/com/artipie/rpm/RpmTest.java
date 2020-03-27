@@ -23,7 +23,6 @@
  */
 package com.artipie.rpm;
 
-import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
@@ -32,13 +31,10 @@ import com.artipie.asto.rx.RxStorageWrapper;
 import com.jcabi.matchers.XhtmlMatchers;
 import com.jcabi.xml.XMLDocument;
 import io.vertx.reactivex.core.Vertx;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import org.apache.commons.io.IOUtils;
@@ -93,7 +89,8 @@ public final class RpmTest {
     public void addsSingleRpm(@TempDir final Path folder, @TempDir final Path store)
         throws Exception {
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
-        final Storage storage = RpmTest.save(folder, store, key, this.vertx);
+        final Storage storage = new FileStorage(store, this.vertx.fileSystem());
+        FileStorageLoader.uploadResource(storage, key);
         final Rpm rpm = new Rpm(storage, this.vertx);
         rpm.update(new Key.From(key)).blockingAwait();
         final Path primary = folder.resolve("primary.xml.gz");
@@ -132,31 +129,6 @@ public final class RpmTest {
                 Matchers.equalTo(true)
             );
         }
-    }
-
-    // @checkstyle ParameterNumberCheck (6 lines)
-    private static Storage save(
-        final Path folder,
-        final Path store,
-        final String key,
-        final Vertx vertx)
-        throws IOException, InterruptedException, ExecutionException {
-        final Storage storage = new FileStorage(store, vertx.fileSystem());
-        final Path bin = folder.resolve("x.rpm");
-        Files.copy(
-            RpmITCase.class.getResourceAsStream(
-                String.format("/%s", key)
-            ),
-            bin,
-            StandardCopyOption.REPLACE_EXISTING
-        );
-        storage.save(
-            new Key.From(key),
-            new Content.From(
-                new RxFile(bin, vertx.fileSystem()).flow()
-            )
-        ).get();
-        return storage;
     }
 
     /**
@@ -219,12 +191,8 @@ public final class RpmTest {
 
         @BeforeEach
         void setUp() throws Exception {
-            this.storage = RpmTest.save(
-                this.folder,
-                this.store,
-                NamingPolicyAware.KEY,
-                RpmTest.this.vertx
-            );
+            this.storage = new FileStorage(this.store, RpmTest.this.vertx.fileSystem());
+            FileStorageLoader.uploadResource(this.storage, NamingPolicyAware.KEY);
         }
 
         @SuppressWarnings("PMD.AvoidCatchingGenericException")
