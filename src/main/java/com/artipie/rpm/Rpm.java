@@ -34,6 +34,7 @@ import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.vertx.reactivex.core.Vertx;
 import java.nio.file.Files;
+import java.util.Arrays;
 
 /**
  * The RPM front.
@@ -109,7 +110,18 @@ public final class Rpm {
      * @return Completion or error signal.
      */
     public Completable update(final Key key) {
-        return this.batchUpdate(key);
+        final String[] parts = key.string().split("/");
+        final Key folder;
+        if (parts.length == 1) {
+            folder = Key.ROOT;
+        } else {
+            folder = new Key.From(
+                Arrays.stream(parts)
+                    .limit(parts.length - 1)
+                    .toArray(String[]::new)
+            );
+        }
+        return this.batchUpdate(folder);
     }
 
     /**
@@ -124,12 +136,12 @@ public final class Rpm {
             this.naming,
             this.dgst
         );
-        return updater.deleteMetadata()
-            .andThen(SingleInterop.fromFuture(this.storage.list(Key.ROOT))
+        return updater.deleteMetadata(prefix)
+            .andThen(SingleInterop.fromFuture(this.storage.list(prefix))
                 .flatMapObservable(Observable::fromIterable)
                 .filter(key -> key.string().endsWith(".rpm"))
                 .flatMapCompletable(key -> this.doUpdate(updater, key))
-                .andThen(updater.complete())
+                .andThen(updater.complete(prefix))
             );
     }
 

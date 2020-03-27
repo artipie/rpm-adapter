@@ -57,7 +57,7 @@ public final class RepoUpdaterTest {
                 final Pkg pkg = this.pkg(key);
                 return this.updater.processNext(new Key.From(key), pkg);
             }
-        ).andThen(this.updater.complete()).blockingAwait();
+        ).andThen(this.updater.complete(Key.ROOT)).blockingAwait();
     }
 
     @BeforeEach

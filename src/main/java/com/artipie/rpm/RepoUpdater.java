@@ -154,10 +154,11 @@ final class RepoUpdater {
      * - publishes to storage
      * - generates repomd.xml
      * - delete temporary files
+     * @param prefix Root of repository in the storage
      * @return Completion or error signal
      * @checkstyle ExecutableStatementCountCheck (72 lines)
      */
-    public Completable complete() {
+    public Completable complete(final Key prefix) {
         final XMLOutputFactory factory = XMLOutputFactory.newFactory();
         final Path repomd;
         final XMLStreamWriter xml;
@@ -187,11 +188,11 @@ final class RepoUpdater {
                 }
             )
         ).andThen(
-            this.processType(xml, this.pfile, "primary")
+            this.processType(xml, this.pfile, "primary", prefix)
         ).andThen(
-            this.processType(xml, this.lfile, "filelists")
+            this.processType(xml, this.lfile, "filelists", prefix)
         ).andThen(
-            this.processType(xml, this.ofile, "other")
+            this.processType(xml, this.ofile, "other", prefix)
         ).andThen(
             Completable.fromAction(
                 () -> {
@@ -223,7 +224,7 @@ final class RepoUpdater {
         ).flatMapCompletable(
             str ->
                 this.stg.save(
-                    new Key.From("repodata/repomd.xml"),
+                    new Key.From(RepoUpdater.key(prefix, "repodata", "repomd.xml")),
                     new Content.From(str.getBytes())
                 )
         ).doOnTerminate(
@@ -238,10 +239,13 @@ final class RepoUpdater {
 
     /**
      * Deletes old metadata from storage.
+     * @param prefix Root of repository in the storage
      * @return Completion or error signal
      */
-    public Completable deleteMetadata() {
-        return this.stg.list(new Key.From("repodata"))
+    public Completable deleteMetadata(final Key prefix) {
+        final Key repokey;
+        repokey = key(prefix, "repodata");
+        return this.stg.list(repokey)
             .flatMapCompletable(
                 keys -> Flowable.fromIterable(keys)
                     .flatMapCompletable(this.stg::delete)
@@ -249,15 +253,33 @@ final class RepoUpdater {
     }
 
     /**
+     * Creates key by prefix and the rest parts.
+     * @param prefix The prefix of the key
+     * @param parts Other parts of the key
+     * @return Compound key
+     */
+    private static Key key(final Key prefix, final String... parts) {
+        final Key key;
+        if (Key.ROOT.equals(prefix)) {
+            key = new Key.From(parts);
+        } else {
+            key = new Key.From(prefix, parts);
+        }
+        return key;
+    }
+
+    /**
      * Processes metadata file and write information to repomd.xml file.
      * @param writer Streaming XML writer
      * @param file Metadata file to be processed
      * @param type Type of the metadata file
+     * @param prefix Root of repository in the storage
      * @return Completion or error signal
+     * @checkstyle ParameterNumberCheck (82 lines)
      * @checkstyle ExecutableStatementCountCheck (81 lines)
      */
     @SuppressWarnings("PMD.ExcessiveMethodLength")
-    private Completable processType(final XMLStreamWriter writer, final Path file, final String type) {
+    private Completable processType(final XMLStreamWriter writer, final Path file, final String type, final Key prefix) {
         return Single.fromCallable(() -> Files.createTempFile(type, ".xml.gz"))
             .flatMapCompletable(
                 gzip -> RepoUpdater.gzip(file, gzip).andThen(
@@ -269,13 +291,13 @@ final class RepoUpdater {
                     )
                 ).flatMapCompletable(
                     gzipname -> {
-                        final String location = String.format("repodata/%s.xml.gz", gzipname);
+                        final String filename = String.format("%s.xml.gz", gzipname);
                         return Completable.fromAction(
                             () -> {
                                 writer.writeStartElement("data");
                                 writer.writeAttribute("type", type);
                                 writer.writeEmptyElement("location");
-                                writer.writeAttribute("href", location);
+                                writer.writeAttribute("href", String.format("repodata/%s", filename));
                             }
                         ).andThen(
                             Single.fromCallable(
@@ -348,7 +370,7 @@ final class RepoUpdater {
                             )
                         ).andThen(
                             this.stg.save(
-                                new Key.From(location),
+                                RepoUpdater.key(prefix, "repodata", filename),
                                 new Content.From(
                                     new RxFile(gzip, this.fsystem).flow()
                                 )

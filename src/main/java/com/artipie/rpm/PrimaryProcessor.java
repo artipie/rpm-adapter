@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.xml.stream.XMLEventReader;
@@ -166,7 +167,14 @@ public class PrimaryProcessor {
                             this.xml.writeAttribute("installed", String.valueOf(pkg.num(Header.HeaderTag.SIZE)));
                             this.xml.writeAttribute("archive", String.valueOf(pkg.num(Header.HeaderTag.ARCHIVESIZE)));
                             this.xml.writeEmptyElement("location");
-                            this.xml.writeAttribute("href", key.string());
+                            this.xml.writeAttribute(
+                                "href",
+                                Objects.requireNonNull(
+                                    Arrays.stream(key.string().split("/"))
+                                        .reduce((left, right) -> right)
+                                        .orElse(null)
+                                )
+                            );
                             this.xml.writeStartElement("format");
                             this.xml.writeStartElement("http://linux.duke.edu/metadata/rpm", "license");
                             this.xml.writeCharacters(pkg.tag(Header.HeaderTag.LICENSE));
