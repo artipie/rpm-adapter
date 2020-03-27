@@ -29,10 +29,12 @@ import com.artipie.asto.fs.RxFile;
 import com.artipie.asto.rx.RxStorageWrapper;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Completable;
+import io.reactivex.CompletableSource;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.vertx.reactivex.core.Vertx;
 import java.nio.file.Files;
+import java.util.Arrays;
 
 /**
  * The RPM front.
@@ -66,21 +68,6 @@ public final class Rpm {
      * The vertx instance.
      */
     private final Vertx vertx;
-
-    /**
-     * Access lock for primary.xml file.
-     */
-    private final ReactiveLock primary;
-
-    /**
-     * Access lock for filelists.xml file.
-     */
-    private final ReactiveLock filelists;
-
-    /**
-     * Access lock for other.xml file.
-     */
-    private final ReactiveLock other;
 
     /**
      * RPM files naming policy.
@@ -136,9 +123,6 @@ public final class Rpm {
         this.vertx = vertx;
         this.naming = naming;
         this.dgst = dgst;
-        this.other = new ReactiveLock();
-        this.filelists = new ReactiveLock();
-        this.primary = new ReactiveLock();
     }
 
     /**
@@ -160,47 +144,18 @@ public final class Rpm {
      * @return Completion or error signal.
      */
     public Completable update(final Key key) {
-        return Single.fromCallable(() -> Files.createTempFile("rpm", ".rpm"))
-            .flatMap(
-                temp -> new RxFile(temp, this.vertx.fileSystem())
-                    .save(
-                        new RxStorageWrapper(this.storage).value(key)
-                            .flatMapPublisher(pub -> pub)
-                    )
-                    .andThen(Single.just(new Pkg(temp))))
-            .flatMapCompletable(
-                pkg -> {
-                    final Repomd repomd = new Repomd(
-                        this.storage,
-                        this.vertx,
-                        this.naming,
-                        this.dgst
-                    );
-                    return Completable.concatArray(
-                        repomd.update(
-                            "primary",
-                            new SynchronousAct(
-                                file -> new Primary(file, this.dgst).update(key, pkg),
-                                this.primary
-                            )
-                        ),
-                        repomd.update(
-                            "filelists",
-                            new SynchronousAct(
-                                file -> new Filelists(file, this.dgst).update(pkg),
-                                this.filelists
-                            )
-                        ),
-                        repomd.update(
-                            "other",
-                            new SynchronousAct(
-                                file -> new Other(file, this.dgst).update(pkg),
-                                this.other
-                            )
-                        )
-                    );
-                }
+        final String[] parts = key.string().split("/");
+        final Key folder;
+        if (parts.length == 1) {
+            folder = Key.ROOT;
+        } else {
+            folder = new Key.From(
+                Arrays.stream(parts)
+                    .limit(parts.length - 1)
+                    .toArray(String[]::new)
             );
+        }
+        return this.batchUpdate(folder);
     }
 
     /**
@@ -220,9 +175,39 @@ public final class Rpm {
      * @return Completable action
      */
     public Completable batchUpdate(final Key prefix) {
-        return SingleInterop.fromFuture(this.storage.list(prefix))
-            .flatMapObservable(Observable::fromIterable)
-            .filter(key -> key.string().endsWith(".rpm"))
-            .flatMapCompletable(this::update);
+        final RepoUpdater updater = new RepoUpdater(
+            this.storage,
+            this.vertx.fileSystem(),
+            this.naming,
+            this.dgst
+        );
+        return updater.deleteMetadata(prefix)
+            .andThen(SingleInterop.fromFuture(this.storage.list(prefix))
+                .flatMapObservable(Observable::fromIterable)
+                .filter(key -> key.string().endsWith(".rpm"))
+                .flatMapCompletable(key -> this.doUpdate(updater, key))
+                .andThen(updater.complete(prefix))
+            );
+    }
+
+    /**
+     * Processes next Key with RepoUpdater.
+     * @param updater RepoUpdater instance
+     * @param key Key
+     * @return Completable action
+     */
+    private CompletableSource doUpdate(final RepoUpdater updater, final Key key) {
+        return Single.fromCallable(() -> Files.createTempFile("rpm", ".rpm"))
+            .flatMap(
+                temp -> new RxFile(temp, this.vertx.fileSystem())
+                    .save(
+                        new RxStorageWrapper(this.storage).value(key)
+                            .flatMapPublisher(pub -> pub)
+                    ).andThen(Single.just(new Pkg(temp)))
+            ).flatMap(
+                pkg -> updater.processNext(key, pkg).andThen(Single.just(pkg))
+            ).flatMapCompletable(
+                pkg -> Completable.fromAction(() -> Files.delete(pkg.path()))
+            );
     }
 }
