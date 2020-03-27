@@ -33,6 +33,13 @@ import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.vertx.reactivex.core.file.FileSystem;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.StringWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.zip.GZIPOutputStream;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -42,27 +49,76 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.StringWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.zip.GZIPOutputStream;
 
-public class RepoUpdater {
+/**
+ * Coordinates generation of all metadata and process repomd.xml file.
+ * @since 0.4
+ * @checkstyle LineLengthCheck (500 lines)
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
+ */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+final class RepoUpdater {
+    /**
+     * The storage.
+     */
     private final RxStorageWrapper stg;
+
+    /**
+     * The FileSystem instance for reactive operations with files.
+     */
     private final FileSystem fsystem;
+
+    /**
+     * Naming policy.
+     */
     private final NamingPolicy policy;
+
+    /**
+     * Digest algorithm for checksum.
+     */
     private final Digest dgst;
+
+    /**
+     * Temporary primary.xml file.
+     */
     private final Path pfile;
+
+    /**
+     * Generator for primary.xml.
+     */
     private final PrimaryProcessor primary;
+
+    /**
+     * Temporary filelists.xml file.
+     */
     private final Path lfile;
+
+    /**
+     * Generator for filelists.xml.
+     */
     private final FileListsProcessor filelists;
+
+    /**
+     * Temporary other.xml file.
+     */
     private final Path ofile;
+
+    /**
+     * Generator for other.xml.
+     */
     private final OtherProcessor other;
 
-    public RepoUpdater(final Storage stg, final FileSystem fsystem, final NamingPolicy policy, final Digest dgst) {
+    /**
+     * Ctor.
+     *
+     * @param stg The storage
+     * @param fsystem The FileSystem instance
+     * @param policy Naming policy
+     * @param dgst Hashing sum computation algorithm
+     * @checkstyle ParameterNumberCheck (16 lines)
+     */
+    @SuppressWarnings("PMD.ConstructorOnlyInitializesOrCallOtherConstructors")
+    RepoUpdater(final Storage stg, final FileSystem fsystem, final NamingPolicy policy, final Digest dgst) {
         this.stg = new RxStorageWrapper(stg);
         this.fsystem = fsystem;
         this.policy = policy;
@@ -74,12 +130,18 @@ public class RepoUpdater {
             this.filelists = new FileListsProcessor(this.lfile, dgst);
             this.ofile = Files.createTempFile("other", ".xml");
             this.other = new OtherProcessor(this.ofile, dgst);
-        } catch (IOException | XMLStreamException ex) {
+        } catch (final IOException | XMLStreamException ex) {
             throw new IllegalStateException("Could not create repo updater", ex);
         }
     }
 
-    public Completable processNext(Key key, Pkg pkg) {
+    /**
+     * Generates metadata for the next RPM.
+     * @param key Key represents RPM storage path
+     * @param pkg RPM for metadata generation
+     * @return Completion or error signal
+     */
+    public Completable processNext(final Key key, final Pkg pkg) {
         return Completable.concatArray(
             this.primary.processNext(key, pkg),
             this.filelists.processNext(pkg),
@@ -87,6 +149,14 @@ public class RepoUpdater {
         );
     }
 
+    /**
+     * Finishes processing of RPMs. The following actions are performed:
+     * - publishes to storage
+     * - generates repomd.xml
+     * - delete temporary files
+     * @return Completion or error signal
+     * @checkstyle ExecutableStatementCountCheck (72 lines)
+     */
     public Completable complete() {
         final XMLOutputFactory factory = XMLOutputFactory.newFactory();
         final Path repomd;
@@ -96,13 +166,13 @@ public class RepoUpdater {
             xml = factory.createXMLStreamWriter(
                 Files.newOutputStream(repomd)
             );
-        } catch (IOException | XMLStreamException ex) {
+        } catch (final IOException | XMLStreamException ex) {
             throw new IllegalStateException("Could not complete repo update", ex);
         }
         return Completable.concatArray(
-            primary.complete(),
-            filelists.complete(),
-            other.complete()
+            this.primary.complete(),
+            this.filelists.complete(),
+            this.other.complete()
         ).andThen(
             Completable.fromAction(
                 () -> {
@@ -115,9 +185,12 @@ public class RepoUpdater {
                     xml.writeEndElement();
                 }
             )
-        ).andThen(processType(xml, pfile, "primary")
-        ).andThen(processType(xml, lfile, "filelists")
-        ).andThen(processType(xml, ofile, "other")
+        ).andThen(
+            this.processType(xml, this.pfile, "primary")
+        ).andThen(
+            this.processType(xml, this.lfile, "filelists")
+        ).andThen(
+            this.processType(xml, this.ofile, "other")
         ).andThen(
             Completable.fromAction(
                 () -> {
@@ -127,37 +200,45 @@ public class RepoUpdater {
                 }
             )
         ).andThen(
-            Single.fromCallable(() -> {
-                final Transformer transformer = TransformerFactory.newInstance().newTransformer();
-                transformer.setOutputProperty(OutputKeys.VERSION, "1.0");
-                transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-                transformer.setOutputProperty(OutputKeys.STANDALONE, "no");
-                transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-                StringWriter out = new StringWriter();
-                transformer.transform(
-                    new StAXSource(
-                        XMLInputFactory.newFactory().createXMLStreamReader(
-                            Files.newInputStream(repomd)
-                        )
-                    ),
-                    new StreamResult(out)
-                );
-                return out.toString();
-            })
+            Single.fromCallable(
+                () -> {
+                    final Transformer transformer = TransformerFactory.newInstance().newTransformer();
+                    transformer.setOutputProperty(OutputKeys.VERSION, "1.0");
+                    transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+                    transformer.setOutputProperty(OutputKeys.STANDALONE, "no");
+                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                    final StringWriter out = new StringWriter();
+                    transformer.transform(
+                        new StAXSource(
+                            XMLInputFactory.newFactory().createXMLStreamReader(
+                                Files.newInputStream(repomd)
+                            )
+                        ),
+                        new StreamResult(out)
+                    );
+                    return out.toString();
+                }
+            )
         ).flatMapCompletable(
             str ->
                 this.stg.save(
                     new Key.From("repodata/repomd.xml"),
                     new Content.From(str.getBytes())
                 )
-        ).doOnTerminate(() -> {
-            Files.delete(this.pfile);
-            Files.delete(this.lfile);
-            Files.delete(this.ofile);
-            Files.delete(repomd);
-        });
+        ).doOnTerminate(
+            () -> {
+                Files.delete(this.pfile);
+                Files.delete(this.lfile);
+                Files.delete(this.ofile);
+                Files.delete(repomd);
+            }
+        );
     }
 
+    /**
+     * Deletes old metadata from storage.
+     * @return Completion or error signal
+     */
     public Completable deleteMetadata() {
         return this.stg.list(new Key.From("repodata"))
             .flatMapCompletable(
@@ -166,6 +247,15 @@ public class RepoUpdater {
             );
     }
 
+    /**
+     * Processes metadata file and write information to repomd.xml file.
+     * @param writer Streaming XML writer
+     * @param file Metadata file to be processed
+     * @param type Type of the metadata file
+     * @return Completion or error signal
+     * @checkstyle ExecutableStatementCountCheck (81 lines)
+     */
+    @SuppressWarnings("PMD.ExcessiveMethodLength")
     private Completable processType(final XMLStreamWriter writer, final Path file, final String type) {
         return Single.fromCallable(() -> Files.createTempFile(type, ".xml.gz"))
             .flatMapCompletable(
@@ -179,70 +269,90 @@ public class RepoUpdater {
                 ).flatMapCompletable(
                     gzipname -> {
                         final String location = String.format("repodata/%s.xml.gz", gzipname);
-                        return Completable.fromAction(() -> {
-                            writer.writeStartElement("data");
-                            writer.writeAttribute("type", type);
-                            writer.writeEmptyElement("location");
-                            writer.writeAttribute("href", location);
-                        }).andThen(
-                            Single.fromCallable(() -> Files.size(file))
-                                .flatMapCompletable(opensize ->
-                                    Completable.fromAction(() -> {
+                        return Completable.fromAction(
+                            () -> {
+                                writer.writeStartElement("data");
+                                writer.writeAttribute("type", type);
+                                writer.writeEmptyElement("location");
+                                writer.writeAttribute("href", location);
+                            }
+                        ).andThen(
+                            Single.fromCallable(
+                                () -> Files.size(file)
+                            ).flatMapCompletable(
+                                opensize -> Completable.fromAction(
+                                    () -> {
                                         writer.writeStartElement("opensize");
                                         writer.writeCharacters(String.valueOf(opensize));
                                         writer.writeEndElement();
-                                    })
+                                    }
                                 )
+                            )
                         ).andThen(
-                            Single.fromCallable(() -> Files.size(gzip))
-                                .flatMapCompletable(size ->
-                                    Completable.fromAction(() -> {
+                            Single.fromCallable(
+                                () -> Files.size(gzip)
+                            ).flatMapCompletable(
+                                size -> Completable.fromAction(
+                                    () -> {
                                         writer.writeStartElement("size");
                                         writer.writeCharacters(String.valueOf(size));
                                         writer.writeEndElement();
-                                    })
+                                    }
                                 )
+                            )
                         ).andThen(
                             new Checksum(gzip, this.dgst).hash()
-                                .flatMapCompletable(checksum ->
-                                    Completable.fromAction(() -> {
-                                        writer.writeStartElement("checksum");
-                                        writer.writeAttribute("type", this.dgst.type());
-                                        writer.writeCharacters(String.valueOf(checksum));
-                                        writer.writeEndElement();
-                                    })
+                                .flatMapCompletable(
+                                    checksum -> Completable.fromAction(
+                                        () -> {
+                                            writer.writeStartElement("checksum");
+                                            writer.writeAttribute("type", this.dgst.type());
+                                            writer.writeCharacters(String.valueOf(checksum));
+                                            writer.writeEndElement();
+                                        }
+                                    )
                                 )
                         ).andThen(
                             new Checksum(file, this.dgst).hash()
-                                .flatMapCompletable(checksum ->
-                                    Completable.fromAction(() -> {
-                                        writer.writeStartElement("open-checksum");
-                                        writer.writeAttribute("type", this.dgst.type());
-                                        writer.writeCharacters(String.valueOf(checksum));
-                                        writer.writeEndElement();
-                                    })
+                                .flatMapCompletable(
+                                    checksum -> Completable.fromAction(
+                                        () -> {
+                                            writer.writeStartElement("open-checksum");
+                                            writer.writeAttribute("type", this.dgst.type());
+                                            writer.writeCharacters(String.valueOf(checksum));
+                                            writer.writeEndElement();
+                                        }
+                                    )
                                 )
                         ).andThen(
                             Single.fromCallable(() -> Files.size(file))
-                                .flatMapCompletable(opensize ->
-                                    Completable.fromAction(() -> {
-                                        writer.writeStartElement("opensize");
-                                        writer.writeCharacters(String.valueOf(opensize));
-                                        writer.writeEndElement();
-                                    })
+                                .flatMapCompletable(
+                                    opensize -> Completable.fromAction(
+                                        () -> {
+                                            writer.writeStartElement("opensize");
+                                            writer.writeCharacters(String.valueOf(opensize));
+                                            writer.writeEndElement();
+                                        }
+                                    )
                                 )
-                        ).andThen(Completable.fromAction(() -> {
-                            writer.writeStartElement("timestamp");
-                            // @checkstyle MagicNumberCheck (1 line)
-                            writer.writeCharacters(String.valueOf(System.currentTimeMillis() / 1000L));
-                            writer.writeEndElement();
-                            writer.writeEndElement();
-                        })).andThen(this.stg.save(
-                            new Key.From(location),
-                            new Content.From(
-                                new RxFile(gzip, this.fsystem).flow()
+                        ).andThen(
+                            Completable.fromAction(
+                                () -> {
+                                    writer.writeStartElement("timestamp");
+                                    // @checkstyle MagicNumberCheck (1 line)
+                                    writer.writeCharacters(String.valueOf(System.currentTimeMillis() / 1000L));
+                                    writer.writeEndElement();
+                                    writer.writeEndElement();
+                                }
                             )
-                        )).doOnTerminate(() -> Files.delete(gzip));
+                        ).andThen(
+                            this.stg.save(
+                                new Key.From(location),
+                                new Content.From(
+                                    new RxFile(gzip, this.fsystem).flow()
+                                )
+                            )
+                        ).doOnTerminate(() -> Files.delete(gzip));
                     }
                 )
             );
@@ -259,8 +369,8 @@ public class RepoUpdater {
         return Completable.fromAction(
             () -> {
                 try (InputStream fis = Files.newInputStream(input);
-                     OutputStream fos = Files.newOutputStream(output);
-                     GZIPOutputStream gzos = new GZIPOutputStream(fos)) {
+                    OutputStream fos = Files.newOutputStream(output);
+                    GZIPOutputStream gzos = new GZIPOutputStream(fos)) {
                     // @checkstyle MagicNumberCheck (1 line)
                     final byte[] buffer = new byte[65_536];
                     while (true) {

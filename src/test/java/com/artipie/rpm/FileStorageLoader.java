@@ -51,7 +51,7 @@ public final class FileStorageLoader {
      * @throws ExecutionException when upload failed
      * @throws InterruptedException when upload interrupted
      */
-    public static void uploadResource(
+    static void uploadResource(
         final Storage storage,
         final String key) throws IOException, ExecutionException, InterruptedException {
         final byte[] data = IOUtils.toByteArray(
