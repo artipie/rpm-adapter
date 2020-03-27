@@ -93,7 +93,8 @@ final class FileListsProcessor {
         );
         this.dgst = dgst;
         this.xml = XMLOutputFactory.newFactory().createXMLStreamWriter(
-            Files.newOutputStream(this.tmpfile)
+            Files.newOutputStream(this.tmpfile),
+            "UTF-8"
         );
         this.lock = new ReactiveLock();
         this.writeHeader();

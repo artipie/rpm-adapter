@@ -164,7 +164,8 @@ final class RepoUpdater {
         try {
             repomd = Files.createTempFile("repomd", ".xml");
             xml = factory.createXMLStreamWriter(
-                Files.newOutputStream(repomd)
+                Files.newOutputStream(repomd),
+                "UTF-8"
             );
         } catch (final IOException | XMLStreamException ex) {
             throw new IllegalStateException("Could not complete repo update", ex);
