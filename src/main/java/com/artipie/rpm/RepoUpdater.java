@@ -176,7 +176,7 @@ final class RepoUpdater {
         ).andThen(
             Completable.fromAction(
                 () -> {
-                    xml.writeStartDocument();
+                    xml.writeStartDocument("UTF-8", "1.0");
                     xml.writeStartElement("repomd");
                     xml.writeDefaultNamespace("http://linux.duke.edu/metadata/repo");
                     xml.writeStartElement("revision");

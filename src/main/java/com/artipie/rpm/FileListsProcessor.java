@@ -164,7 +164,7 @@ final class FileListsProcessor {
      * @throws XMLStreamException when XML generation causes error
      */
     private void writeHeader() throws XMLStreamException {
-        this.xml.writeStartDocument();
+        this.xml.writeStartDocument("UTF-8", "1.0");
         this.xml.writeStartElement("filelists");
         this.xml.writeDefaultNamespace("http://linux.duke.edu/metadata/filelists");
         this.xml.writeAttribute("packages", "-1");

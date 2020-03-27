@@ -163,7 +163,7 @@ final class OtherProcessor {
      * @throws XMLStreamException when XML generation causes error
      */
     private void writeHeader() throws XMLStreamException {
-        this.xml.writeStartDocument();
+        this.xml.writeStartDocument("UTF-8", "1.0");
         this.xml.writeStartElement("otherdata");
         this.xml.writeDefaultNamespace("http://linux.duke.edu/metadata/other");
         this.xml.writeAttribute("packages", "-1");

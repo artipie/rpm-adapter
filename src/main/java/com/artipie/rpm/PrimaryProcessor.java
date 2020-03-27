@@ -232,7 +232,7 @@ public class PrimaryProcessor {
      * @throws XMLStreamException when XML generation causes error
      */
     private void writeHeader() throws XMLStreamException {
-        this.xml.writeStartDocument();
+        this.xml.writeStartDocument("UTF-8", "1.0");
         this.xml.writeStartElement("metadata");
         this.xml.writeDefaultNamespace("http://linux.duke.edu/metadata/common");
         this.xml.writeNamespace("rpm", "http://linux.duke.edu/metadata/rpm");
