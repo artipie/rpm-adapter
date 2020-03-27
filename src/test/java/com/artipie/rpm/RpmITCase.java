@@ -23,11 +23,9 @@
  */
 package com.artipie.rpm;
 
-import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
-import com.artipie.asto.fs.RxFile;
 import com.jcabi.log.Logger;
 import io.vertx.reactivex.core.Vertx;
 import java.io.BufferedReader;
@@ -36,7 +34,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -94,21 +91,8 @@ public final class RpmITCase {
         final Vertx vertx = Vertx.vertx();
         final Storage storage = new FileStorage(RpmITCase.repodir, vertx.fileSystem());
         final Rpm rpm = new Rpm.Base(storage, vertx);
-        final Path bin = RpmITCase.folder.resolve("x.rpm");
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
-        Files.copy(
-            RpmITCase.class.getResourceAsStream(
-                String.format("/%s", key)
-            ),
-            bin,
-            StandardCopyOption.REPLACE_EXISTING
-        );
-        storage.save(
-            new Key.From(key),
-            new Content.From(
-                new RxFile(bin, vertx.fileSystem()).flow()
-            )
-        ).get();
+        FileStorageLoader.uploadResource(storage, key);
         rpm.batchUpdate(Key.ROOT).blockingAwait();
         final Container.ExecResult result = RpmITCase.yumutils.execInContainer(
             "/bin/bash",
@@ -146,26 +130,12 @@ public final class RpmITCase {
         final Path repo = RpmITCase.folder.resolve("rpm-files-repo");
         final Storage storage = new FileStorage(repo, vertx.fileSystem());
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
-        final Path bin = RpmITCase.folder.resolve(key);
-        Files.copy(
-            RpmITCase.class.getResourceAsStream(String.format("/%s", key)),
-            bin,
-            StandardCopyOption.REPLACE_EXISTING
-        );
-        storage.save(
-            new Key.From(key),
-            new Content.From(
-                new RxFile(bin, vertx.fileSystem()).flow()
-            )
-        ).get();
+        FileStorageLoader.uploadResource(storage, key);
         final Rpm rpm = new Rpm.Base(storage, vertx);
         rpm.update(new Key.From(key)).blockingAwait();
-        final String expected = this.etalon(bin);
+        final String expected = this.etalon(repo.resolve(key));
         final String actual = primary(repo);
         comparePrimaryFiles(expected, actual);
-        RpmITCase.yumutils.execInContainer(
-            "rm", "-fr", "/createrepo-repo/repodata"
-        );
     }
 
     /**
@@ -192,6 +162,9 @@ public final class RpmITCase {
      */
     @AfterAll
     static void stopContainer() throws Exception {
+        RpmITCase.yumutils.execInContainer(
+            "rm", "-fr", "/createrepo-repo/repodata"
+        );
         RpmITCase.yumutils.stop();
     }
 
