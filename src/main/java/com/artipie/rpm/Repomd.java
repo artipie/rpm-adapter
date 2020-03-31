@@ -139,12 +139,6 @@ final class Repomd {
      * @param act Action
      * @param repomd The temp
      * @return Completion or error signal
-     * @todo #41:30min Continue refactoring Repomd.performUpdate method
-     *  and all other dependencies: it is very long and complex to read
-     *  and understand without reading everything. Most probably this
-     *  method can be split into multiple methods or some parts can be
-     *  moved to another class. For example the content of the zipWith
-     *  should be extracted from here
      */
     private CompletableSource performUpdate(
         final String type,
@@ -162,6 +156,13 @@ final class Repomd {
                 )
             )
             .flatMap(file -> act.update(file).andThen(Single.just(file)))
+            /**
+             * @todo #41:30min Continue refactoring Repomd.performUpdate method
+             *  and all other dependencies: it is very long and complex to read
+             *  and understand without reading everything. The content of
+             *  the zipWith here should be extracted in its own method. If possible
+             *  make it a class that can be tested by itself.
+             */
             .zipWith(
                 Single.fromCallable(() -> Files.createTempFile(type, ".xml.gz")),
                 (src, gzip) -> Repomd.gzip(src, gzip).andThen(
@@ -189,6 +190,10 @@ final class Repomd {
      *
      * @param repomd The temp
      * @return Completion or error signal
+     * @todo #41:30min This method and saveGzip are very similar
+     *  but implemented differently. Factor those together as
+     *  the same method based on the implementation of the saveGzip
+     *  that is closer to the rx paradigm than saveRepo.
      */
     private CompletableSource saveRepo(final Path repomd) {
         return Completable.fromAction(
