@@ -139,6 +139,11 @@ final class Repomd {
      * @param act Action
      * @param repomd The temp
      * @return Completion or error signal
+     * @todo #41:30min Continue refactoring Repomd.performUpdate method
+     *  and all other dependencies: it is very long and complex to read
+     *  and understand without reading everything. The content of
+     *  the zipWith below should be extracted in its own method. If possible
+     *  make it a class that can be tested by itself.
      */
     private CompletableSource performUpdate(
         final String type,
@@ -156,13 +161,6 @@ final class Repomd {
                 )
             )
             .flatMap(file -> act.update(file).andThen(Single.just(file)))
-            /**
-             * @todo #41:30min Continue refactoring Repomd.performUpdate method
-             *  and all other dependencies: it is very long and complex to read
-             *  and understand without reading everything. The content of
-             *  the zipWith here should be extracted in its own method. If possible
-             *  make it a class that can be tested by itself.
-             */
             .zipWith(
                 Single.fromCallable(() -> Files.createTempFile(type, ".xml.gz")),
                 (src, gzip) -> Repomd.gzip(src, gzip).andThen(
