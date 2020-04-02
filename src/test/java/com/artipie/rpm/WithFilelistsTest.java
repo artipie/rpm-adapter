@@ -64,7 +64,7 @@ public class WithFilelistsTest {
         final String key = "with-fileList.aarch64.rpm";
         final Storage storage = WithFilelistsTest.save(folder, store, key, this.vertx);
         new WithFilelists(
-            new Rpm.Base(storage, this.vertx)
+            new RpmAbstraction.Base(storage, this.vertx)
         ).update(
             new Key.From(key)
         ).blockingAwait();

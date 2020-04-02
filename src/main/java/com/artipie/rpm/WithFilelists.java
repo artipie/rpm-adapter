@@ -25,6 +25,7 @@ package com.artipie.rpm;
 
 import com.artipie.asto.Key;
 import io.reactivex.Completable;
+import io.reactivex.CompletableSource;
 
 /**
  * Rpm decorator which provide filelist creation on update.
@@ -35,19 +36,19 @@ import io.reactivex.Completable;
  *  upload. Implement this behavior and then enable the test in
  *  WithFilelistsTest.
  */
-public final class WithFilelists implements Rpm {
+public final class WithFilelists implements RpmAbstraction {
 
     /**
      * Original Rpm.
      */
-    private final Rpm origin;
+    private final RpmAbstraction origin;
 
     /**
      * Constructor.
      *
      * @param rpm Rpm to be wrapped.
      */
-    public WithFilelists(final Rpm rpm) {
+    public WithFilelists(final RpmAbstraction rpm) {
         this.origin = rpm;
     }
 
@@ -59,5 +60,10 @@ public final class WithFilelists implements Rpm {
     @Override
     public Completable batchUpdate(final Key prefix) {
         return this.origin.batchUpdate(prefix);
+    }
+
+    @Override
+    public CompletableSource doUpdate(RepoUpdater updater, Key key) {
+        return this.origin.doUpdate(updater, key);
     }
 }

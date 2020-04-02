@@ -54,11 +54,72 @@ import java.util.Arrays;
  * That's it.
  *
  * @since 0.1
+ * @deprecated Use {@link RpmAbstraction.Base} instead.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+@Deprecated
+public final class Rpm {
 
-public interface Rpm {
+    /**
+     * Rpm abstraction.
+     */
+    private final RpmAbstraction rpm;
+
+    /**
+     * Ctor.
+     * @param stg Storage
+     * @deprecated use {@link #Rpm(Storage, Vertx)} instead
+     */
+    @Deprecated
+    public Rpm(final Storage stg) {
+        this(stg, Vertx.vertx());
+    }
+
+    /**
+     * Ctor.
+     * @param stg Storage
+     * @param vertx The Vertx instance
+     */
+    public Rpm(final Storage stg, final Vertx vertx) {
+        this(stg, vertx, NamingPolicy.DEFAULT, Digest.SHA256);
+    }
+
+    /**
+     * Ctor.
+     * @param stg The storage
+     * @param naming RPM files naming policy
+     * @param dgst Hashing sum computation algorithm
+     * @deprecated use {@link #Rpm(Storage, Vertx, NamingPolicy, Digest)} instead
+     */
+    @Deprecated
+    public Rpm(final Storage stg, final NamingPolicy naming, final Digest dgst) {
+        this(stg, Vertx.vertx(), naming, dgst);
+    }
+
+    /**
+     * Ctor.
+     * @param stg The storage
+     * @param vertx The Vertx instance
+     * @param naming RPM files naming policy
+     * @param dgst Hashing sum computation algorithm
+     * @checkstyle ParameterNumberCheck (10 lines)
+     */
+    public Rpm(final Storage stg, final Vertx vertx, final NamingPolicy naming, final Digest dgst) {
+        this.rpm = new RpmAbstraction.Base(stg, vertx, naming, dgst);
+    }
+
+    /**
+     * Update the meta info for single artifact.
+     *
+     * @param key The name of the file just updated
+     * @return Completion or error signal.
+     * @deprecated use {@link #update(Key)} instead
+     */
+    @Deprecated
+    public Completable update(final String key) {
+        return this.update(new Key.From(key));
+    }
 
     /**
      * Update the meta info for single artifact.
@@ -66,141 +127,37 @@ public interface Rpm {
      * @param key The name of the file just updated
      * @return Completion or error signal.
      */
-    Completable update(Key key);
+    public Completable update(final Key key) {
+        return this.rpm.update(key);
+    }
 
     /**
      * Batch update RPM files for repository.
-     *
+     * @param prefix Repository key prefix (String)
+     * @return Completable action
+     * @deprecated use {@link #batchUpdate(Key)} instead
+     */
+    @Deprecated
+    public Completable batchUpdate(final String prefix) {
+        return this.batchUpdate(new Key.From(prefix));
+    }
+
+    /**
+     * Batch update RPM files for repository.
      * @param prefix Repository key prefix
      * @return Completable action
      */
-    Completable batchUpdate(Key prefix);
+    public Completable batchUpdate(final Key prefix) {
+        return this.rpm.batchUpdate(prefix);
+    }
 
     /**
-     * Base implementation for Rpm.
-     *
-     * @since 0.3.3
+     * Processes next Key with RepoUpdater.
+     * @param updater RepoUpdater instance
+     * @param key Key
+     * @return Completable action
      */
-    final class Base implements Rpm {
-
-        /**
-         * The storage.
-         */
-        private final Storage storage;
-
-        /**
-         * The vertx instance.
-         */
-        private final Vertx vertx;
-
-        /**
-         * Access lock for primary.xml file.
-         */
-        private final ReactiveLock primary;
-
-        /**
-         * Access lock for filelists.xml file.
-         */
-        private final ReactiveLock filelists;
-
-        /**
-         * Access lock for other.xml file.
-         */
-        private final ReactiveLock other;
-
-        /**
-         * RPM files naming policy.
-         */
-        private final NamingPolicy naming;
-
-        /**
-         * Hashing sum computation algorithm.
-         */
-        private final Digest dgst;
-
-        /**
-         * Ctor.
-         *
-         * @param stg Storage
-         * @param vertx The Vertx instance
-         */
-        public Base(final Storage stg, final Vertx vertx) {
-            this(stg, vertx, NamingPolicy.DEFAULT, Digest.SHA256);
-        }
-
-        /**
-         * Ctor.
-         *
-         * @param stg The storage
-         * @param vertx The Vertx instance
-         * @param naming RPM files naming policy
-         * @param dgst Hashing sum computation algorithm
-         * @checkstyle ParameterNumberCheck (10 lines)
-         */
-        public Base(final Storage stg, final Vertx vertx,
-            final NamingPolicy naming, final Digest dgst) {
-            this.storage = stg;
-            this.vertx = vertx;
-            this.naming = naming;
-            this.dgst = dgst;
-            this.other = new ReactiveLock();
-            this.filelists = new ReactiveLock();
-            this.primary = new ReactiveLock();
-        }
-
-        @Override
-        public Completable update(final Key key) {
-            final String[] parts = key.string().split("/");
-            final Key folder;
-            if (parts.length == 1) {
-                folder = Key.ROOT;
-            } else {
-                folder = new Key.From(
-                    Arrays.stream(parts)
-                        .limit(parts.length - 1)
-                        .toArray(String[]::new)
-                );
-            }
-            return this.batchUpdate(folder);
-        }
-
-        @Override
-        public Completable batchUpdate(final Key prefix) {
-            final RepoUpdater updater = new RepoUpdater(
-                this.storage,
-                this.vertx.fileSystem(),
-                this.naming,
-                this.dgst
-            );
-            return updater.deleteMetadata(prefix)
-                .andThen(SingleInterop.fromFuture(this.storage.list(prefix))
-                    .flatMapObservable(Observable::fromIterable)
-                    .filter(key -> key.string().endsWith(".rpm"))
-                    .flatMapCompletable(key -> this.doUpdate(updater, key))
-                    .andThen(updater.complete(prefix))
-                );
-        }
-
-        /**
-         * Processes next Key with RepoUpdater.
-         *
-         * @param updater RepoUpdater instance
-         * @param key Key
-         * @return Completable action
-         */
-        private CompletableSource doUpdate(final RepoUpdater updater, final Key key) {
-            return Single.fromCallable(() -> Files.createTempFile("rpm", ".rpm"))
-                .flatMap(
-                    temp -> new RxFile(temp, this.vertx.fileSystem())
-                        .save(
-                            new RxStorageWrapper(this.storage).value(key)
-                                .flatMapPublisher(pub -> pub)
-                        ).andThen(Single.just(new Pkg(temp)))
-                ).flatMap(
-                    pkg -> updater.processNext(key, pkg).andThen(Single.just(pkg))
-                ).flatMapCompletable(
-                    pkg -> Completable.fromAction(() -> Files.delete(pkg.path()))
-                );
-        }
+    private CompletableSource doUpdate(final RepoUpdater updater, final Key key) {
+        return this.rpm.doUpdate(updater, key);
     }
 }
