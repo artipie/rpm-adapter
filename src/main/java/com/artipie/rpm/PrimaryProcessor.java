@@ -295,10 +295,11 @@ public class PrimaryProcessor {
         final int[] dirsidx = (int[]) pkg.header().getEntry(Header.HeaderTag.DIRINDEXES).getValues();
         final Set<String> dirset = Arrays.stream(dirs).collect(Collectors.toSet());
         for (int idx = 0; idx < files.length; idx += 1) {
-            if (files[idx].charAt(0) == '.') {
+            final String fle = files[idx];
+            if (fle.isEmpty() || fle.charAt(0) == '.') {
                 continue;
             }
-            final String path = String.format("%s%s", dirs[dirsidx[idx]], files[idx]);
+            final String path = String.format("%s%s", dirs[dirsidx[idx]], fle);
             this.xml.writeStartElement("file");
             if (dirset.contains(String.format("%s/", path))) {
                 this.xml.writeAttribute("type", "dir");
