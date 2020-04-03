@@ -29,7 +29,7 @@ Some valuable references:
   * [RPM format](https://rpm-packaging-guide.github.io/)
   * [Yum repository internals](https://blog.packagecloud.io/eng/2015/07/20/yum-repository-internals/) (blog post)
   * [YUM repository and package management: Complete Tutorial](https://www.slashroot.in/yum-repository-and-package-management-complete-tutorial) (blog post)
-  * [The Origin of RPM Content](https://docs.pulpproject.org/plugins/pulp_rpm/tech-reference/rpm.html)
+  * [The Origin of RPM Content](https://docs.pulpproject.org/en/2.9/plugins/pulp_rpm/tech-reference/rpm.html)
 
 This is the dependency you need:
 
@@ -40,7 +40,7 @@ This is the dependency you need:
   <version>[...]</version>
 </dependency>
 ```
-
+ 
 Then, you implement `com.yegor256.rpm.Storage` interface.
 
 Then, you make an instance of `Rpm` class with your storage
