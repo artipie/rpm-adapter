@@ -26,7 +26,6 @@ package com.artipie.rpm;
 import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.fs.RxFile;
 import com.artipie.asto.rx.RxStorageWrapper;
 import com.jcabi.xml.XML;
@@ -188,18 +187,9 @@ final class Repomd {
      *
      * @param repomd The temp
      * @return Completion or error signal
-     * @todo #41:30min This method and saveGzip are very similar
-     *  but implemented differently. Factor those together as
-     *  the same method based on the implementation of the saveGzip
-     *  that is closer to the rx paradigm than saveRepo.
      */
     private CompletableSource saveRepo(final Path repomd) {
-        return Completable.fromAction(
-            () -> new BlockingStorage(this.storage).save(
-                new Key.From("repodata/repomd.xml"),
-                Files.readAllBytes(repomd)
-            )
-        );
+        return this.saveGzip(repomd, "repodata/repomd.xml");
     }
 
     /**
