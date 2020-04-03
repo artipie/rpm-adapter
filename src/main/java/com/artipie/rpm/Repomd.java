@@ -139,11 +139,6 @@ final class Repomd {
      * @param act Action
      * @param repomd The temp
      * @return Completion or error signal
-     * @todo #41:30min Continue refactoring Repomd.performUpdate method
-     *  and all other dependencies: it is very long and complex to read
-     *  and understand without reading everything. The content of
-     *  the zipWith below should be extracted in its own method. If possible
-     *  make it a class that can be tested by itself.
      */
     private CompletableSource performUpdate(
         final String type,
@@ -160,10 +155,26 @@ final class Repomd {
                     file
                 )
             )
-            .flatMap(file -> act.update(file).andThen(Single.just(file)))
-            .zipWith(
-                Single.fromCallable(() -> Files.createTempFile(type, ".xml.gz")),
-                (src, gzip) -> Repomd.gzip(src, gzip).andThen(
+            .flatMap(file -> act.update(file).toSingleDefault(file))
+            .flatMap(file -> this.buildRepoXml(type, file))
+            .flatMapCompletable(new Update(repomd)::apply)
+            .andThen(this.saveRepo(repomd));
+    }
+
+    /**
+     * Build repo xml by preparing its content.
+     *
+     * @param type The file type
+     * @param src Source metadata file
+     * @return Completion or error signal
+     * @todo #60:30min Transform this method and all its dependent (in
+     *  particular: saveGzip, repoXml, gzip, etc) in a self-sufficient
+     *  class that extends Single, and add tests for it.
+     */
+    private Single<RepoXml> buildRepoXml(final String type, final Path src) {
+        return Single.fromCallable(() -> Files.createTempFile(type, ".xml.gz"))
+            .flatMap(
+                gzip -> Repomd.gzip(src, gzip).andThen(
                     SingleInterop.fromFuture(
                         this.policy.name(
                             type,
@@ -177,10 +188,7 @@ final class Repomd {
                         )
                     )
                 )
-            )
-            .flatMap(self -> self)
-            .flatMapCompletable(new Update(repomd)::apply)
-            .andThen(this.saveRepo(repomd));
+            );
     }
 
     /**
