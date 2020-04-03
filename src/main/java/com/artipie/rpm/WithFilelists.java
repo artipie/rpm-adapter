@@ -63,7 +63,7 @@ public final class WithFilelists implements RpmAbstraction {
     }
 
     @Override
-    public CompletableSource doUpdate(RepoUpdater updater, Key key) {
+    public CompletableSource doUpdate(final RepoUpdater updater, final Key key) {
         return this.origin.doUpdate(updater, key);
     }
 }

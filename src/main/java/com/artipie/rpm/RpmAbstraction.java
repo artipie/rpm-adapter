@@ -83,7 +83,7 @@ public interface RpmAbstraction {
      * @param key Key
      * @return Completable action
      */
-    CompletableSource doUpdate(final RepoUpdater updater, final Key key);
+    CompletableSource doUpdate(RepoUpdater updater, Key key);
 
     /**
      * Base implementation for Rpm.

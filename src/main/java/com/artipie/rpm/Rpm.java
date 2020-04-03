@@ -25,16 +25,8 @@ package com.artipie.rpm;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.asto.fs.RxFile;
-import com.artipie.asto.rx.RxStorageWrapper;
-import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Completable;
-import io.reactivex.CompletableSource;
-import io.reactivex.Observable;
-import io.reactivex.Single;
 import io.vertx.reactivex.core.Vertx;
-import java.nio.file.Files;
-import java.util.Arrays;
 
 /**
  * The RPM front.
@@ -64,7 +56,7 @@ public final class Rpm {
     /**
      * Rpm abstraction.
      */
-    private final RpmAbstraction rpm;
+    private final RpmAbstraction origin;
 
     /**
      * Ctor.
@@ -106,7 +98,7 @@ public final class Rpm {
      * @checkstyle ParameterNumberCheck (10 lines)
      */
     public Rpm(final Storage stg, final Vertx vertx, final NamingPolicy naming, final Digest dgst) {
-        this.rpm = new RpmAbstraction.Base(stg, vertx, naming, dgst);
+        this.origin = new RpmAbstraction.Base(stg, vertx, naming, dgst);
     }
 
     /**
@@ -128,7 +120,7 @@ public final class Rpm {
      * @return Completion or error signal.
      */
     public Completable update(final Key key) {
-        return this.rpm.update(key);
+        return this.origin.update(key);
     }
 
     /**
@@ -148,16 +140,7 @@ public final class Rpm {
      * @return Completable action
      */
     public Completable batchUpdate(final Key prefix) {
-        return this.rpm.batchUpdate(prefix);
+        return this.origin.batchUpdate(prefix);
     }
 
-    /**
-     * Processes next Key with RepoUpdater.
-     * @param updater RepoUpdater instance
-     * @param key Key
-     * @return Completable action
-     */
-    private CompletableSource doUpdate(final RepoUpdater updater, final Key key) {
-        return this.rpm.doUpdate(updater, key);
-    }
 }
