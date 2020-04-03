@@ -54,7 +54,7 @@ import org.xmlunit.diff.Diff;
 import org.xmlunit.diff.Difference;
 
 /**
- * Integration case for {@link Rpm}.
+ * Integration case for {@link RpmAbstraction.Base}.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @since 0.1
  */
@@ -90,7 +90,7 @@ public final class RpmITCase {
     public void savesAndLoads() throws Exception {
         final Vertx vertx = Vertx.vertx();
         final Storage storage = new FileStorage(RpmITCase.repodir, vertx.fileSystem());
-        final Rpm rpm = new Rpm(storage, vertx);
+        final RpmAbstraction rpm = new RpmAbstraction.Base(storage, vertx);
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
         FileStorageLoader.uploadResource(storage, key);
         rpm.batchUpdate(Key.ROOT).blockingAwait();
@@ -131,7 +131,7 @@ public final class RpmITCase {
         final Storage storage = new FileStorage(repo, vertx.fileSystem());
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
         FileStorageLoader.uploadResource(storage, key);
-        final Rpm rpm = new Rpm(storage, vertx);
+        final RpmAbstraction rpm = new RpmAbstraction.Base(storage, vertx);
         rpm.update(new Key.From(key)).blockingAwait();
         final String expected = this.etalon(repo.resolve(key));
         final String actual = primary(repo);

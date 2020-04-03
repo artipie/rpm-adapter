@@ -25,16 +25,8 @@ package com.artipie.rpm;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.asto.fs.RxFile;
-import com.artipie.asto.rx.RxStorageWrapper;
-import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Completable;
-import io.reactivex.CompletableSource;
-import io.reactivex.Observable;
-import io.reactivex.Single;
 import io.vertx.reactivex.core.Vertx;
-import java.nio.file.Files;
-import java.util.Arrays;
 
 /**
  * The RPM front.
@@ -54,30 +46,17 @@ import java.util.Arrays;
  * That's it.
  *
  * @since 0.1
+ * @deprecated Use {@link RpmAbstraction.Base} instead.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+@Deprecated
 public final class Rpm {
 
     /**
-     * The storage.
+     * Rpm abstraction.
      */
-    private final Storage storage;
-
-    /**
-     * The vertx instance.
-     */
-    private final Vertx vertx;
-
-    /**
-     * RPM files naming policy.
-     */
-    private final NamingPolicy naming;
-
-    /**
-     * Hashing sum computation algorithm.
-     */
-    private final Digest dgst;
+    private final RpmAbstraction origin;
 
     /**
      * Ctor.
@@ -119,10 +98,7 @@ public final class Rpm {
      * @checkstyle ParameterNumberCheck (10 lines)
      */
     public Rpm(final Storage stg, final Vertx vertx, final NamingPolicy naming, final Digest dgst) {
-        this.storage = stg;
-        this.vertx = vertx;
-        this.naming = naming;
-        this.dgst = dgst;
+        this.origin = new RpmAbstraction.Base(stg, vertx, naming, dgst);
     }
 
     /**
@@ -144,18 +120,7 @@ public final class Rpm {
      * @return Completion or error signal.
      */
     public Completable update(final Key key) {
-        final String[] parts = key.string().split("/");
-        final Key folder;
-        if (parts.length == 1) {
-            folder = Key.ROOT;
-        } else {
-            folder = new Key.From(
-                Arrays.stream(parts)
-                    .limit(parts.length - 1)
-                    .toArray(String[]::new)
-            );
-        }
-        return this.batchUpdate(folder);
+        return this.origin.update(key);
     }
 
     /**
@@ -175,39 +140,7 @@ public final class Rpm {
      * @return Completable action
      */
     public Completable batchUpdate(final Key prefix) {
-        final RepoUpdater updater = new RepoUpdater(
-            this.storage,
-            this.vertx.fileSystem(),
-            this.naming,
-            this.dgst
-        );
-        return updater.deleteMetadata(prefix)
-            .andThen(SingleInterop.fromFuture(this.storage.list(prefix))
-                .flatMapObservable(Observable::fromIterable)
-                .filter(key -> key.string().endsWith(".rpm"))
-                .flatMapCompletable(key -> this.doUpdate(updater, key))
-                .andThen(updater.complete(prefix))
-            );
+        return this.origin.batchUpdate(prefix);
     }
 
-    /**
-     * Processes next Key with RepoUpdater.
-     * @param updater RepoUpdater instance
-     * @param key Key
-     * @return Completable action
-     */
-    private CompletableSource doUpdate(final RepoUpdater updater, final Key key) {
-        return Single.fromCallable(() -> Files.createTempFile("rpm", ".rpm"))
-            .flatMap(
-                temp -> new RxFile(temp, this.vertx.fileSystem())
-                    .save(
-                        new RxStorageWrapper(this.storage).value(key)
-                            .flatMapPublisher(pub -> pub)
-                    ).andThen(Single.just(new Pkg(temp)))
-            ).flatMap(
-                pkg -> updater.processNext(key, pkg).andThen(Single.just(pkg))
-            ).flatMapCompletable(
-                pkg -> Completable.fromAction(() -> Files.delete(pkg.path()))
-            );
-    }
 }

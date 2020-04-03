@@ -51,7 +51,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Test case for {@link Rpm}.
+ * Test case for {@link RpmAbstraction}.
  *
  * @since 0.0.3
  * @todo #32:30min This test class needs refactoring. What is still need to be done
@@ -91,7 +91,7 @@ public final class RpmTest {
         final String key = "nginx-1.16.1-1.el8.ngx.x86_64.rpm";
         final Storage storage = new FileStorage(store, this.vertx.fileSystem());
         FileStorageLoader.uploadResource(storage, key);
-        final Rpm rpm = new Rpm(storage, this.vertx);
+        final RpmAbstraction rpm = new RpmAbstraction.Base(storage, this.vertx);
         rpm.update(new Key.From(key)).blockingAwait();
         final Path primary = folder.resolve("primary.xml.gz");
         new RxFile(primary, this.vertx.fileSystem()).save(
@@ -161,7 +161,7 @@ public final class RpmTest {
 
         @Test
         public void defaultPolicy() throws Exception {
-            new Rpm(this.storage, RpmTest.this.vertx)
+            new RpmAbstraction.Base(this.storage, RpmTest.this.vertx)
                 .update(
                     new Key.From(NamingPolicyAware.KEY)
                 ).blockingAwait();
@@ -197,7 +197,7 @@ public final class RpmTest {
 
         @SuppressWarnings("PMD.AvoidCatchingGenericException")
         private void updateAarchRpmWithPrefixes(final Digest digest) throws Exception {
-            new Rpm(
+            new RpmAbstraction.Base(
                 this.storage,
                 RpmTest.this.vertx,
                 new NamingPolicy.HashPrefixed(digest),
