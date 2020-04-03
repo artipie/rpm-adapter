@@ -151,14 +151,14 @@ final class Repomd {
         final Path repomd
     ) {
         return Single.fromCallable(() -> Files.createTempFile(type, ".xml"))
-            .doOnSuccess(
+            .flatMap(
                 file -> this.metaFile(
                     new XMLDocument(repomd.toFile())
                         .registerNs("ns", "http://linux.duke.edu/metadata/repo").nodes(
                         String.format("/ns:repomd/data[type='%s']", type)
                     ),
                     file
-                )
+                ).toSingleDefault(file)
             )
             .flatMap(file -> act.update(file).andThen(Single.just(file)))
             .zipWith(
@@ -235,7 +235,7 @@ final class Repomd {
         final String gziploc
     ) {
         return Single.just(new RepoXml())
-            .doOnSuccess(
+            .map(
                 rxml -> rxml.base(type, gziploc)
             ).zipWith(
                 Single.fromCallable(() -> Files.size(src)), RepoXml::openSize
