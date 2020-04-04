@@ -1,48 +1,98 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2019 Yegor Bugayenko
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 package com.artipie.rpm;
 
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
-public class Cli {
-    private static final Option namingOption = Option.builder("np")
-            .longOpt( "naming-policy" )
-            .desc("(optional, default simple) configures NamingPolicy for Rpm")
-            .hasArg()
-            .build();
-    private static final Option digestOption = Option.builder("d")
-            .longOpt( "digest" )
-            .desc("(optional, default sha256) configures Digest instance for Rpm")
-            .hasArg()
-            .build();
+/**
+ * Cli tool main class.
+ *
+ * @since 0.1
+ */
+public final class Cli {
+    /**
+     * Naming policy option object.
+     */
+    private static final Option NAMING_OPTION = Option.builder("np")
+        .longOpt("naming-policy")
+        .desc("(optional, default simple) configures NamingPolicy for Rpm")
+        .hasArg()
+        .build();
 
-    public static void main(String[] args) {
-        try {
-            CommandLine cmd = parseCommand(args);
-            /*
-            * @todo  #68:30min start execution of the command
-            *  you can use cmd.getArgs() to get args as array of strings
-            *  you would expect something like ["update", "./package.rpm"]
-            *  use this link for documentation
-            *  https://commons.apache.org/proper/commons-cli/usage.html
-            * */
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
+    /**
+     * Digest option object.
+     */
+    private static final Option DIGEST_OPTION = Option.builder("d")
+        .longOpt("digest")
+        .desc("(optional, default sha256) configures Digest instance for Rpm")
+        .hasArg()
+        .build();
+
+    /**
+     * Ctor.
+     */
+    private Cli() {
+    }
+
+    /**
+     * Main method of Cli tool.
+     *
+     * @param args Arguments of command line
+     * @throws ParseException if parsing failed
+     * @todo  #68:30min start execution of the command
+     *  you can use cmd.getArgs() to get args as array of strings
+     *  you would expect something like ["update", "./package.rpm"]
+     *  use this link for documentation
+     *  https://commons.apache.org/proper/commons-cli/usage.html
+     */
+    @SuppressWarnings("ProhibitPublicStaticMethods")
+    public static void main(final String[] args) throws ParseException {
+        @SuppressWarnings("PMD.UnusedLocalVariable")
+        final CommandLine cmd = parseCommand(args);
     }
 
     /**
      * Parse the args and get the command.
      *
-     * @param args array of string of arguments
-     * @return CommandLine object of the command
+     * @param args Array of string of arguments
+     * @return CommandLine Object of the command
      * @throws ParseException if parsing failed
      */
-    static private CommandLine parseCommand(String[] args) throws ParseException {
-        Options options = new Options();
-        options.addOption(namingOption);
-        options.addOption(digestOption);
-        CommandLineParser parser = new DefaultParser();
-        CommandLine c = parser.parse(options, args);
-        if(c.getArgs().length!=2) throw new ParseException("Wrong arguments count, something is missing");
-        return c;
+    private static CommandLine parseCommand(final String... args) throws ParseException {
+        final Options options = new Options();
+        options.addOption(Cli.NAMING_OPTION);
+        options.addOption(Cli.DIGEST_OPTION);
+        final CommandLineParser parser = new DefaultParser();
+        final CommandLine cmd = parser.parse(options, args);
+        if (cmd.getArgs().length != 2) {
+            throw new ParseException("Wrong arguments count, something is missing");
+        }
+        return cmd;
     }
 }
