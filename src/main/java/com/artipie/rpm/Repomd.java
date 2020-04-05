@@ -52,6 +52,11 @@ import java.util.zip.GZIPOutputStream;
 final class Repomd {
 
     /**
+     * Path of repomd file.
+     */
+    private static final String FILE_PATH = "repodata/repomd.xml";
+
+    /**
      * The storage.
      */
     private final Storage storage;
@@ -109,14 +114,14 @@ final class Repomd {
      */
     private Completable loadRepomd(final Path file) {
         return SingleInterop.fromFuture(
-            this.storage.exists(new Key.From("repodata/repomd.xml"))
+            this.storage.exists(new Key.From(Repomd.FILE_PATH))
         ).flatMapCompletable(
             exists -> {
                 final Completable res;
                 if (exists) {
                     res = new RxFile(file, this.vertx.fileSystem()).save(
                         new RxStorageWrapper(this.storage)
-                            .value(new Key.From("repodata/repomd.xml"))
+                            .value(new Key.From(Repomd.FILE_PATH))
                             .flatMapPublisher(pub -> pub)
                     );
                 } else {
@@ -189,7 +194,7 @@ final class Repomd {
      * @return Completion or error signal
      */
     private CompletableSource saveRepo(final Path repomd) {
-        return this.saveGzip(repomd, "repodata/repomd.xml");
+        return this.saveGzip(repomd, Repomd.FILE_PATH);
     }
 
     /**
