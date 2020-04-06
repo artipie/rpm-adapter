@@ -55,6 +55,21 @@ public final class Cli {
         .build();
 
     /**
+     * Options object.
+     */
+    private static final Options OPTIONS = new Options();
+
+    static {
+        Cli.OPTIONS.addOption(Cli.NAMING_OPTION);
+        Cli.OPTIONS.addOption(Cli.DIGEST_OPTION);
+    }
+
+    /**
+     * Command line parser object.
+     */
+    private static final CommandLineParser PARSER = new DefaultParser();
+
+    /**
      * Ctor.
      */
     private Cli() {
@@ -85,11 +100,7 @@ public final class Cli {
      * @throws ParseException if parsing failed
      */
     private static CommandLine parseCommand(final String... args) throws ParseException {
-        final Options options = new Options();
-        options.addOption(Cli.NAMING_OPTION);
-        options.addOption(Cli.DIGEST_OPTION);
-        final CommandLineParser parser = new DefaultParser();
-        final CommandLine cmd = parser.parse(options, args);
+        final CommandLine cmd = Cli.PARSER.parse(Cli.OPTIONS, args);
         if (cmd.getArgs().length != 2) {
             throw new ParseException("Wrong arguments count, something is missing");
         }
