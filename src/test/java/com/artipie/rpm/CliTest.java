@@ -25,6 +25,7 @@ package com.artipie.rpm;
 
 import org.apache.commons.cli.ParseException;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.IsInstanceOf;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -41,7 +42,8 @@ class CliTest {
         } catch (final ParseException exception) {
             MatcherAssert.assertThat(
                 String.format("Exception occurred: %s", exception.getMessage()),
-                true
+                exception,
+                IsInstanceOf.instanceOf(Cli.WrongArgumentException.class)
             );
         }
     }
