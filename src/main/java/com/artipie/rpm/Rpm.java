@@ -25,8 +25,28 @@ package com.artipie.rpm;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.asto.fs.FileStorage;
+import com.artipie.asto.rx.RxStorageWrapper;
+import com.artipie.rpm.meta.XmlRepomd;
+import com.artipie.rpm.pkg.FilePackage;
+import com.artipie.rpm.pkg.FilelistsOutput;
+import com.artipie.rpm.pkg.MetadataFile;
+import com.artipie.rpm.pkg.OthersOutput;
+import com.artipie.rpm.pkg.PrimaryOutput;
+import com.jcabi.aspects.Tv;
+import com.jcabi.log.Logger;
+import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Completable;
+import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.vertx.reactivex.core.Vertx;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import org.cactoos.list.ListOf;
 
 /**
  * The RPM front.
@@ -37,44 +57,44 @@ import io.vertx.reactivex.core.Vertx;
  * <pre> Rpm rpm = new Rpm(storage);</pre>
  *
  * Then, you put your binary RPM artifact to the storage and call
- * {@link Rpm#update(Key)}. This method will parse the RPM package
- * and update all the necessary meta-data files. Right after this,
+ * {@link Rpm#batchUpdate(Key)}. This method will parse the all RPM packages
+ * in repository and update all the necessary meta-data files. Right after this,
  * your clients will be able to use the package, via {@code yum}:
  *
- * <pre> rpm.update("nginx.rpm").subscribe();</pre>
- *
- * That's it.
+ * <pre> rpm.batchUpdate(new Key.From("rmp-repo"));</pre>
  *
  * @since 0.1
- * @deprecated Use {@link RpmAbstraction.Base} instead.
+ * @todo #69:30min Add option to exclude `filelists.xml` metadata file from
+ *  updates. Som RPM repositories contains too many files in RPM packages,
+ *  so it may take too many time to update the filelists. Just add an option
+ *  to `Rpm` constructor and exclude filelists output from `Repository`
+ *  list of metadata files in `batchUpdate` method.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-@Deprecated
 public final class Rpm {
 
     /**
-     * Rpm abstraction.
+     * Primary storage.
      */
-    private final RpmAbstraction origin;
+    private final Storage storage;
 
     /**
-     * Ctor.
-     * @param stg Storage
-     * @deprecated use {@link #Rpm(Storage, Vertx)} instead
+     * Naming policy.
      */
-    @Deprecated
+    private final NamingPolicy naming;
+
+    /**
+     * Digest algorithm for check-sums.
+     */
+    private final Digest digest;
+
+    /**
+     * New Rpm for repository in storage.
+     * @param stg The storage which contains repository
+     */
     public Rpm(final Storage stg) {
-        this(stg, Vertx.vertx());
-    }
-
-    /**
-     * Ctor.
-     * @param stg Storage
-     * @param vertx The Vertx instance
-     */
-    public Rpm(final Storage stg, final Vertx vertx) {
-        this(stg, vertx, NamingPolicy.DEFAULT, Digest.SHA256);
+        this(stg, StandardNamingPolicy.PLAIN, Digest.SHA256);
     }
 
     /**
@@ -82,23 +102,11 @@ public final class Rpm {
      * @param stg The storage
      * @param naming RPM files naming policy
      * @param dgst Hashing sum computation algorithm
-     * @deprecated use {@link #Rpm(Storage, Vertx, NamingPolicy, Digest)} instead
      */
-    @Deprecated
     public Rpm(final Storage stg, final NamingPolicy naming, final Digest dgst) {
-        this(stg, Vertx.vertx(), naming, dgst);
-    }
-
-    /**
-     * Ctor.
-     * @param stg The storage
-     * @param vertx The Vertx instance
-     * @param naming RPM files naming policy
-     * @param dgst Hashing sum computation algorithm
-     * @checkstyle ParameterNumberCheck (10 lines)
-     */
-    public Rpm(final Storage stg, final Vertx vertx, final NamingPolicy naming, final Digest dgst) {
-        this.origin = new RpmAbstraction.Base(stg, vertx, naming, dgst);
+        this.storage = stg;
+        this.naming = naming;
+        this.digest = dgst;
     }
 
     /**
@@ -118,9 +126,22 @@ public final class Rpm {
      *
      * @param key The name of the file just updated
      * @return Completion or error signal.
+     * @deprecated This method calls {@link #batchUpdate(Key)} with parent of the key
      */
+    @Deprecated
     public Completable update(final Key key) {
-        return this.origin.update(key);
+        final String[] parts = key.string().split("/");
+        final Key folder;
+        if (parts.length == 1) {
+            folder = Key.ROOT;
+        } else {
+            folder = new Key.From(
+                Arrays.stream(parts)
+                    .limit(parts.length - 1)
+                    .toArray(String[]::new)
+            );
+        }
+        return this.batchUpdate(folder);
     }
 
     /**
@@ -140,7 +161,81 @@ public final class Rpm {
      * @return Completable action
      */
     public Completable batchUpdate(final Key prefix) {
-        return this.origin.batchUpdate(prefix);
+        final Path tmpdir;
+        try {
+            tmpdir = Files.createTempDirectory("repo-");
+        } catch (final IOException err) {
+            throw new IllegalStateException("Failed to create temp dir", err);
+        }
+        final Storage local = new FileStorage(tmpdir, Vertx.vertx().fileSystem());
+        return SingleInterop.fromFuture(this.storage.list(prefix))
+            .flatMapObservable(Observable::fromIterable)
+            .filter(key -> key.string().endsWith(".rpm"))
+            .flatMapSingle(
+                key -> {
+                    final String file = Paths.get(key.string()).getFileName().toString();
+                    return new RxStorageWrapper(this.storage).value(key).flatMapCompletable(
+                        content -> new RxStorageWrapper(local).save(new Key.From(file), content)
+                    ).andThen(Single.just(new FilePackage(tmpdir.resolve(file))));
+                }
+            )
+            .reduceWith(
+                () -> {
+                    final XmlRepomd repomd = new XmlRepomd(
+                        Files.createTempFile("repomd-", ".xml")
+                    );
+                    repomd.begin(System.currentTimeMillis() / Tv.THOUSAND);
+                    return new Repository(
+                        repomd,
+                        new ListOf<>(
+                            new MetadataFile(
+                                "primary",
+                                new PrimaryOutput(Files.createTempFile("primary-", ".xml"))
+                                    .start(),
+                                repomd
+                            ),
+                            new MetadataFile(
+                                "others",
+                                new OthersOutput(Files.createTempFile("others-", ".xml"))
+                                    .start(),
+                                repomd
+                            ),
+                            new MetadataFile(
+                                "filelists",
+                                new FilelistsOutput(Files.createTempFile("filelists-", ".xml"))
+                                    .start(),
+                                repomd
+                            )
+                        ),
+                        this.digest
+                    );
+                },
+                Repository::update
+            )
+            .doOnSuccess(rep -> Logger.info(this, "repository updated"))
+            .doOnSuccess(Repository::close)
+            .doOnSuccess(rep -> Logger.info(this, "repository closed"))
+            .flatMapObservable(repo -> Observable.fromIterable(repo.save(this.naming, this.digest)))
+            .doOnNext(file -> Files.move(file, tmpdir.resolve(file.getFileName())))
+            .flatMapCompletable(
+                path -> new RxStorageWrapper(local)
+                    .value(new Key.From(path.getFileName().toString()))
+                    .flatMapCompletable(
+                        content -> new RxStorageWrapper(this.storage).save(
+                            new Key.From("repodata", path.getFileName().toString()), content
+                        )
+                    )
+            ).doOnTerminate(() -> Rpm.cleanup(tmpdir));
     }
 
+    /**
+     * Cleanup temporary dir.
+     * @param dir Directory
+     * @throws IOException On error
+     */
+    private static void cleanup(final Path dir) throws IOException {
+        for (final Path item : Files.list(dir).collect(Collectors.toList())) {
+            Files.delete(item);
+        }
+    }
 }
