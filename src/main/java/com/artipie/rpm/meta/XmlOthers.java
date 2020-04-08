@@ -130,7 +130,7 @@ public final class XmlOthers implements Closeable {
 
     @Override
     public void close() throws IOException {
-        final Path trf = Files.createFile(this.tmp.getParent().resolve("others.xml.trf"));
+        final Path trf = Files.createTempFile("others-", ".xml");
         try {
             this.xml.writeEndElement();
             this.xml.writeEndDocument();

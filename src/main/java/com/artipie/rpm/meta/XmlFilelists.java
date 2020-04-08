@@ -132,7 +132,7 @@ public final class XmlFilelists implements Closeable {
 
     @Override
     public void close() throws IOException {
-        final Path trf = Files.createFile(this.tmp.getParent().resolve("filelists.xml.trf"));
+        final Path trf = Files.createTempFile("filelists-", ".xml");
         try {
             this.xml.writeEndElement();
             this.xml.writeEndDocument();

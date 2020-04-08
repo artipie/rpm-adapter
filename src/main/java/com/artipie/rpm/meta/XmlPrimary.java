@@ -127,9 +127,7 @@ public final class XmlPrimary implements Closeable {
 
     @Override
     public void close() throws IOException {
-        final Path trf = Files.createFile(
-            this.tmp.getParent().resolve("primary.xml.trf")
-        );
+        final Path trf = Files.createTempFile("primary-", ".xml");
         try {
             this.xml.writeEndElement();
             this.xml.writeEndDocument();
