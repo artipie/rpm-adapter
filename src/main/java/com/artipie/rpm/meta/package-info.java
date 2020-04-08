@@ -21,49 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm;
-
-import com.artipie.asto.Key;
-import io.reactivex.Completable;
-import io.reactivex.CompletableSource;
 
 /**
- * Rpm decorator which provide filelist creation on update.
+ * Metadata generators for RPM files.
  *
- * @since 0.3.0
- * @todo #17:30min Implement WithFilelists decorator.
- *  WithFilelists decorator create filelists.xml and filelists.xml.gz files on
- *  upload. Implement this behavior and then enable the test in
- *  WithFilelistsTest.
+ * @since 0.6
  */
-public final class WithFilelists implements RpmAbstraction {
+package com.artipie.rpm.meta;
 
-    /**
-     * Original Rpm.
-     */
-    private final RpmAbstraction origin;
-
-    /**
-     * Constructor.
-     *
-     * @param rpm Rpm to be wrapped.
-     */
-    public WithFilelists(final RpmAbstraction rpm) {
-        this.origin = rpm;
-    }
-
-    @Override
-    public Completable update(final Key key) {
-        return this.origin.update(key);
-    }
-
-    @Override
-    public Completable batchUpdate(final Key prefix) {
-        return this.origin.batchUpdate(prefix);
-    }
-
-    @Override
-    public CompletableSource doUpdate(final RepoUpdater updater, final Key key) {
-        return this.origin.doUpdate(updater, key);
-    }
-}

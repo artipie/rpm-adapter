@@ -23,16 +23,14 @@
  */
 package com.artipie.rpm;
 
-import hu.akarnokd.rxjava2.interop.SingleInterop;
-import io.reactivex.Flowable;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
-import org.cactoos.io.BytesOf;
-import org.cactoos.text.HexOf;
-import org.reactivestreams.Publisher;
+import org.bouncycastle.util.encoders.Hex;
 
 /**
  * RPM files naming policy.
@@ -41,17 +39,13 @@ import org.reactivestreams.Publisher;
 public interface NamingPolicy {
 
     /**
-     * Default naming policy, just returns source name.
-     */
-    NamingPolicy DEFAULT = (src, cnt) -> CompletableFuture.completedFuture(src);
-
-    /**
      * Name for source with its content.
      * @param source RPM file
      * @param content RPM file content
-     * @return Async file name
+     * @return File name
+     * @throws IOException On error
      */
-    CompletionStage<String> name(String source, Publisher<ByteBuffer> content);
+    String name(String source, Path content) throws IOException;
 
     /**
      * Add hash prefix to names. Uses SHA256 by default
@@ -81,20 +75,15 @@ public interface NamingPolicy {
         }
 
         @Override
-        public CompletionStage<String> name(
-            final String source, final Publisher<ByteBuffer> content
-        ) {
-            return Flowable.fromPublisher(content)
-                .reduce(
-                    this.dgst.get(),
-                    (acc, buf) -> {
-                        acc.update(buf);
-                        return acc;
-                    }
-                )
-                .map(res -> new HexOf(new BytesOf(res.digest())).asString())
-                .map(hex -> String.format("%s-%s", hex, source))
-                .to(SingleInterop.get());
+        public String name(final String source, final Path content) throws IOException {
+            final MessageDigest digest = this.dgst.get();
+            final ByteBuffer buffer = ByteBuffer.allocate(1024 * 8);
+            try (FileChannel chan = FileChannel.open(content, StandardOpenOption.READ)) {
+                while (chan.read(buffer) > 0) {
+                    digest.update(buffer);
+                }
+            }
+            return String.format("%s-%s", Hex.toHexString(digest.digest()), source);
         }
     }
 }

@@ -21,35 +21,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm;
+package com.artipie.rpm.pkg;
 
-import com.jcabi.matchers.XhtmlMatchers;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import org.hamcrest.MatcherAssert;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.xembly.Directives;
+import com.artipie.rpm.Digest;
+import java.io.IOException;
+import org.cactoos.Text;
 
 /**
- * Test case for {@link Update}.
- *
- * @since 0.1
+ * RPM checksum.
+ * @since 0.8
  */
-public final class UpdateTest {
-    /**
-     * Fake storage works.
-     * @param folder Temporary folder for the test
-     * @throws Exception If some problem inside
-     */
-    @Test
-    public void makesUpdateToXmlFile(@TempDir final Path folder) throws Exception {
-        final Path xml = folder.resolve("a.xml");
-        new Update(xml).apply(new Directives().add("test").add("foo")).blockingAwait();
-        MatcherAssert.assertThat(
-            new String(Files.readAllBytes(xml)),
-            XhtmlMatchers.hasXPath("/test/foo")
-        );
-    }
+public interface Checksum extends Text {
 
+    /**
+     * Digest.
+     * @return Digest
+     */
+    Digest digest();
+
+    @Override
+    String asString() throws IOException;
 }

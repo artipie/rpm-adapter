@@ -21,52 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm;
-
-import io.reactivex.Single;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Locale;
-import javax.xml.bind.DatatypeConverter;
 
 /**
- * Hashing sum of a file.
+ * RPM package objects.
  *
- * @since 0.1
+ * @since 0.6
  */
-final class Checksum {
+package com.artipie.rpm.pkg;
 
-    /**
-     * The XML.
-     */
-    private final Path file;
-
-    /**
-     * Message digest.
-     */
-    private final Digest dgst;
-
-    /**
-     * Ctor.
-     * @param path The path
-     * @param dgst The hashing algorithm for checksum computation.
-     */
-    Checksum(final Path path, final Digest dgst) {
-        this.file = path;
-        this.dgst = dgst;
-    }
-
-    /**
-     * Calculate it.
-     * @return The hash of the file content or error.
-     */
-    public Single<String> hash() {
-        return Single.fromCallable(
-            () -> Files.readAllBytes(this.file)
-        ).map(
-            bytes -> DatatypeConverter.printHexBinary(
-                this.dgst.messageDigest().digest(bytes)
-            ).toLowerCase(Locale.ENGLISH));
-    }
-
-}
