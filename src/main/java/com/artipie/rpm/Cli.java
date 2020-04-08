@@ -102,28 +102,8 @@ public final class Cli {
     private static CommandLine parseCommand(final String... args) throws ParseException {
         final CommandLine cmd = Cli.PARSER.parse(Cli.OPTIONS, args);
         if (cmd.getArgs().length != 2) {
-            throw new Cli.WrongArgumentException();
+            throw new ParseException("Wrong arguments count, something is missing");
         }
         return cmd;
-    }
-
-    /**
-     * Exception for passing wrong number of arguments.
-     *
-     * @since 0.1
-     */
-    public static final class WrongArgumentException extends ParseException {
-        /**
-         * This exception {@code serialVersionUID}.
-         */
-        private static final long serialVersionUID = 9112808380089253196L;
-
-        /**
-         * Construct a new <code>ParseException</code>
-         * with the specified detail message.
-         */
-        public WrongArgumentException() {
-            super("Wrong arguments count, something is missing");
-        }
     }
 }
