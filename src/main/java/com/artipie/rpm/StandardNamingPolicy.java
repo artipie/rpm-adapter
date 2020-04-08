@@ -21,47 +21,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.artipie.rpm;
 
-import com.artipie.asto.Content;
-import com.artipie.asto.Key;
-import com.artipie.asto.Storage;
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import org.apache.commons.io.IOUtils;
+import java.nio.file.Path;
 
 /**
- * Utility class to load resource from classpath to Storage.
- *
- * @since 0.4
+ * Standard naming policies.
+ * @since 0.8
  */
-public final class FileStorageLoader {
+public enum StandardNamingPolicy implements NamingPolicy {
     /**
-     * Ctor.
+     * Plain simple names.
      */
-    private FileStorageLoader() {
-    }
+    PLAIN((src, digest) -> src),
+    /**
+     * Add SHA1 prefixes to names.
+     */
+    SHA1(new HashPrefixed(Digest.SHA1)),
+    /**
+     * Add SHA256 prefixes to names.
+     */
+    SHA256(new HashPrefixed(Digest.SHA256));
 
     /**
-     * Uploads resource from classpath to Storage.
-     * @param storage The storage
-     * @param key Resource name and key to upload
-     * @throws IOException when resource could not read
-     * @throws ExecutionException when upload failed
-     * @throws InterruptedException when upload interrupted
+     * Origin policy.
      */
-    static void uploadResource(
-        final Storage storage,
-        final String key) throws IOException, ExecutionException, InterruptedException {
-        final byte[] data = IOUtils.toByteArray(
-            FileStorageLoader.class.getResourceAsStream(
-                String.format("/%s", key)
-            )
-        );
-        storage.save(
-            new Key.From(key),
-            new Content.From(data)
-        ).get();
+    private final NamingPolicy origin;
+
+    /**
+     * Enum ctor.
+     * @param origin Origin policy
+     */
+    StandardNamingPolicy(final NamingPolicy origin) {
+        this.origin = origin;
+    }
+
+    @Override
+    public String name(final String source, final Path content) throws IOException {
+        return this.origin.name(source, content);
     }
 }

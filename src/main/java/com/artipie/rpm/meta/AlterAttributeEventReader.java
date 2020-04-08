@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm;
+package com.artipie.rpm.meta;
 
 import java.util.ArrayList;
 import java.util.Iterator;
