@@ -80,6 +80,24 @@ in the `repodata` directory:
 Examples of these files you can find in
 [this repo](https://download.docker.com/linux/centos/7/source/stable/repodata/).
 
+## Cli
+
+Build the Cli tool using `mvn clean compile assembly:single`.
+You can run it as following
+```shell script
+java -jar target/rpm-adapter.jar  --naming-policy=simple --digest=SHA256 update ./package.rpm
+#or
+java -jar target/rpm-adapter.jar batchUpdate ./repo-dir/
+```
+
+Options are:
+- `naming-policy` - (optional, default `simple`) configures NamingPolicy for Rpm
+- `digest` - (optional, default `sha256`) configures Digest instance for Rpm
+
+Commands are:
+- `update` - update one or more .rpm packages. It's equivalent of Rpm#update call
+- `batchUpdate` - update specified directory as RPM repository, same as Rpm#batchUpdate call
+
 ## How to contribute
 
 Fork repository, make changes, send us a pull request. We will review
