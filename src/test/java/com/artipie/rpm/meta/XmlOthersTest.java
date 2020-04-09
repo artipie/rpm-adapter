@@ -29,13 +29,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Testcase for {@link XmlOthers} class.
- * @since 0.1
+ * @since 0.6
  * @todo #80:30min add another test for adding a changelog
+ *  to do that you need to wait for  the changelog to be implemented first
+ *  there's a puzzle for implementing it.
  */
+@DisabledOnOs(OS.WINDOWS)
 public class XmlOthersTest {
 
     /**

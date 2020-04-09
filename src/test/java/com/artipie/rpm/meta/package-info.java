@@ -25,7 +25,7 @@
 /**
  * Meta files, tests.
  *
- * @since 0.1
+ * @since 0.6
  */
 package com.artipie.rpm.meta;
 
