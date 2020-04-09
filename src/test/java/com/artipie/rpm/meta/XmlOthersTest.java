@@ -26,7 +26,7 @@ package com.artipie.rpm.meta;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.AfterAll;
@@ -49,7 +49,7 @@ public class XmlOthersTest {
     /**
      * The XmlOthers object.
      */
-    private static XmlOthers xmlOthers = new XmlOthers(Path.of(XmlOthersTest.path));
+    private static XmlOthers xmlOthers = new XmlOthers(Paths.get(XmlOthersTest.path));
 
     /**
      * File object for the created file.
@@ -106,7 +106,7 @@ public class XmlOthersTest {
     @Test
     public void addingAPackage() {
         try {
-            final String content = Files.readString(Path.of(XmlOthersTest.path));
+            final String content = new String(Files.readAllBytes(Paths.get(XmlOthersTest.path)));
             MatcherAssert.assertThat(
                 "file created",
                 content,
