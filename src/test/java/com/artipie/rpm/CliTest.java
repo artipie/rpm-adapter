@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 /**
  * Test case for {@link Cli}.
  *
- * @since 0.1
+ * @since 0.6
  */
 class CliTest {
 

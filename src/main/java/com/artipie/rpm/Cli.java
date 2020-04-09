@@ -33,7 +33,7 @@ import org.apache.commons.cli.ParseException;
 /**
  * Cli tool main class.
  *
- * @since 0.1
+ * @since 0.6
  */
 public final class Cli {
     /**
@@ -80,7 +80,7 @@ public final class Cli {
      *
      * @param args Arguments of command line
      * @throws ParseException if parsing failed
-     * @todo  #68:30min start execution of the command
+     * @todo #68:30min start execution of the command
      *  you can use cmd.getArgs() to get args as array of strings
      *  you would expect something like ["update", "./package.rpm"]
      *  use this link for documentation
