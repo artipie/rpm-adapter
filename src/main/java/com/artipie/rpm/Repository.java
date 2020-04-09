@@ -38,7 +38,7 @@ import java.util.List;
  * Repository aggregate {@link PackageOutput}. It accepts package metadata
  * and proxies to all outputs. On complete, it saves summary metadata to
  * {@code repomd.xml} file.
- * @since 0.8
+ * @since 0.6
  */
 final class Repository implements PackageOutput {
 

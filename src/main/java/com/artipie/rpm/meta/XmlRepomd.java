@@ -39,7 +39,7 @@ import javax.xml.stream.XMLStreamWriter;
  * <p>
  * This object is not thread safe and depends on order of method calls.
  * </p>
- * @since 0.8
+ * @since 0.6
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class XmlRepomd implements Closeable {
@@ -141,7 +141,7 @@ public final class XmlRepomd implements Closeable {
 
     /**
      * Repomd {@code data} updater.
-     * @since 0.8
+     * @since 0.6
      */
     public static final class Data implements Closeable {
 

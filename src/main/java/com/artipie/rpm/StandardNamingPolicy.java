@@ -28,7 +28,7 @@ import java.nio.file.Path;
 
 /**
  * Standard naming policies.
- * @since 0.8
+ * @since 0.6
  */
 public enum StandardNamingPolicy implements NamingPolicy {
     /**

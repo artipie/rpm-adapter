@@ -31,7 +31,7 @@ import org.redline_rpm.header.Header;
 /**
  * RPM package.
  *
- * @since 0.8
+ * @since 0.6
  */
 public interface Package {
 
@@ -45,7 +45,7 @@ public interface Package {
 
     /**
      * Package metadata.
-     * @since 0.8
+     * @since 0.6
      * @todo #69:30min This class has too many methods, consider refactoring it.
      *  Most probably headers methods can be moved to another Headers (or Tags) object.
      */

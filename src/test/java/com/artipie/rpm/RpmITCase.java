@@ -39,7 +39,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Integration test for {@link Rpm}.
- * @since 0.8
+ * @since 0.6
  * @todo #69:30min I've checked that this test generates metadata correctly,
  *  but we need to automate it. Let's check all metadata files after
  *  `Rpm.batchUpdate()` using xpath matchers. The files to check:

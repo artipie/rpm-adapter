@@ -49,7 +49,7 @@ import javax.xml.transform.stream.StreamResult;
  * <p>
  * This object is not thread safe and depends on order of method calls.
  * </p>
- * @since 0.8
+ * @since 0.6
  * @todo #69:30min Create a unit test to verify that this class
  *  can write `others.xml` file correctly. The example of others.xml can
  *  be found at test resources.
@@ -183,7 +183,7 @@ public final class XmlOthers implements Closeable {
 
     /**
      * Package writer.
-     * @since 0.8
+     * @since 0.6
      */
     public static final class Package {
 

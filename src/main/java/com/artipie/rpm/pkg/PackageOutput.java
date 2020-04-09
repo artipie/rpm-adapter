@@ -33,7 +33,7 @@ import org.cactoos.list.ListOf;
 
 /**
  * RPM package output.
- * @since 0.8
+ * @since 0.6
  */
 public interface PackageOutput extends Closeable {
 
@@ -46,7 +46,7 @@ public interface PackageOutput extends Closeable {
 
     /**
      * File output implementation.
-     * @since 0.8
+     * @since 0.6
      */
     interface FileOutput extends PackageOutput {
 
@@ -59,7 +59,7 @@ public interface PackageOutput extends Closeable {
 
     /**
      * Multiple outputs.
-     * @since 0.8
+     * @since 0.6
      */
     final class Multiple implements PackageOutput {
 
