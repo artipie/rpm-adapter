@@ -41,7 +41,7 @@ import javax.xml.stream.XMLStreamException;
  * so it should be used to accept metadata from {@link Package}
  * and it proxies metadata to underlying output. After closing it saves
  * all metadata to {@code repomd.xml}.
- * @since 0.8
+ * @since 0.6
  * @todo #69:30min Add a unit test for this class, it should verify that
  *  it updates `repomd.xml` file correctly after save.
  */

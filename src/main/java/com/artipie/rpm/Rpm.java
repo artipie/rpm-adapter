@@ -167,7 +167,8 @@ public final class Rpm {
         } catch (final IOException err) {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
-        final Storage local = new FileStorage(tmpdir, Vertx.vertx().fileSystem());
+        final Vertx vertx = Vertx.vertx();
+        final Storage local = new FileStorage(tmpdir, vertx.fileSystem());
         return SingleInterop.fromFuture(this.storage.list(prefix))
             .flatMapObservable(Observable::fromIterable)
             .filter(key -> key.string().endsWith(".rpm"))
@@ -225,7 +226,12 @@ public final class Rpm {
                             new Key.From("repodata", path.getFileName().toString()), content
                         )
                     )
-            ).doOnTerminate(() -> Rpm.cleanup(tmpdir));
+            ).doOnTerminate(
+                () -> {
+                    Rpm.cleanup(tmpdir);
+                    vertx.close();
+                }
+            );
     }
 
     /**

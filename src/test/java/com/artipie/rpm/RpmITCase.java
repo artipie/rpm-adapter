@@ -30,6 +30,8 @@ import com.artipie.asto.rx.RxStorageWrapper;
 import io.reactivex.Observable;
 import io.vertx.reactivex.core.Vertx;
 import java.nio.file.Path;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -37,7 +39,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Integration test for {@link Rpm}.
- * @since 0.8
+ * @since 0.6
  * @todo #69:30min I've checked that this test generates metadata correctly,
  *  but we need to automate it. Let's check all metadata files after
  *  `Rpm.batchUpdate()` using xpath matchers. The files to check:
@@ -54,9 +56,24 @@ import org.junit.jupiter.api.io.TempDir;
 @DisabledOnOs(OS.WINDOWS)
 final class RpmITCase {
 
+    /**
+     * VertX closeable instance.
+     */
+    private Vertx vertx;
+
+    @BeforeEach
+    void setUp() {
+        this.vertx = Vertx.vertx();
+    }
+
+    @AfterEach
+    void tearDown() {
+        this.vertx.close();
+    }
+
     @Test
     void generatesMetadata(@TempDir final Path tmp) {
-        final Storage storage = new FileStorage(tmp, Vertx.vertx().fileSystem());
+        final Storage storage = new FileStorage(tmp, this.vertx.fileSystem());
         Observable.fromArray(
             "aom-1.0.0-8.20190810git9666276.el8.aarch64.rpm",
             "nginx-1.16.1-1.el8.ngx.x86_64.rpm"

@@ -33,7 +33,7 @@ import org.cactoos.scalar.IoChecked;
 
 /**
  * Package output for {@code filelists.xml}.
- * @since 0.8
+ * @since 0.6
  */
 public final class FilelistsOutput implements PackageOutput.FileOutput {
 

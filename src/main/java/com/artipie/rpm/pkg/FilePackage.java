@@ -109,7 +109,7 @@ public final class FilePackage implements Package {
 
     /**
      * File package metadata.
-     * @since 0.8
+     * @since 0.6
      * @todo #69:30min Create unit tests to verify that
      *  FilePackage headers can parse headers and header range correctly,
      *  can calculate file size and check-sums correctly.

@@ -29,7 +29,7 @@ import org.cactoos.Text;
 
 /**
  * RPM checksum.
- * @since 0.8
+ * @since 0.6
  */
 public interface Checksum extends Text {
 

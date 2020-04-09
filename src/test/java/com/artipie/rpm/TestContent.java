@@ -36,7 +36,7 @@ import org.reactivestreams.Subscriber;
 
 /**
  * Content implementation for test resources.
- * @since 0.8
+ * @since 0.6
  */
 public final class TestContent implements Content {
 
