@@ -51,17 +51,10 @@ public final class Cli {
 
     /**
      * Ctor.
-     * @param rpm
+     * @param rpm Rpm instance
      */
     private Cli(final Rpm rpm) {
         this.rpm = rpm;
-    }
-
-    /**
-     * Run CLI tool.
-     */
-    private void run() {
-        this.rpm.batchUpdate(Key.ROOT).blockingAwait();
     }
 
     /**
@@ -69,7 +62,15 @@ public final class Cli {
      *
      * @param args Arguments of command line
      * @throws ParseException if parsing failed
+     * @checkstyle IllegalCatchCheck (70 lines)
+     * @checkstyle LineLengthCheck (50 lines)
      */
+    @SuppressWarnings(
+        {
+            "PMD.SystemPrintln", "PMD.AvoidCatchingGenericException",
+            "PMD.DoNotCallSystemExit", "PMD.AvoidDuplicateLiterals"
+        }
+    )
     public static void main(final String... args) throws ParseException {
         final CommandLine cli = new DefaultParser().parse(
             new Options()
@@ -121,5 +122,12 @@ public final class Cli {
         } finally {
             vertx.close();
         }
+    }
+
+    /**
+     * Run CLI tool.
+     */
+    private void run() {
+        this.rpm.batchUpdate(Key.ROOT).blockingAwait();
     }
 }
