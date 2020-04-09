@@ -23,100 +23,64 @@
  */
 package com.artipie.rpm.meta;
 
-import java.io.File;
-import java.io.IOException;
+import com.jcabi.matchers.XhtmlMatchers;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
-import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Testcase for {@link XmlOthers} class.
  * @since 0.1
+ * @todo #80:30min add another test for adding a changelog
  */
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class XmlOthersTest {
 
     /**
-     * Path of the file.
-     */
-    private static String path = "src/test/resources/other.xml";
-
-    /**
-     * The XmlOthers object.
-     */
-    private static XmlOthers xmlOthers = new XmlOthers(Paths.get(XmlOthersTest.path));
-
-    /**
-     * File object for the created file.
-     */
-    private static File file = new File(XmlOthersTest.path);
-
-    /**
-     * Expected content of the file.
-     * @checkstyle StringLiteralsConcatenationCheck (20 lines)
-     */
-    private static String expectedOut =
-        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
-        + "<otherdata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"1\">\n"
-        + "    <package name=\"aom\" "
-        + "pkgid=\"7eaefd1cb4f9740558da7f12f9cb5a6141a47f5d064a98d46c29959869af1a44\""
-        + " arch=\"aarch64\">\n"
-        + "        <version ver=\"1.0.0\" rel=\"8.20190810git9666276.el8\" epoch=\"0\"/>\n"
-        + "        <changelog>NOT_IMPLEMENTED</changelog>\n"
-        + "    </package>\n"
-        + "</otherdata>\n";
-
-    /**
-     * Setting up the file and insert some test packages.
+     * Test package added successfully.
+     * @param tmp Temp path
      * @throws Exception
-     * @todo #80:30min after implementing the changelog, refactor this to add actual changelog
-     *  this should also include changing the {@code expectedOut} to match the added changelog
-     */
-    @BeforeAll
-    public void setUp() throws Exception {
-        XmlOthersTest.xmlOthers.startPackages();
-        final XmlOthers.Package pack = XmlOthersTest.xmlOthers.addPackage(
-            "aom",
-            "aarch64",
-            "7eaefd1cb4f9740558da7f12f9cb5a6141a47f5d064a98d46c29959869af1a44"
-        );
-        pack.version(0, "1.0.0", "8.20190810git9666276.el8");
-        pack.changelog();
-        pack.close();
-        XmlOthersTest.xmlOthers.close();
-    }
-
-    /**
-     * Delete the created file after test is done.
-     * @throws Exception
-     */
-    @AfterAll
-    public void tearDown() throws Exception {
-        XmlOthersTest.file.delete();
-    }
-
-    /**
-     * Test the created file content is the same as expected.
+     * @checkstyle
      */
     @Test
-    public void addingAPackage() {
-        try {
-            final String content = new String(Files.readAllBytes(Paths.get(XmlOthersTest.path)));
-            MatcherAssert.assertThat(
-                "file created",
-                content,
-                IsEqual.equalTo(XmlOthersTest.expectedOut)
-            );
-        } catch (final IOException exception) {
-            MatcherAssert.assertThat(
-                String.format("IOException occurred: %s", exception.getMessage()),
-                false
-            );
+    void canAddPackage(@TempDir final Path tmp) throws Exception {
+        final Path xml = tmp.resolve("others.xml");
+        try (XmlOthers others = new XmlOthers(xml)) {
+            others.startPackages();
+            others.addPackage(
+                "aom", "aarch64",
+                "7ae"
+            ).close();
         }
+        MatcherAssert.assertThat(
+            new String(Files.readAllBytes(xml), StandardCharsets.UTF_8),
+            // @checkstyle LineLengthCheck (1 line)
+            XhtmlMatchers.hasXPath("/*[local-name()='otherdata']/*[local-name()='package' and @name='aom' and @pkgid='7ae' and @arch='aarch64']")
+        );
     }
+
+    /**
+     * Test adding a version for the package.
+     * @param tmp Temp path
+     * @throws Exception
+     */
+    @Test
+    void canAddVersion(@TempDir final Path tmp) throws Exception {
+        final Path xml = tmp.resolve("other.xml");
+        try (XmlOthers others = new XmlOthers(xml)) {
+            others.startPackages();
+            others.addPackage(
+                "aaa", "bbb",
+                "ccc"
+            ).version(0, "1.0.0", "8.20190810git9666276.el8").close();
+        }
+        MatcherAssert.assertThat(
+            new String(Files.readAllBytes(xml), StandardCharsets.UTF_8),
+            // @checkstyle LineLengthCheck (1 line)
+            XhtmlMatchers.hasXPath("/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='version' and @epoch='0' and @ver='1.0.0' and @rel='8.20190810git9666276.el8']")
+        );
+    }
+
 }
