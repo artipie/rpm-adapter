@@ -30,8 +30,6 @@ import org.redline_rpm.header.Header;
  * Helper object to read metadata header tags from RPM package.
  *
  * @since 0.6
- * @todo #69:30min Write javadocs for all these method. When done, remove
- *  JavadocMethodCheck suppression annotation for PMD checker.
  */
 @SuppressWarnings("PMD.TooManyMethods")
 public final class HeaderTags {
