@@ -26,10 +26,10 @@ package com.artipie.rpm.pkg;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.cactoos.list.ListOf;
 
 /**
  * RPM package output.
@@ -73,7 +73,7 @@ public interface PackageOutput extends Closeable {
          * @param outs Outputs
          */
         public Multiple(final PackageOutput... outs) {
-            this(new ListOf<>(outs));
+            this(Arrays.asList(outs));
         }
 
         /**
@@ -81,7 +81,7 @@ public interface PackageOutput extends Closeable {
          * @param outs Outputs
          */
         public Multiple(final Iterable<? extends PackageOutput> outs) {
-            this.list = new ListOf<>(outs);
+            this.list = outs;
         }
 
         @Override

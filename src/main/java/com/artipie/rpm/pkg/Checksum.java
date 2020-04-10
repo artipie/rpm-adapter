@@ -25,13 +25,12 @@ package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
 import java.io.IOException;
-import org.cactoos.Text;
 
 /**
  * RPM checksum.
  * @since 0.6
  */
-public interface Checksum extends Text {
+public interface Checksum {
 
     /**
      * Digest.
@@ -39,6 +38,10 @@ public interface Checksum extends Text {
      */
     Digest digest();
 
-    @Override
-    String asString() throws IOException;
+    /**
+     * Checksum hex string.
+     * @return Hex string
+     * @throws IOException On error
+     */
+    String hex() throws IOException;
 }

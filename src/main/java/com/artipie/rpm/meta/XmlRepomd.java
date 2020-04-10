@@ -167,7 +167,7 @@ public final class XmlRepomd implements Closeable {
         public void gzipChecksum(final Checksum checksum) throws XMLStreamException, IOException {
             this.xml.writeStartElement("checksum");
             this.xml.writeAttribute("type", checksum.digest().type());
-            this.xml.writeCharacters(checksum.asString());
+            this.xml.writeCharacters(checksum.hex());
             this.xml.writeEndElement();
         }
 
@@ -180,7 +180,7 @@ public final class XmlRepomd implements Closeable {
         public void openChecksum(final Checksum checksum) throws XMLStreamException, IOException {
             this.xml.writeStartElement("open-checksum");
             this.xml.writeAttribute("type", checksum.digest().type());
-            this.xml.writeCharacters(checksum.asString());
+            this.xml.writeCharacters(checksum.hex());
             this.xml.writeEndElement();
         }
 

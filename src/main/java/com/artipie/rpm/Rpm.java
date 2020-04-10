@@ -46,7 +46,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.stream.Collectors;
-import org.cactoos.list.ListOf;
 
 /**
  * The RPM front.
@@ -188,7 +187,7 @@ public final class Rpm {
                     repomd.begin(System.currentTimeMillis() / Tv.THOUSAND);
                     return new Repository(
                         repomd,
-                        new ListOf<>(
+                        Arrays.asList(
                             new MetadataFile(
                                 "primary",
                                 new PrimaryOutput(Files.createTempFile("primary-", ".xml"))

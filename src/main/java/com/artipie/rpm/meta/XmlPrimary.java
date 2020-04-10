@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -46,7 +47,6 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamResult;
-import org.cactoos.iterable.Filtered;
 
 /**
  * XML {@code primary.xml} metadata imperative writer.
@@ -518,9 +518,12 @@ public final class XmlPrimary implements Closeable {
          * @return Self
          * @throws XMLStreamException On XML error
          */
-        public Format requires(final Iterable<String> requires) throws XMLStreamException {
+        public Format requires(final List<String> requires) throws XMLStreamException {
             this.xml.writeStartElement("http://linux.duke.edu/metadata/rpm", "requires");
-            for (final String name : new Filtered<>(nme -> !nme.startsWith("rpmlib("), requires)) {
+            final List<String> filtered = requires.stream()
+                .filter(nme -> !nme.startsWith("rpmlib("))
+                .collect(Collectors.toList());
+            for (final String name : filtered) {
                 this.xml.writeStartElement("http://linux.duke.edu/metadata/rpm", "entry");
                 this.xml.writeAttribute("name", name);
                 this.xml.writeEndElement();

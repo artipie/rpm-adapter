@@ -29,7 +29,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import javax.xml.stream.XMLStreamException;
-import org.cactoos.scalar.IoChecked;
 
 /**
  * Generates other.xml metadata file.
@@ -84,7 +83,7 @@ public final class OthersOutput implements PackageOutput.FileOutput {
         try {
             this.xml.addPackage(
                 tags.name(), tags.arch(),
-                new IoChecked<>(() -> meta.checksum().asString()).value()
+                meta.checksum().hex()
             ).version(tags.epoch(), tags.version(), tags.release())
                 .changelog().close();
         } catch (final XMLStreamException err) {

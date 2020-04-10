@@ -71,7 +71,7 @@ public final class FileChecksum implements Checksum {
     }
 
     @Override
-    public String asString() throws IOException {
+    public String hex() throws IOException {
         final MessageDigest digest = this.dgst.messageDigest();
         try (FileChannel chan = FileChannel.open(this.file, StandardOpenOption.READ)) {
             final ByteBuffer buf = ByteBuffer.allocate(FileChecksum.BUF_SIZE);

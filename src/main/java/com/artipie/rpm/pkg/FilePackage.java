@@ -27,17 +27,14 @@ import com.artipie.rpm.Digest;
 import com.artipie.rpm.FileChecksum;
 import com.jcabi.log.Logger;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
-import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
-import org.cactoos.Scalar;
-import org.cactoos.list.ListOf;
-import org.cactoos.scalar.Sticky;
-import org.cactoos.scalar.Unchecked;
 import org.redline_rpm.ReadableChannelWrapper;
 import org.redline_rpm.Scanner;
 import org.redline_rpm.header.AbstractHeader;
@@ -57,33 +54,11 @@ public final class FilePackage implements Package {
     private final Path file;
 
     /**
-     * The header.
-     */
-    private final Unchecked<Header> hdr;
-
-    /**
      * Ctor.
      * @param path The path
      */
     public FilePackage(final Path path) {
         this.file = path;
-        this.hdr = new Unchecked<>(
-            new Sticky<>(
-                new Scalar<Header>() {
-                    @Override
-                    public Header value() throws Exception {
-                        try (InputStream fios = Files.newInputStream(FilePackage.this.file)) {
-                            final Format format = new Scanner(
-                                new PrintStream(Logger.stream(Level.INFO, this))
-                            ).run(new ReadableChannelWrapper(Channels.newChannel(fios)));
-                            final Header header = format.getHeader();
-                            Logger.debug(this, "header: %s", header.toString());
-                            return header;
-                        }
-                    }
-                }
-            )
-        );
     }
 
     /**
@@ -102,9 +77,17 @@ public final class FilePackage implements Package {
     /**
      * Get header.
      * @return The header
+     * @throws IOException On error
      */
-    private Header header() {
-        return this.hdr.value();
+    private Header header() throws IOException {
+        try (FileChannel chan = FileChannel.open(this.file, StandardOpenOption.READ)) {
+            final Format format = new Scanner(
+                new PrintStream(Logger.stream(Level.INFO, this))
+            ).run(new ReadableChannelWrapper(chan));
+            final Header header = format.getHeader();
+            Logger.debug(this, "header: %s", header.toString());
+            return header;
+        }
     }
 
     /**
@@ -169,7 +152,7 @@ public final class FilePackage implements Package {
 
         @Override
         public List<String> headers(final Header.HeaderTag tag) {
-            return new ListOf<>((String[]) this.hdr.getEntry(tag).getValues());
+            return Arrays.asList((String[]) this.hdr.getEntry(tag).getValues());
         }
 
         @Override

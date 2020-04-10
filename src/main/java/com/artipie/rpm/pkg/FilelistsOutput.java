@@ -29,7 +29,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import javax.xml.stream.XMLStreamException;
-import org.cactoos.scalar.IoChecked;
 
 /**
  * Package output for {@code filelists.xml}.
@@ -83,7 +82,7 @@ public final class FilelistsOutput implements PackageOutput.FileOutput {
         final HeaderTags tags = new HeaderTags(meta);
         try {
             this.xml.startPackage(
-                tags.name(), tags.arch(), new IoChecked<>(() -> meta.checksum().asString()).value()
+                tags.name(), tags.arch(), meta.checksum().hex()
             ).version(tags.epoch(), tags.version(), tags.release())
                 .files(
                     tags.baseNames().toArray(new String[0]),
