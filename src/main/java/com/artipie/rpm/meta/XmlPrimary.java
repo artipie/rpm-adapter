@@ -148,7 +148,7 @@ public final class XmlPrimary implements Closeable {
                 new StAXSource(reader),
                 new StreamResult(Files.newOutputStream(trf, StandardOpenOption.TRUNCATE_EXISTING))
             );
-            Files.move(trf, this.tmp, StandardCopyOption.REPLACE_EXISTING);
+            Files.move(trf, this.tmp, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } catch (final XMLStreamException | TransformerException err) {
             throw new IOException("Failed to close", err);
         } finally {
