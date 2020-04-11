@@ -55,6 +55,43 @@ public interface PackageOutput extends Closeable {
          * @return Path
          */
         Path file();
+
+        /**
+         * Fake {@link FileOutput}.
+         *
+         * @since 1.0
+         */
+        final class Fake implements FileOutput {
+
+            /**
+             * File path.
+             */
+            private final Path file;
+
+            /**
+             * Ctor.
+             *
+             * @param file File path
+             */
+            public Fake(final Path file) {
+                this.file = file;
+            }
+
+            @Override
+            public void accept(final Package.Meta meta) {
+                // nothing
+            }
+
+            @Override
+            public void close() {
+                // nothing
+            }
+
+            @Override
+            public Path file() {
+                return this.file;
+            }
+        }
     }
 
     /**
