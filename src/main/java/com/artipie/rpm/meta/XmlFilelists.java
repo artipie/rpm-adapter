@@ -109,7 +109,7 @@ public final class XmlFilelists implements Closeable {
             this.xml.writer().writeEndElement();
             this.xml.writer().writeEndDocument();
             this.xml.writer().close();
-            this.xml.alter(
+            this.xml.alterTag(
                 "filelists",
                 "packages",
                 String.valueOf(this.packages.get())

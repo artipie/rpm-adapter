@@ -109,7 +109,7 @@ final class XmlFile {
      * @param value Value to be replace
      * @throws IOException when XML alteration causes error
      */
-    public void alter(
+    public void alterTag(
         final String tag, final String attribute, final String value
     ) throws IOException {
         final Path trf = Files.createTempFile("", ".xml");
