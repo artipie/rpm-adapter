@@ -51,94 +51,94 @@ public final class HeaderTags {
     }
 
     public String name() {
-        return this.meta.header(Header.HeaderTag.NAME, "");
+        return this.meta.header(Header.HeaderTag.NAME).asString("");
     }
 
     public String arch() {
-        return this.meta.header(Header.HeaderTag.ARCH, "");
+        return this.meta.header(Header.HeaderTag.ARCH).asString("");
     }
 
     public int epoch() {
-        return this.meta.header(Header.HeaderTag.EPOCH, 0);
+        return this.meta.header(Header.HeaderTag.EPOCH).asInt(0);
     }
 
     public String version() {
-        return this.meta.header(Header.HeaderTag.VERSION, "");
+        return this.meta.header(Header.HeaderTag.VERSION).asString("");
     }
 
     public String release() {
-        return this.meta.header(Header.HeaderTag.RELEASE, "");
+        return this.meta.header(Header.HeaderTag.RELEASE).asString("");
     }
 
     public String summary() {
-        return this.meta.header(Header.HeaderTag.SUMMARY, "");
+        return this.meta.header(Header.HeaderTag.SUMMARY).asString("");
     }
 
     public String description() {
-        return this.meta.header(Header.HeaderTag.DESCRIPTION, "");
+        return this.meta.header(Header.HeaderTag.DESCRIPTION).asString("");
     }
 
     public String packager() {
-        return this.meta.header(Header.HeaderTag.PACKAGER, "");
+        return this.meta.header(Header.HeaderTag.PACKAGER).asString("");
     }
 
     public String url() {
-        return this.meta.header(Header.HeaderTag.URL, "");
+        return this.meta.header(Header.HeaderTag.URL).asString("");
     }
 
     public int fileTimes() {
-        return this.meta.header(Header.HeaderTag.FILEMTIMES, 0);
+        return this.meta.header(Header.HeaderTag.FILEMTIMES).asInt(0);
     }
 
     public int buildTime() {
-        return this.meta.header(Header.HeaderTag.BUILDTIME, 0);
+        return this.meta.header(Header.HeaderTag.BUILDTIME).asInt(0);
     }
 
     public int installedSize() {
-        return this.meta.header(Header.HeaderTag.SIZE, 0);
+        return this.meta.header(Header.HeaderTag.SIZE).asInt(0);
     }
 
     public int archiveSize() {
-        return this.meta.header(Header.HeaderTag.ARCHIVESIZE, 0);
+        return this.meta.header(Header.HeaderTag.ARCHIVESIZE).asInt(0);
     }
 
     public String license() {
-        return this.meta.header(Header.HeaderTag.LICENSE, "");
+        return this.meta.header(Header.HeaderTag.LICENSE).asString("");
     }
 
     public String vendor() {
-        return this.meta.header(Header.HeaderTag.VENDOR, "");
+        return this.meta.header(Header.HeaderTag.VENDOR).asString("");
     }
 
     public String group() {
-        return this.meta.header(Header.HeaderTag.GROUP, "");
+        return this.meta.header(Header.HeaderTag.GROUP).asString("");
     }
 
     public String buildHost() {
-        return this.meta.header(Header.HeaderTag.BUILDHOST, "");
+        return this.meta.header(Header.HeaderTag.BUILDHOST).asString("");
     }
 
     public String sourceRmp() {
-        return this.meta.header(Header.HeaderTag.SOURCERPM, "");
+        return this.meta.header(Header.HeaderTag.SOURCERPM).asString("");
     }
 
     public List<String> providers() {
-        return this.meta.headers(Header.HeaderTag.PROVIDENAME);
+        return this.meta.header(Header.HeaderTag.PROVIDENAME).asStrings();
     }
 
     public List<String> requires() {
-        return this.meta.headers(Header.HeaderTag.REQUIRENAME);
+        return this.meta.header(Header.HeaderTag.REQUIRENAME).asStrings();
     }
 
     public List<String> baseNames() {
-        return this.meta.headers(Header.HeaderTag.BASENAMES);
+        return this.meta.header(Header.HeaderTag.BASENAMES).asStrings();
     }
 
     public List<String> dirNames() {
-        return this.meta.headers(Header.HeaderTag.DIRNAMES);
+        return this.meta.header(Header.HeaderTag.DIRNAMES).asStrings();
     }
 
     public int[] dirIndexes() {
-        return this.meta.intHeaders(Header.HeaderTag.DIRINDEXES);
+        return this.meta.header(Header.HeaderTag.DIRINDEXES).asInts();
     }
 }
