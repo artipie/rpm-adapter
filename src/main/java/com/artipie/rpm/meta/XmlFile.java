@@ -51,10 +51,11 @@ import javax.xml.transform.stream.StreamResult;
  *  instead of exposing its internal state via the writer() method.
  * @todo #81:30min Introduce a class named XmlPackagesFile that should be responsible
  *  of writing the start of the document (as in {XmlFilelists, XmlOthers, XmlPrimary}.startPackages
- *  and XmlRepomd.begin) by taking this information in its constructor + a XmlFile. It should also
- *  be responsible of counting the number of packages added. With all this information,
- *  the alter method can then be moved to XmlPackagesFile and renamed close by exploiting
- *  directly that information.
+ *  and XmlRepomd.begin) as well as writing the end of the document (as in
+ *  {XmlFilelists, XmlOthers, XmlPrimary}.close) by taking the needed information in
+ *  its constructor + a XmlFile. It should also be responsible of counting the number
+ *  of packages added. With all this information, the alter method can then be moved
+ *  to XmlPackagesFile and renamed close by exploiting directly that information.
  */
 final class XmlFile {
 
