@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 Yegor Bugayenko
+ * Copyright (c) 2020 artipie.com
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import javax.xml.stream.XMLStreamException;
-import org.cactoos.scalar.IoChecked;
 
 /**
  * Package output for {@code primary} metadata.
@@ -90,7 +89,7 @@ public final class PrimaryOutput implements PackageOutput.FileOutput {
                 .version(tags.epoch(), tags.version(), tags.release())
                 .checksum(
                     meta.checksum().digest().type(), "YES",
-                    new IoChecked<>(() -> meta.checksum().asString()).value()
+                    meta.checksum().hex()
                 ).summary(tags.summary())
                 .description(tags.description())
                 .packager(tags.packager())

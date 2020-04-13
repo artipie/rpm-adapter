@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 Yegor Bugayenko
+ * Copyright (c) 2020 artipie.com
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,13 +25,12 @@ package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
 import java.io.IOException;
-import org.cactoos.Text;
 
 /**
  * RPM checksum.
  * @since 0.6
  */
-public interface Checksum extends Text {
+public interface Checksum {
 
     /**
      * Digest.
@@ -39,6 +38,10 @@ public interface Checksum extends Text {
      */
     Digest digest();
 
-    @Override
-    String asString() throws IOException;
+    /**
+     * Checksum hex string.
+     * @return Hex string
+     * @throws IOException On error
+     */
+    String hex() throws IOException;
 }

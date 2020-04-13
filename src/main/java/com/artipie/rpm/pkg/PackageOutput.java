@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 Yegor Bugayenko
+ * Copyright (c) 2020 artipie.com
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,10 +26,10 @@ package com.artipie.rpm.pkg;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.cactoos.list.ListOf;
 
 /**
  * RPM package output.
@@ -73,7 +73,7 @@ public interface PackageOutput extends Closeable {
          * @param outs Outputs
          */
         public Multiple(final PackageOutput... outs) {
-            this(new ListOf<>(outs));
+            this(Arrays.asList(outs));
         }
 
         /**
@@ -81,7 +81,7 @@ public interface PackageOutput extends Closeable {
          * @param outs Outputs
          */
         public Multiple(final Iterable<? extends PackageOutput> outs) {
-            this.list = new ListOf<>(outs);
+            this.list = outs;
         }
 
         @Override
