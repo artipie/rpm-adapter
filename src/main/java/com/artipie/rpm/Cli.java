@@ -62,6 +62,9 @@ public final class Cli {
      *
      * @param args Arguments of command line
      * @throws ParseException if parsing failed
+     * @todo #89:30min Refactor options parsing.
+     *  Extract the logic of parsing CLI arguments into separate class with
+     *  methods like naming, digest, path.
      * @checkstyle IllegalCatchCheck (70 lines)
      * @checkstyle LineLengthCheck (50 lines)
      */
