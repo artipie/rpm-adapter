@@ -42,8 +42,6 @@ import javax.xml.stream.XMLStreamException;
  * and it proxies metadata to underlying output. After closing it saves
  * all metadata to {@code repomd.xml}.
  * @since 0.6
- * @todo #69:30min Add a unit test for this class, it should verify that
- *  it updates `repomd.xml` file correctly after save.
  */
 public final class MetadataFile implements PackageOutput {
 
