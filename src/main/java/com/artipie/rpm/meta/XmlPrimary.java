@@ -25,6 +25,8 @@ package com.artipie.rpm.meta;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -138,22 +140,21 @@ public final class XmlPrimary implements Closeable {
             transformer.setOutputProperty(OutputKeys.STANDALONE, "no");
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             final XMLInputFactory factory = XMLInputFactory.newFactory();
-            final XMLEventReader reader = new AlterAttributeEventReader(
-                factory.createXMLEventReader(Files.newInputStream(this.tmp)),
-                "metadata",
-                "packages",
-                String.valueOf(this.packages.get())
-            );
-            transformer.transform(
-                new StAXSource(reader),
-                new StreamResult(Files.newOutputStream(trf, StandardOpenOption.TRUNCATE_EXISTING))
-            );
-            Files.move(
-                trf,
-                this.tmp,
-                StandardCopyOption.REPLACE_EXISTING,
-                StandardCopyOption.ATOMIC_MOVE
-            );
+            try (InputStream input = Files.newInputStream(this.tmp);
+                OutputStream output =
+                    Files.newOutputStream(trf, StandardOpenOption.TRUNCATE_EXISTING)) {
+                final XMLEventReader reader = new AlterAttributeEventReader(
+                    factory.createXMLEventReader(input),
+                    "metadata",
+                    "packages",
+                    String.valueOf(this.packages.get())
+                );
+                transformer.transform(
+                    new StAXSource(reader),
+                    new StreamResult(output)
+                );
+            }
+            Files.move(trf, this.tmp, StandardCopyOption.REPLACE_EXISTING);
         } catch (final XMLStreamException | TransformerException err) {
             throw new IOException("Failed to close", err);
         } finally {
