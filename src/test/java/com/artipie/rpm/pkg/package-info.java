@@ -21,44 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm;
-
-import java.io.IOException;
-import java.nio.file.Path;
 
 /**
- * Standard naming policies.
- * @since 0.6
+ * RPM package objects, tests.
+ *
+ * @since 0.6.3
  */
-public enum StandardNamingPolicy implements NamingPolicy {
-    /**
-     * Plain simple names.
-     */
-    PLAIN((src, digest) -> src),
-    /**
-     * Add SHA1 prefixes to names.
-     */
-    SHA1(new HashPrefixed(Digest.SHA1)),
-    /**
-     * Add SHA256 prefixes to names.
-     */
-    SHA256(new HashPrefixed(Digest.SHA256));
+package com.artipie.rpm.pkg;
 
-    /**
-     * Origin policy.
-     */
-    private final NamingPolicy origin;
-
-    /**
-     * Enum ctor.
-     * @param origin Origin policy
-     */
-    StandardNamingPolicy(final NamingPolicy origin) {
-        this.origin = origin;
-    }
-
-    @Override
-    public String name(final String source, final Path content) throws IOException {
-        return this.origin.name(source, content);
-    }
-}
