@@ -25,28 +25,15 @@ package com.artipie.rpm.meta;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import javax.xml.stream.XMLEventReader;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stax.StAXSource;
-import javax.xml.transform.stream.StreamResult;
 
 /**
  * XML {@code primary.xml} metadata imperative writer.
@@ -63,41 +50,28 @@ import javax.xml.transform.stream.StreamResult;
 public final class XmlPrimary implements Closeable {
 
     /**
-     * XML factory.
-     */
-    private static final XMLOutputFactory FACTORY =
-        XMLOutputFactory.newInstance();
-
-    /**
-     * XML stream.
-     */
-    private final XMLStreamWriter xml;
-
-    /**
      * Packages counter.
      */
     private final AtomicInteger packages;
 
     /**
-     * Temporary file.
+     * Xml file.
      */
-    private final Path tmp;
+    private final XmlFile xml;
 
     /**
      * Ctor.
-     * @param path Temporary file path
+     * @param path Path to write primary.xml
      */
     public XmlPrimary(final Path path) {
-        this(path, XmlPrimary.xmlStreamWriter(path));
+        this(new XmlFile(path));
     }
 
     /**
      * Primary ctor.
-     * @param tmp Temporary path
-     * @param xml XML stream writer
+     * @param xml Xml file
      */
-    private XmlPrimary(final Path tmp, final XMLStreamWriter xml) {
-        this.tmp = tmp;
+    public XmlPrimary(final XmlFile xml) {
         this.xml = xml;
         this.packages = new AtomicInteger();
     }
@@ -107,11 +81,11 @@ public final class XmlPrimary implements Closeable {
      * @throws XMLStreamException On error
      */
     public void startPackages() throws XMLStreamException {
-        this.xml.writeStartDocument(StandardCharsets.UTF_8.displayName(), "1.0");
-        this.xml.writeStartElement("metadata");
-        this.xml.writeDefaultNamespace("http://linux.duke.edu/metadata/common");
-        this.xml.writeNamespace("rpm", "http://linux.duke.edu/metadata/rpm");
-        this.xml.writeAttribute("packages", "-1");
+        this.xml.writer().writeStartDocument(StandardCharsets.UTF_8.displayName(), "1.0");
+        this.xml.writer().writeStartElement("metadata");
+        this.xml.writer().writeDefaultNamespace("http://linux.duke.edu/metadata/common");
+        this.xml.writer().writeNamespace("rpm", "http://linux.duke.edu/metadata/rpm");
+        this.xml.writer().writeAttribute("packages", "-1");
     }
 
     /**
@@ -120,56 +94,24 @@ public final class XmlPrimary implements Closeable {
      * @throws XMLStreamException On error
      */
     public Package startPackage() throws XMLStreamException {
-        this.xml.writeStartElement("package");
-        this.xml.writeAttribute("type", "rpm");
-        return new Package(this.xml, this);
+        this.xml.writer().writeStartElement("package");
+        this.xml.writer().writeAttribute("type", "rpm");
+        return new Package(this.xml.writer(), this);
     }
 
     @Override
     public void close() throws IOException {
-        final Path trf = Files.createTempFile("primary-", ".xml");
         try {
-            this.xml.writeEndElement();
-            this.xml.writeEndDocument();
-            this.xml.close();
-            final Transformer transformer = TransformerFactory.newInstance().newTransformer();
-            transformer.setOutputProperty(OutputKeys.VERSION, "1.0");
-            transformer.setOutputProperty(OutputKeys.ENCODING, StandardCharsets.UTF_8.name());
-            transformer.setOutputProperty(OutputKeys.STANDALONE, "no");
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            final XMLInputFactory factory = XMLInputFactory.newFactory();
-            final XMLEventReader reader = new AlterAttributeEventReader(
-                factory.createXMLEventReader(Files.newInputStream(this.tmp)),
+            this.xml.writer().writeEndElement();
+            this.xml.writer().writeEndDocument();
+            this.xml.writer().close();
+            this.xml.alterTag(
                 "metadata",
                 "packages",
                 String.valueOf(this.packages.get())
             );
-            transformer.transform(
-                new StAXSource(reader),
-                new StreamResult(Files.newOutputStream(trf, StandardOpenOption.TRUNCATE_EXISTING))
-            );
-            Files.move(trf, this.tmp, StandardCopyOption.REPLACE_EXISTING);
-        } catch (final XMLStreamException | TransformerException err) {
-            throw new IOException("Failed to close", err);
-        } finally {
-            if (Files.exists(trf)) {
-                Files.delete(trf);
-            }
-        }
-    }
-
-    /**
-     * New XML stream writer from path.
-     * @param path File path
-     * @return XML stream writer
-     */
-    private static XMLStreamWriter xmlStreamWriter(final Path path) {
-        try {
-            return XmlPrimary.FACTORY.createXMLStreamWriter(Files.newOutputStream(path), "UTF-8");
         } catch (final XMLStreamException err) {
-            throw new IllegalStateException("Failed to create XML stream", err);
-        } catch (final IOException err) {
-            throw new UncheckedIOException("Failed to open file stream", err);
+            throw new IOException("Failed to close", err);
         }
     }
 
