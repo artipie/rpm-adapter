@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 Yegor Bugayenko
+ * Copyright (c) 2020 artipie.com
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -40,6 +40,15 @@ import javax.xml.stream.XMLStreamWriter;
  * This object is not thread safe and depends on order of method calls.
  * </p>
  * @since 0.6
+ * @todo #81:30min Refactor this class so it uses XmlFile instead of using
+ *  a XMLStreamWriter and a Path. It is not straightforward because it exposes
+ *  the Path via the path() which is now hidden in the XmlFile object.
+ *  We must keep the path hidden there while at the same time allow for
+ *  Repository to be responsible of triggering the save of the repomd file
+ *  after all the metadata files (declared in Rpm) have wrote themselves to
+ *  repomd as expected. One solution would be to delegate to the xml files
+ *  and thus to XmlFile the act of moving itself in the desired place: in
+ *  that case the way other metadata files are saved should be adapted.
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class XmlRepomd implements Closeable {
@@ -167,7 +176,7 @@ public final class XmlRepomd implements Closeable {
         public void gzipChecksum(final Checksum checksum) throws XMLStreamException, IOException {
             this.xml.writeStartElement("checksum");
             this.xml.writeAttribute("type", checksum.digest().type());
-            this.xml.writeCharacters(checksum.asString());
+            this.xml.writeCharacters(checksum.hex());
             this.xml.writeEndElement();
         }
 
@@ -180,7 +189,7 @@ public final class XmlRepomd implements Closeable {
         public void openChecksum(final Checksum checksum) throws XMLStreamException, IOException {
             this.xml.writeStartElement("open-checksum");
             this.xml.writeAttribute("type", checksum.digest().type());
-            this.xml.writeCharacters(checksum.asString());
+            this.xml.writeCharacters(checksum.hex());
             this.xml.writeEndElement();
         }
 

@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 Yegor Bugayenko
+ * Copyright (c) 2020 artipie.com
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,8 +42,6 @@ import javax.xml.stream.XMLStreamException;
  * and it proxies metadata to underlying output. After closing it saves
  * all metadata to {@code repomd.xml}.
  * @since 0.6
- * @todo #69:30min Add a unit test for this class, it should verify that
- *  it updates `repomd.xml` file correctly after save.
  */
 public final class MetadataFile implements PackageOutput {
 

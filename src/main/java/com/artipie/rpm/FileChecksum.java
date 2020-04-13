@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 Yegor Bugayenko
+ * Copyright (c) 2020 artipie.com
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -71,7 +71,7 @@ public final class FileChecksum implements Checksum {
     }
 
     @Override
-    public String asString() throws IOException {
+    public String hex() throws IOException {
         final MessageDigest digest = this.dgst.messageDigest();
         try (FileChannel chan = FileChannel.open(this.file, StandardOpenOption.READ)) {
             final ByteBuffer buf = ByteBuffer.allocate(FileChecksum.BUF_SIZE);
