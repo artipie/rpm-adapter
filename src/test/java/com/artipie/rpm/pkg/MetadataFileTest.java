@@ -36,7 +36,7 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Tests for {@link MetadataFile}.
  *
- * @since 1.0
+ * @since 0.6.3
  */
 public final class MetadataFileTest {
 

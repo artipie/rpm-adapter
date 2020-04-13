@@ -25,7 +25,7 @@
 /**
  * RPM package objects, tests.
  *
- * @since 0.6
+ * @since 0.6.3
  */
 package com.artipie.rpm.pkg;
 
