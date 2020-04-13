@@ -39,9 +39,6 @@ import javax.xml.stream.XMLStreamWriter;
  * This object is not thread safe and depends on order of method calls.
  * </p>
  * @since 0.4
- * @todo #69:30min Create a unit test to verify that this class
- *  can write `filelists.xml` file correctly. The example of filelists can
- *  be found at test resources.
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class XmlFilelists implements Closeable {
