@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 Yegor Bugayenko
+ * Copyright (c) 2020 artipie.com
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -167,7 +167,7 @@ public final class XmlRepomd implements Closeable {
         public void gzipChecksum(final Checksum checksum) throws XMLStreamException, IOException {
             this.xml.writeStartElement("checksum");
             this.xml.writeAttribute("type", checksum.digest().type());
-            this.xml.writeCharacters(checksum.asString());
+            this.xml.writeCharacters(checksum.hex());
             this.xml.writeEndElement();
         }
 
@@ -180,7 +180,7 @@ public final class XmlRepomd implements Closeable {
         public void openChecksum(final Checksum checksum) throws XMLStreamException, IOException {
             this.xml.writeStartElement("open-checksum");
             this.xml.writeAttribute("type", checksum.digest().type());
-            this.xml.writeCharacters(checksum.asString());
+            this.xml.writeCharacters(checksum.hex());
             this.xml.writeEndElement();
         }
 
