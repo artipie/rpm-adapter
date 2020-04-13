@@ -129,6 +129,7 @@ public final class XmlPrimary implements Closeable {
         return new Package(this.xml, this);
     }
 
+    // @checkstyle ExecutableStatementCount (30 lines)
     @Override
     public void close() throws IOException {
         final Path trf = Files.createTempFile("primary-", ".xml");
