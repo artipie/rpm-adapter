@@ -160,7 +160,7 @@ public final class XmlPrimary implements Closeable {
             Files.move(
                 trf,
                 this.tmp,
-                StandardCopyOption.REPLACE_EXISTING
+                StandardCopyOption.ATOMIC_MOVE
             );
         } catch (final XMLStreamException | TransformerException err) {
             throw new IOException("Failed to close", err);
