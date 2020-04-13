@@ -145,7 +145,10 @@ final class XmlFile {
      */
     private static XMLStreamWriter xmlStreamWriter(final Path path) {
         try {
-            return XmlFile.FACTORY.createXMLStreamWriter(Files.newOutputStream(path), "UTF-8");
+            return XmlFile.FACTORY.createXMLStreamWriter(
+                Files.newOutputStream(path),
+                StandardCharsets.UTF_8.name()
+            );
         } catch (final XMLStreamException err) {
             throw new IllegalStateException("Failed to create XML stream", err);
         } catch (final IOException err) {
