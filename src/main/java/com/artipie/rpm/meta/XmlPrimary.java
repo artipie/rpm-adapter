@@ -153,6 +153,7 @@ public final class XmlPrimary implements Closeable {
                     new StAXSource(reader),
                     new StreamResult(output)
                 );
+                reader.close();
             } finally {
                 Files.deleteIfExists(this.tmp);
             }
