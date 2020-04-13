@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm.meta;
 
+import com.jcabi.aspects.Tv;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,6 +37,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.xml.stream.XMLEventReader;
@@ -154,15 +156,22 @@ public final class XmlPrimary implements Closeable {
                     new StreamResult(output)
                 );
                 reader.close();
-            } finally {
-                Files.deleteIfExists(this.tmp);
+            }
+            int attempts = 0;
+            while (!Files.isWritable(this.tmp)) {
+                attempts += 1;
+                if (attempts > Tv.TEN) {
+                    continue;
+                }
+                TimeUnit.SECONDS.sleep(1);
             }
             Files.move(
                 trf,
                 this.tmp,
-                StandardCopyOption.ATOMIC_MOVE
+                StandardCopyOption.REPLACE_EXISTING
             );
-        } catch (final XMLStreamException | TransformerException err) {
+        } catch (final XMLStreamException | TransformerException
+            | InterruptedException err) {
             throw new IOException("Failed to close", err);
         } finally {
             if (Files.exists(trf)) {
