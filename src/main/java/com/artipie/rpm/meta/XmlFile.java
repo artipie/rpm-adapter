@@ -58,8 +58,10 @@ import javax.xml.transform.stream.StreamResult;
  *  to XmlPackagesFile and renamed close by exploiting directly that information.
  *  Once it is done, use XmlPackagesFile in XmlFilelists, XmlOthers, XmlPrimary and keep
  *  using XmlFile in XmlRepomd.
+ * @checkstyle MethodsOrderCheck (500 lines)
  */
-final class XmlFile implements XmlWriter{
+@SuppressWarnings("PMD.TooManyMethods")
+final class XmlFile implements XmlWriter {
 
     /**
      * XML factory.
@@ -150,13 +152,18 @@ final class XmlFile implements XmlWriter{
     }
 
     @Override
-    public void writeStartElement(String localName) throws XMLStreamException {
-        this.xml.writeStartElement(localName);
+    public void writeStartElement(
+        final String localname
+    ) throws XMLStreamException {
+        this.xml.writeStartElement(localname);
     }
 
     @Override
-    public void writeAttribute(String localName, String value) throws XMLStreamException {
-        this.xml.writeAttribute(localName, value);
+    public void writeAttribute(
+        final String localname,
+        final String value
+    ) throws XMLStreamException {
+        this.xml.writeAttribute(localname, value);
     }
 
     @Override
@@ -165,13 +172,18 @@ final class XmlFile implements XmlWriter{
     }
 
     @Override
-    public void writeStartDocument(String encoding, String version) throws XMLStreamException {
+    public void writeStartDocument(
+        final String encoding,
+        final String version
+    ) throws XMLStreamException {
         this.xml.writeStartDocument(encoding, version);
     }
 
     @Override
-    public void writeDefaultNamespace(String namespaceURI) throws XMLStreamException {
-        this.xml.writeDefaultNamespace(namespaceURI);
+    public void writeDefaultNamespace(
+        final String namespaceuri
+    ) throws XMLStreamException {
+        this.xml.writeDefaultNamespace(namespaceuri);
     }
 
     @Override
@@ -185,27 +197,36 @@ final class XmlFile implements XmlWriter{
     }
 
     @Override
-    public void writeEmptyElement(String localName) throws XMLStreamException {
-        this.xml.writeEmptyElement(localName);
+    public void writeEmptyElement(final String localname) throws XMLStreamException {
+        this.xml.writeEmptyElement(localname);
     }
 
     @Override
-    public void writeCharacters(String text) throws XMLStreamException {
+    public void writeCharacters(final String text) throws XMLStreamException {
         this.xml.writeCharacters(text);
     }
 
     @Override
-    public void writeNamespace(String prefix, String namespaceURI) throws XMLStreamException {
-        this.xml.writeNamespace(prefix, namespaceURI);
+    public void writeNamespace(
+        final String prefix,
+        final String namespaceuri
+    ) throws XMLStreamException {
+        this.xml.writeNamespace(prefix, namespaceuri);
     }
 
     @Override
-    public void writeEmptyElement(String namespaceURI, String localName) throws XMLStreamException {
-        this.xml.writeEmptyElement(namespaceURI, localName);
+    public void writeEmptyElement(
+        final String namespaceuri,
+        final String localname
+    ) throws XMLStreamException {
+        this.xml.writeEmptyElement(namespaceuri, localname);
     }
 
     @Override
-    public void writeStartElement(String namespaceURI, String localName) throws XMLStreamException {
-        this.xml.writeStartElement(namespaceURI, localName);
+    public void writeStartElement(
+        final String namespaceuri,
+        final String localname
+    ) throws XMLStreamException {
+        this.xml.writeStartElement(namespaceuri, localname);
     }
 }
