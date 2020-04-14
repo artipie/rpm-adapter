@@ -46,9 +46,6 @@ import javax.xml.transform.stream.StreamResult;
  * Xml file.
  *
  * @since 1.0
- * @todo #81:30min Introduce an envelope for XMLStreamWriter so that XmlFile
- *  can extend it and wrap the XMLStreamWriter created in the constructor
- *  instead of exposing its internal state via the writer() method.
  * @todo #81:30min Introduce a new class named XmlPackagesFile that should be responsible
  *  of writing the start of the document (as in {XmlFilelists, XmlOthers, XmlPrimary}.startPackages
  *  and XmlRepomd.begin) as well as writing the end of the document (as in
