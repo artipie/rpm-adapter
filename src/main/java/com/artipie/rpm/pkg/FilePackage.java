@@ -33,7 +33,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import org.redline_rpm.ReadableChannelWrapper;
 import org.redline_rpm.Scanner;
@@ -152,12 +154,19 @@ public final class FilePackage implements Package {
 
         @Override
         public List<String> headers(final Header.HeaderTag tag) {
-            return Arrays.asList((String[]) this.hdr.getEntry(tag).getValues());
+            return Optional.ofNullable(this.hdr.getEntry(tag))
+                .map(AbstractHeader.Entry::getValues)
+                .map(val -> (String[]) val)
+                .map(Arrays::asList)
+                .orElse(Collections.emptyList());
         }
 
         @Override
         public int[] intHeaders(final Header.HeaderTag tag) {
-            return (int[]) this.hdr.getEntry(tag).getValues();
+            return Optional.ofNullable(this.hdr.getEntry(tag))
+                .map(AbstractHeader.Entry::getValues)
+                .map(val -> (int[]) val)
+                .orElse(new int[0]);
         }
 
         @Override

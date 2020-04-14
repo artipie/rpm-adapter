@@ -190,4 +190,22 @@ SOFTWARE.
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>longTests</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <systemProperties combine.children="append">
+                <it.longtests.enabled>true</it.longtests.enabled>
+              </systemProperties>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

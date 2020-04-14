@@ -29,13 +29,17 @@ import com.artipie.asto.fs.FileStorage;
 import com.artipie.asto.rx.RxStorageWrapper;
 import io.reactivex.Observable;
 import io.vertx.reactivex.core.Vertx;
+import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
+import org.testcontainers.containers.GenericContainer;
 
 /**
  * Integration test for {@link Rpm}.
@@ -83,5 +87,150 @@ final class RpmITCase {
         new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
+    }
+
+    /**
+     * This class downloads about 400 RPM packages from Centos repository
+     * and updates it using Rpm.
+     * @since 0.7
+     */
+    @Nested
+    @EnabledIfSystemProperty(named = "it.longtests.enabled", matches = "true")
+    final class WithDockerPackages {
+
+        /**
+         * Vertx.
+         */
+        private Vertx vertx;
+
+        @BeforeEach
+        void setUp() {
+            this.vertx = Vertx.vertx();
+        }
+
+        @AfterEach
+        void tearDown() {
+            this.vertx.rxClose().blockingAwait();
+        }
+
+        @Test
+        void updateMetadata(@TempDir final Path repo) throws Exception {
+            final Centos centos = new Centos().withCommand("tail", "-f", "/dev/null");
+            centos.start();
+            centos.exec("yum -yq update").yum()
+                .download(
+                    String.join(
+                        " ",
+                        "firefox",
+                        "vim",
+                        "zsh",
+                        "java-11-openjdk-devel perl dotnet python3 ruby golang-bin",
+                        "git-core zlib zlib-devel gcc-c++ patch readline readline-devel",
+                        "libffi-devel openssl-devel make bzip2 autoconf",
+                        "automake libtool bison curl sqlite-devel",
+                        "ant",
+                        "maven",
+                        "tex texlive-ms",
+                        "qt5-linguist",
+                        "iptables",
+                        "xorg-x11-server-Xwayland",
+                        "gnome-autoar mesa-libGLw",
+                        "rrdtool cups",
+                        "httpd  epel-release nginx"
+                    )
+                ).back().exec("rm -fr /repo/*").close();
+            new Rpm(new FileStorage(repo, this.vertx.fileSystem())).batchUpdate(Key.ROOT)
+                .blockingAwait();
+        }
+    }
+
+    /**
+     * Centos8 Docker container.
+     * @since 0.7
+     */
+    private static final class Centos extends GenericContainer<Centos> {
+
+        /**
+         * Ctor.
+         */
+        Centos() {
+            super("centos:centos8");
+        }
+
+        /**
+         * Exec bash command.
+         * @param cmd Command
+         * @return Self
+         * @throws IOException On network problems
+         * @throws InterruptedException On thread interruption
+         */
+        @SuppressWarnings("PMD.SystemPrintln")
+        public Centos exec(final String cmd) throws IOException, InterruptedException {
+            final ExecResult res = this.execInContainer("/bin/bash", "-c", cmd);
+            if (res.getStdout() != null) {
+                System.out.println(res.getStdout());
+            }
+            if (res.getStderr() != null) {
+                System.err.println(res.getStderr());
+            }
+            if (res.getExitCode() != 0) {
+                throw new IllegalStateException(
+                    String.format("Failed to exec command: `%s`", cmd)
+                );
+            }
+            return this;
+        }
+
+        /**
+         * Yum tool.
+         * @return Yum instance
+         */
+        public Yum yum() {
+            return new Yum(this);
+        }
+    }
+
+    /**
+     * Yum tool.
+     * @since 0.7
+     */
+    private static final class Yum {
+
+        /**
+         * Centos container.
+         */
+        private final Centos centos;
+
+        /**
+         * Ctor.
+         * @param centos Centos
+         */
+        Yum(final Centos centos) {
+            this.centos = centos;
+        }
+
+        /**
+         * Back to Centos container.
+         * @return Centos
+         */
+        public Centos back() {
+            return this.centos;
+        }
+
+        /**
+         * Download a package to {@code /repo} dir.
+         * @param pkg Package
+         * @return Self
+         * @throws IOException On network error
+         * @throws InterruptedException On thread interruption
+         */
+        public Yum download(final String pkg) throws IOException, InterruptedException {
+            this.centos.exec(
+                String.format(
+                    "yum install -yq --downloadonly --downloaddir=/repo %s", pkg
+                )
+            );
+            return this;
+        }
     }
 }
