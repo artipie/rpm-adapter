@@ -24,13 +24,14 @@
 package com.artipie.rpm.meta;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -121,22 +122,25 @@ final class XmlFile {
             transformer.setOutputProperty(OutputKeys.ENCODING, StandardCharsets.UTF_8.name());
             transformer.setOutputProperty(OutputKeys.STANDALONE, "no");
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            final XMLInputFactory factory = XMLInputFactory.newFactory();
-            final XMLEventReader reader = new AlterAttributeEventReader(
-                factory.createXMLEventReader(Files.newInputStream(this.path)),
-                tag, attribute, value
-            );
-            transformer.transform(
-                new StAXSource(reader),
-                new StreamResult(Files.newOutputStream(trf, StandardOpenOption.TRUNCATE_EXISTING))
-            );
+            try (
+                InputStream input = Files.newInputStream(this.path);
+                OutputStream out = Files.newOutputStream(trf, StandardOpenOption.TRUNCATE_EXISTING)
+            ) {
+                transformer.transform(
+                    new StAXSource(
+                        new AlterAttributeEventReader(
+                            XMLInputFactory.newFactory().createXMLEventReader(input),
+                            tag, attribute, value
+                        )
+                    ),
+                    new StreamResult(out)
+                );
+            }
             Files.move(trf, this.path, StandardCopyOption.REPLACE_EXISTING);
         } catch (final XMLStreamException | TransformerException err) {
             throw new IOException("Failed to alter file", err);
         }  finally {
-            if (Files.exists(trf)) {
-                Files.delete(trf);
-            }
+            Files.deleteIfExists(trf);
         }
     }
 
