@@ -83,7 +83,7 @@ public interface Package {
 
     /**
      * Package metadata header.
-     * @since 1.0
+     * @since 0.6.3
      */
     interface MetaHeader {
         /**

@@ -160,7 +160,7 @@ public final class FilePackage implements Package {
     /**
      * {@link AbstractHeader.Entry} based MetaHeader.
      *
-     * @since 1.0
+     * @since 0.6.3
      */
     private static final class EntryHeader implements MetaHeader {
 
