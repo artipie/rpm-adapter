@@ -23,8 +23,12 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.asto.Key;
+import com.artipie.asto.fs.FileStorage;
+import io.vertx.reactivex.core.Vertx;
+import java.nio.file.Paths;
+import java.util.Locale;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -34,45 +38,23 @@ import org.apache.commons.cli.ParseException;
  * Cli tool main class.
  *
  * @since 0.6
+ * @todo #89:30min Cli options are not parsed correctly. getOptionValue method always return
+ *  default value for both options, so it's not possible to override them. But the tool is working
+ *  correctly. To build it use `cli` maven profile, see the README.
  */
 public final class Cli {
-    /**
-     * Naming policy option object.
-     */
-    private static final Option NAMING_OPTION = Option.builder("np")
-        .longOpt("naming-policy")
-        .desc("(optional, default simple) configures NamingPolicy for Rpm")
-        .hasArg()
-        .build();
 
     /**
-     * Digest option object.
+     * Rpm tool.
      */
-    private static final Option DIGEST_OPTION = Option.builder("d")
-        .longOpt("digest")
-        .desc("(optional, default sha256) configures Digest instance for Rpm")
-        .hasArg()
-        .build();
-
-    /**
-     * Options object.
-     */
-    private static final Options OPTIONS = new Options();
-
-    static {
-        Cli.OPTIONS.addOption(Cli.NAMING_OPTION);
-        Cli.OPTIONS.addOption(Cli.DIGEST_OPTION);
-    }
-
-    /**
-     * Command line parser object.
-     */
-    private static final CommandLineParser PARSER = new DefaultParser();
+    private final Rpm rpm;
 
     /**
      * Ctor.
+     * @param rpm Rpm instance
      */
-    private Cli() {
+    private Cli(final Rpm rpm) {
+        this.rpm = rpm;
     }
 
     /**
@@ -80,30 +62,75 @@ public final class Cli {
      *
      * @param args Arguments of command line
      * @throws ParseException if parsing failed
-     * @todo #68:30min start execution of the command
-     *  you can use cmd.getArgs() to get args as array of strings
-     *  you would expect something like ["update", "./package.rpm"]
-     *  use this link for documentation
-     *  https://commons.apache.org/proper/commons-cli/usage.html
+     * @todo #89:30min Refactor options parsing.
+     *  Extract the logic of parsing CLI arguments into separate class with
+     *  methods like naming, digest, path.
+     * @checkstyle IllegalCatchCheck (70 lines)
+     * @checkstyle LineLengthCheck (50 lines)
      */
-    @SuppressWarnings("ProhibitPublicStaticMethods")
-    public static void main(final String[] args) throws ParseException {
-        @SuppressWarnings("PMD.UnusedLocalVariable")
-        final CommandLine cmd = parseCommand(args);
+    @SuppressWarnings(
+        {
+            "PMD.SystemPrintln", "PMD.AvoidCatchingGenericException",
+            "PMD.DoNotCallSystemExit", "PMD.AvoidDuplicateLiterals"
+        }
+    )
+    public static void main(final String... args) throws ParseException {
+        final CommandLine cli = new DefaultParser().parse(
+            new Options()
+                .addOption(
+                    Option.builder("n")
+                        .argName("np")
+                        .longOpt("naming-policy")
+                        .desc("(optional, default plain) configures NamingPolicy for Rpm: plain, sha256 or sha1")
+                        .hasArg()
+                        .build()
+                )
+                .addOption(
+                    Option.builder("d")
+                        .argName("dgst")
+                        .longOpt("digest")
+                        .desc("(optional, default sha256) configures Digest instance for Rpm: sha256 or sha1")
+                        .hasArg()
+                        .build()
+                ),
+            args
+        );
+        if (cli.getArgs().length != 1) {
+            System.err.println("expected repository path");
+            System.exit(1);
+        }
+        final StandardNamingPolicy naming = StandardNamingPolicy.valueOf(
+            cli.getOptionValue("np", "plain").toUpperCase(Locale.US)
+        );
+        System.out.printf("RPM naming-policy=%s\n", naming);
+        final Digest digest = Digest.valueOf(
+            cli.getOptionValue("dgst", "sha256").toUpperCase(Locale.US)
+        );
+        System.out.printf("RPM digest=%s\n", digest);
+        final Vertx vertx = Vertx.vertx();
+        try {
+            new Cli(
+                new Rpm(
+                    new FileStorage(
+                        Paths.get(cli.getArgList().get(0)),
+                        vertx.fileSystem()
+                    ),
+                    naming,
+                    digest
+                )
+            ).run();
+        } catch (final Exception err) {
+            System.err.printf("RPM failed: %s\n", err.getLocalizedMessage());
+            err.printStackTrace(System.err);
+        } finally {
+            vertx.close();
+        }
     }
 
     /**
-     * Parse the args and get the command.
-     *
-     * @param args Array of string of arguments
-     * @return CommandLine Object of the command
-     * @throws ParseException if parsing failed
+     * Run CLI tool.
      */
-    private static CommandLine parseCommand(final String... args) throws ParseException {
-        final CommandLine cmd = Cli.PARSER.parse(Cli.OPTIONS, args);
-        if (cmd.getArgs().length != 2) {
-            throw new ParseException("Wrong arguments count, something is missing");
-        }
-        return cmd;
+    private void run() {
+        this.rpm.batchUpdate(Key.ROOT).blockingAwait();
     }
 }

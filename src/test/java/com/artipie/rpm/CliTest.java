@@ -26,6 +26,7 @@ package com.artipie.rpm;
 import org.apache.commons.cli.ParseException;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test;
  *
  * @since 0.6
  */
+@Disabled
 class CliTest {
 
     @Test
@@ -43,9 +45,8 @@ class CliTest {
             MatcherAssert.assertThat(
                 String.format("Exception occurred: %s", exception.getMessage()),
                 "Wrong arguments count, something is missing",
-                    IsEqual.equalTo(exception.getMessage())
+                IsEqual.equalTo(exception.getMessage())
             );
         }
     }
-
 }

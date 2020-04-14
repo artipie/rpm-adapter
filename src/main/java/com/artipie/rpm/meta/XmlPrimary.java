@@ -41,7 +41,7 @@ import javax.xml.stream.XMLStreamWriter;
  * This object is not thread safe and depends on order of method calls.
  * </p>
  *
- * @since 0.7
+ * @since 0.6
  * @todo #69:30min Create a unit test to verify that this class
  *  can write `primary.xml` file correctly. The example of primary.xml can
  *  be found at test resources.
@@ -117,7 +117,7 @@ public final class XmlPrimary implements Closeable {
 
     /**
      * XML package writer.
-     * @since 0.7
+     * @since 0.6
      */
     public static final class Package {
 
@@ -349,7 +349,7 @@ public final class XmlPrimary implements Closeable {
 
     /**
      * Format package writer.
-     * @since 0.7
+     * @since 0.6
      */
     public static final class Format {
 
