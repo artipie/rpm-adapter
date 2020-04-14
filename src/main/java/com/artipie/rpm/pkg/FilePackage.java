@@ -130,9 +130,7 @@ public final class FilePackage implements Package {
 
         @Override
         public MetaHeader header(final Header.HeaderTag tag) {
-            return new EntryHeader(
-                Optional.ofNullable(this.hdr.getEntry(tag))
-            );
+            return new EntryHeader(this.hdr.getEntry(tag));
         }
 
         @Override
@@ -170,6 +168,14 @@ public final class FilePackage implements Package {
          * Native header entry.
          */
         private final Optional<AbstractHeader.Entry<?>> entry;
+
+        /**
+         * Ctor.
+         * @param entry Native header entry
+         */
+        EntryHeader(final AbstractHeader.Entry<?> entry) {
+            this(Optional.ofNullable(entry));
+        }
 
         /**
          * Ctor.
