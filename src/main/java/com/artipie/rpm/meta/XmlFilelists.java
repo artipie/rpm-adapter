@@ -76,10 +76,10 @@ public final class XmlFilelists implements Closeable {
      * @throws XMLStreamException when XML generation causes error
      */
     public XmlFilelists startPackages() throws XMLStreamException {
-        this.xml.writer().writeStartDocument("UTF-8", "1.0");
-        this.xml.writer().writeStartElement("filelists");
-        this.xml.writer().writeDefaultNamespace("http://linux.duke.edu/metadata/filelists");
-        this.xml.writer().writeAttribute("packages", "-1");
+        this.xml.writeStartDocument("UTF-8", "1.0");
+        this.xml.writeStartElement("filelists");
+        this.xml.writeDefaultNamespace("http://linux.duke.edu/metadata/filelists");
+        this.xml.writeAttribute("packages", "-1");
         return this;
     }
 
@@ -93,19 +93,19 @@ public final class XmlFilelists implements Closeable {
      */
     public Package startPackage(final String name, final String arch, final String checksum)
         throws XMLStreamException {
-        this.xml.writer().writeStartElement("package");
-        this.xml.writer().writeAttribute("pkgid", checksum);
-        this.xml.writer().writeAttribute("name", name);
-        this.xml.writer().writeAttribute("arch", arch);
-        return new Package(this, this.xml.writer());
+        this.xml.writeStartElement("package");
+        this.xml.writeAttribute("pkgid", checksum);
+        this.xml.writeAttribute("name", name);
+        this.xml.writeAttribute("arch", arch);
+        return new Package(this, this.xml);
     }
 
     @Override
     public void close() throws IOException {
         try {
-            this.xml.writer().writeEndElement();
-            this.xml.writer().writeEndDocument();
-            this.xml.writer().close();
+            this.xml.writeEndElement();
+            this.xml.writeEndDocument();
+            this.xml.close();
             this.xml.alterTag(
                 "filelists",
                 "packages",
@@ -130,14 +130,14 @@ public final class XmlFilelists implements Closeable {
         /**
          * XML stream.
          */
-        private final XMLStreamWriter xml;
+        private final XmlFile xml;
 
         /**
          * Ctor.
          * @param filelists Filelists
          * @param xml XML stream
          */
-        Package(final XmlFilelists filelists, final XMLStreamWriter xml) {
+        Package(final XmlFilelists filelists, final XmlFile xml) {
             this.filelists = filelists;
             this.xml = xml;
         }

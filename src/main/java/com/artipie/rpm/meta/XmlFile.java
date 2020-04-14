@@ -59,7 +59,7 @@ import javax.xml.transform.stream.StreamResult;
  *  Once it is done, use XmlPackagesFile in XmlFilelists, XmlOthers, XmlPrimary and keep
  *  using XmlFile in XmlRepomd.
  */
-final class XmlFile {
+final class XmlFile implements XmlWriter{
 
     /**
      * XML factory.
@@ -92,15 +92,6 @@ final class XmlFile {
     private XmlFile(final Path path, final XMLStreamWriter xml) {
         this.path = path;
         this.xml = xml;
-    }
-
-    /**
-     * Underlying XML writer.
-     *
-     * @return XML stream writer
-     */
-    public XMLStreamWriter writer() {
-        return this.xml;
     }
 
     /**
@@ -156,5 +147,65 @@ final class XmlFile {
         } catch (final IOException err) {
             throw new UncheckedIOException("Failed to open file stream", err);
         }
+    }
+
+    @Override
+    public void writeStartElement(String localName) throws XMLStreamException {
+        this.xml.writeStartElement(localName);
+    }
+
+    @Override
+    public void writeAttribute(String localName, String value) throws XMLStreamException {
+        this.xml.writeAttribute(localName, value);
+    }
+
+    @Override
+    public void writeEndElement() throws XMLStreamException {
+        this.xml.writeEndElement();
+    }
+
+    @Override
+    public void writeStartDocument(String encoding, String version) throws XMLStreamException {
+        this.xml.writeStartDocument(encoding, version);
+    }
+
+    @Override
+    public void writeDefaultNamespace(String namespaceURI) throws XMLStreamException {
+        this.xml.writeDefaultNamespace(namespaceURI);
+    }
+
+    @Override
+    public void writeEndDocument() throws XMLStreamException {
+        this.xml.writeEndDocument();
+    }
+
+    @Override
+    public void close() throws XMLStreamException {
+        this.xml.close();
+    }
+
+    @Override
+    public void writeEmptyElement(String localName) throws XMLStreamException {
+        this.xml.writeEmptyElement(localName);
+    }
+
+    @Override
+    public void writeCharacters(String text) throws XMLStreamException {
+        this.xml.writeCharacters(text);
+    }
+
+    @Override
+    public void writeNamespace(String prefix, String namespaceURI) throws XMLStreamException {
+        this.xml.writeNamespace(prefix, namespaceURI);
+    }
+
+    @Override
+    public void writeEmptyElement(String namespaceURI, String localName) throws XMLStreamException {
+        this.xml.writeEmptyElement(namespaceURI, localName);
+    }
+
+    @Override
+    public void writeStartElement(String namespaceURI, String localName) throws XMLStreamException {
+        this.xml.writeStartElement(namespaceURI, localName);
     }
 }
