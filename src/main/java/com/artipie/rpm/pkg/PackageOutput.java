@@ -25,6 +25,7 @@ package com.artipie.rpm.pkg;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -55,6 +56,56 @@ public interface PackageOutput extends Closeable {
          * @return Path
          */
         Path file();
+
+        /**
+         * Fake {@link FileOutput}.
+         *
+         * @since 1.0
+         */
+        final class Fake implements FileOutput {
+
+            /**
+             * File path.
+             */
+            private final Path file;
+
+            /**
+             * Ctor.
+             *
+             * @param file File path
+             */
+            public Fake(final Path file) {
+                this.file = file;
+            }
+
+            /**
+             * Start packages.
+             * @return Self
+             * @throws IOException On failure
+             */
+            public Fake start() throws IOException {
+                Files.write(
+                    this.file,
+                    Arrays.asList("content")
+                );
+                return this;
+            }
+
+            @Override
+            public void accept(final Package.Meta meta) {
+                // nothing
+            }
+
+            @Override
+            public void close() {
+                // nothing
+            }
+
+            @Override
+            public Path file() {
+                return this.file;
+            }
+        }
     }
 
     /**
