@@ -72,6 +72,11 @@ final class XmlFile {
     private final XMLStreamWriter xml;
 
     /**
+     * Output stream.
+     */
+    private final OutputStream stream;
+
+    /**
      * XML file path.
      */
     private final Path path;
@@ -81,16 +86,27 @@ final class XmlFile {
      * @param path File path
      */
     XmlFile(final Path path) {
-        this(path, xmlStreamWriter(path));
+        this(path, outputStream(path));
     }
 
     /**
      * Primary ctor.
      * @param path File path
+     * @param out Underlying output stream
+     */
+    private XmlFile(final Path path, final OutputStream out) {
+        this(path, out, xmlStreamWriter(out));
+    }
+
+    /**
+     * Primary ctor.
+     * @param path File path
+     * @param out Underlying output stream
      * @param xml XML stream writer
      */
-    private XmlFile(final Path path, final XMLStreamWriter xml) {
+    private XmlFile(final Path path, final OutputStream out, final XMLStreamWriter xml) {
         this.path = path;
+        this.stream = out;
         this.xml = xml;
     }
 
@@ -114,6 +130,7 @@ final class XmlFile {
     public void alterTag(
         final String tag, final String attribute, final String value
     ) throws IOException {
+        this.stream.close();
         final Path trf = Files.createTempFile("", ".xml");
         try {
             final Transformer transformer = TransformerFactory.newInstance().newTransformer();
@@ -144,20 +161,31 @@ final class XmlFile {
     }
 
     /**
-     * New XML stream writer from path.
+     * New stream from path.
      * @param path File path
+     * @return Output stream
+     */
+    private static OutputStream outputStream(final Path path) {
+        try {
+            return Files.newOutputStream(path);
+        } catch (final IOException err) {
+            throw new UncheckedIOException("Failed to open file stream", err);
+        }
+    }
+
+    /**
+     * New XML stream writer from path.
+     * @param out Output stream
      * @return XML stream writer
      */
-    private static XMLStreamWriter xmlStreamWriter(final Path path) {
+    private static XMLStreamWriter xmlStreamWriter(final OutputStream out) {
         try {
             return XmlFile.FACTORY.createXMLStreamWriter(
-                Files.newOutputStream(path),
+                out,
                 StandardCharsets.UTF_8.name()
             );
         } catch (final XMLStreamException err) {
             throw new IllegalStateException("Failed to create XML stream", err);
-        } catch (final IOException err) {
-            throw new UncheckedIOException("Failed to open file stream", err);
         }
     }
 }
