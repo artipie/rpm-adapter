@@ -77,6 +77,12 @@ public final class MetadataFile implements PackageOutput {
         this.output.accept(meta);
     }
 
+    @Override
+    public void close() throws IOException {
+        this.output.close();
+        Logger.info(this, "output %s closed", this.output);
+    }
+
     /**
      * Save metadata to repomd, produce gzipped output.
      * @param naming Naming policy
@@ -85,8 +91,6 @@ public final class MetadataFile implements PackageOutput {
      * @throws IOException On error
      */
     public Path save(final NamingPolicy naming, final Digest digest) throws IOException {
-        this.output.close();
-        Logger.info(this, "output %s closed", this.output);
         final Path open = this.output.file();
         Path gzip = Files.createTempFile(this.type, ".gz");
         MetadataFile.gzip(open, gzip);
@@ -106,11 +110,6 @@ public final class MetadataFile implements PackageOutput {
         }
         Files.delete(open);
         return gzip;
-    }
-
-    @Override
-    public void close() {
-        // nothing to close
     }
 
     @Override
