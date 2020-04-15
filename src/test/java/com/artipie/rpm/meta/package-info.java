@@ -21,32 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm;
-
-import org.apache.commons.cli.ParseException;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
 
 /**
- * Test case for {@link Cli}.
+ * Metadata generators for RPM files, tests.
  *
- * @since 0.6
+ * @since 0.6.3
  */
-@Disabled
-class CliTest {
-
-    @Test
-    void testWrongArgumentCount() {
-        try {
-            Cli.main(new String[]{"a"});
-        } catch (final ParseException exception) {
-            MatcherAssert.assertThat(
-                String.format("Exception occurred: %s", exception.getMessage()),
-                "Wrong arguments count, something is missing",
-                IsEqual.equalTo(exception.getMessage())
-            );
-        }
-    }
-}
+package com.artipie.rpm.meta;

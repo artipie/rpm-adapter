@@ -21,32 +21,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm;
+package com.artipie.rpm.meta;
 
-import org.apache.commons.cli.ParseException;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.Disabled;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Test case for {@link Cli}.
+ * Tests for {@link XmlFilelists}.
  *
- * @since 0.6
+ * @since 0.6.3
  */
-@Disabled
-class CliTest {
-
+public final class XmlFilelistsTest {
+    // @todo #84:30min This test only creates a temporary file for XmlFilelists,
+    //  now some assertion should be added to verify that this class
+    //  can write `filelists.xml` file correctly. The example of filelists can
+    //  be found at test resources. If #86 is fixed then remove the DisabledOnOs
+    //  annotation.
     @Test
-    void testWrongArgumentCount() {
-        try {
-            Cli.main(new String[]{"a"});
-        } catch (final ParseException exception) {
-            MatcherAssert.assertThat(
-                String.format("Exception occurred: %s", exception.getMessage()),
-                "Wrong arguments count, something is missing",
-                IsEqual.equalTo(exception.getMessage())
-            );
+    @DisabledOnOs(OS.WINDOWS)
+    public void writesFile(@TempDir final Path temp) throws Exception {
+        final Path file = temp.resolve("filelists.xml");
+        try (XmlFilelists list = new XmlFilelists(file)) {
+            list.startPackages()
+                .startPackage("packagename", "packagearch", "packagechecksun")
+                .version(1, "packageversion", "packagerel")
+                .files(
+                    new String[] {"file" },
+                    new String[] {"dir" },
+                    new int[] {0 }
+                ).close();
         }
     }
 }

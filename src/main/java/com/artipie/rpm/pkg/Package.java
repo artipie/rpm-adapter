@@ -46,41 +46,14 @@ public interface Package {
     /**
      * Package metadata.
      * @since 0.6
-     * @todo #69:30min This class has too many methods, consider refactoring it.
-     *  Most probably headers methods can be moved to another Headers (or Tags) object.
      */
-    @SuppressWarnings("PMD.TooManyMethods")
     interface Meta {
-
         /**
          * Read header.
          * @param tag Tag name
-         * @param def Default value
-         * @return Header value
+         * @return Header
          */
-        String header(Header.HeaderTag tag, String def);
-
-        /**
-         * Integer header.
-         * @param tag Tag name
-         * @param def Default value
-         * @return Integer number
-         */
-        int header(Header.HeaderTag tag, int def);
-
-        /**
-         * List of string headers.
-         * @param tag Tag name
-         * @return List of values
-         */
-        List<String> headers(Header.HeaderTag tag);
-
-        /**
-         * Int headers.
-         * @param tag Tag name
-         * @return Int array
-         */
-        int[] intHeaders(Header.HeaderTag tag);
+        MetaHeader header(Header.HeaderTag tag);
 
         /**
          * RPM file checksum.
@@ -106,5 +79,37 @@ public interface Package {
          * @return Begin and end values
          */
         int[] range();
+    }
+
+    /**
+     * Package metadata header.
+     * @since 0.6.3
+     */
+    interface MetaHeader {
+        /**
+         * String header.
+         * @param def Default value
+         * @return Header value
+         */
+        String asString(String def);
+
+        /**
+         * Integer header.
+         * @param def Default value
+         * @return Integer number
+         */
+        int asInt(int def);
+
+        /**
+         * List of strings header.
+         * @return List of values
+         */
+        List<String> asStrings();
+
+        /**
+         * Array of ints header.
+         * @return Int array
+         */
+        int[] asInts();
     }
 }
