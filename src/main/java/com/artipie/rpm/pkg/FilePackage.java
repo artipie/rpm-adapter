@@ -33,7 +33,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import org.redline_rpm.ReadableChannelWrapper;
 import org.redline_rpm.Scanner;
@@ -127,37 +129,8 @@ public final class FilePackage implements Package {
         }
 
         @Override
-        public String header(final Header.HeaderTag tag, final String def) {
-            final AbstractHeader.Entry<?> entry = this.hdr.getEntry(tag);
-            final String val;
-            if (entry == null) {
-                val = "";
-            } else {
-                val = ((String[]) entry.getValues())[0];
-            }
-            return val;
-        }
-
-        @Override
-        public int header(final Header.HeaderTag tag, final int def) {
-            final AbstractHeader.Entry<?> entry = this.hdr.getEntry(tag);
-            final int val;
-            if (entry == null) {
-                val = def;
-            } else {
-                val = ((int[]) entry.getValues())[0];
-            }
-            return val;
-        }
-
-        @Override
-        public List<String> headers(final Header.HeaderTag tag) {
-            return Arrays.asList((String[]) this.hdr.getEntry(tag).getValues());
-        }
-
-        @Override
-        public int[] intHeaders(final Header.HeaderTag tag) {
-            return (int[]) this.hdr.getEntry(tag).getValues();
+        public MetaHeader header(final Header.HeaderTag tag) {
+            return new EntryHeader(this.hdr.getEntry(tag));
         }
 
         @Override
@@ -181,6 +154,63 @@ public final class FilePackage implements Package {
                 this.hdr.getStartPos(),
                 this.hdr.getEndPos(),
             };
+        }
+    }
+
+    /**
+     * {@link AbstractHeader.Entry} based MetaHeader.
+     *
+     * @since 0.6.3
+     */
+    private static final class EntryHeader implements MetaHeader {
+
+        /**
+         * Native header entry.
+         */
+        private final Optional<AbstractHeader.Entry<?>> entry;
+
+        /**
+         * Ctor.
+         * @param entry Native header entry
+         */
+        EntryHeader(final AbstractHeader.Entry<?> entry) {
+            this(Optional.ofNullable(entry));
+        }
+
+        /**
+         * Ctor.
+         * @param entry Native header entry
+         */
+        EntryHeader(final Optional<AbstractHeader.Entry<?>> entry) {
+            this.entry = entry;
+        }
+
+        @Override
+        public String asString(final String def) {
+            return this.entry
+                .map(e -> ((String[]) e.getValues())[0])
+                .orElse(def);
+        }
+
+        @Override
+        public int asInt(final int def) {
+            return this.entry
+                .map(e -> ((int[]) e.getValues())[0])
+                .orElse(def);
+        }
+
+        @Override
+        public List<String> asStrings() {
+            return this.entry
+                .map(e -> Arrays.asList((String[]) e.getValues()))
+                .orElse(Collections.emptyList());
+        }
+
+        @Override
+        public int[] asInts() {
+            return this.entry
+                .map(e -> (int[]) e.getValues())
+                .orElseGet(() -> new int[0]);
         }
     }
 }
