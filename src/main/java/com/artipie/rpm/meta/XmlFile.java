@@ -31,7 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -124,7 +123,7 @@ final class XmlFile {
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             try (
                 InputStream input = Files.newInputStream(this.path);
-                OutputStream out = Files.newOutputStream(trf, StandardOpenOption.TRUNCATE_EXISTING)
+                OutputStream out = Files.newOutputStream(trf)
             ) {
                 transformer.transform(
                     new StAXSource(
