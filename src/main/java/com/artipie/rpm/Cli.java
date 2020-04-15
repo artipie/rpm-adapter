@@ -65,6 +65,8 @@ public final class Cli {
      * @todo #89:30min Refactor options parsing.
      *  Extract the logic of parsing CLI arguments into separate class with
      *  methods like naming, digest, path.
+     * @todo #79:30min Right now Rpm always includes filelists - the flag is hard-coded to
+     *  true. Let's make it a command line option to pass to the Rpm class.
      * @checkstyle IllegalCatchCheck (70 lines)
      * @checkstyle LineLengthCheck (50 lines)
      */
@@ -116,7 +118,8 @@ public final class Cli {
                         vertx.fileSystem()
                     ),
                     naming,
-                    digest
+                    digest,
+                    true
                 )
             ).run();
         } catch (final Exception err) {

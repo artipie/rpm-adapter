@@ -45,6 +45,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -63,11 +64,6 @@ import java.util.stream.Collectors;
  * <pre> rpm.batchUpdate(new Key.From("rmp-repo"));</pre>
  *
  * @since 0.1
- * @todo #69:30min Add option to exclude `filelists.xml` metadata file from
- *  updates. Som RPM repositories contains too many files in RPM packages,
- *  so it may take too many time to update the filelists. Just add an option
- *  to `Rpm` constructor and exclude filelists output from `Repository`
- *  list of metadata files in `batchUpdate` method.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
@@ -89,11 +85,17 @@ public final class Rpm {
     private final Digest digest;
 
     /**
+     * Include filelists?
+     */
+    private final boolean filelists;
+
+    /**
      * New Rpm for repository in storage.
      * @param stg The storage which contains repository
+     * @param filelists Include file lists in update
      */
-    public Rpm(final Storage stg) {
-        this(stg, StandardNamingPolicy.PLAIN, Digest.SHA256);
+    public Rpm(final Storage stg, final boolean filelists) {
+        this(stg, StandardNamingPolicy.PLAIN, Digest.SHA256, filelists);
     }
 
     /**
@@ -101,11 +103,15 @@ public final class Rpm {
      * @param stg The storage
      * @param naming RPM files naming policy
      * @param dgst Hashing sum computation algorithm
+     * @param filelists Include file lists in update
+     * @checkstyle ParameterNumberCheck (3 lines)
      */
-    public Rpm(final Storage stg, final NamingPolicy naming, final Digest dgst) {
+    public Rpm(final Storage stg, final NamingPolicy naming, final Digest dgst,
+        final boolean filelists) {
         this.storage = stg;
         this.naming = naming;
         this.digest = dgst;
+        this.filelists = filelists;
     }
 
     /**
@@ -185,30 +191,31 @@ public final class Rpm {
                         Files.createTempFile("repomd-", ".xml")
                     );
                     repomd.begin(System.currentTimeMillis() / Tv.THOUSAND);
-                    return new Repository(
-                        repomd,
-                        Arrays.asList(
-                            new MetadataFile(
-                                "primary",
-                                new PrimaryOutput(Files.createTempFile("primary-", ".xml"))
-                                    .start(),
-                                repomd
-                            ),
-                            new MetadataFile(
-                                "others",
-                                new OthersOutput(Files.createTempFile("others-", ".xml"))
-                                    .start(),
-                                repomd
-                            ),
+                    final List<MetadataFile> files = Arrays.asList(
+                        new MetadataFile(
+                            "primary",
+                            new PrimaryOutput(Files.createTempFile("primary-", ".xml"))
+                                .start(),
+                            repomd
+                        ),
+                        new MetadataFile(
+                            "others",
+                            new OthersOutput(Files.createTempFile("others-", ".xml"))
+                                .start(),
+                            repomd
+                        )
+                    );
+                    if (this.filelists) {
+                        files.add(
                             new MetadataFile(
                                 "filelists",
                                 new FilelistsOutput(Files.createTempFile("filelists-", ".xml"))
                                     .start(),
                                 repomd
                             )
-                        ),
-                        this.digest
-                    );
+                        );
+                    }
+                    return new Repository(repomd, files, this.digest);
                 },
                 Repository::update
             )
