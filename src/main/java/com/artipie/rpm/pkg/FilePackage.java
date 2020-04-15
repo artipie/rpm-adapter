@@ -84,7 +84,7 @@ public final class FilePackage implements Package {
     private Header header() throws IOException {
         try (FileChannel chan = FileChannel.open(this.file, StandardOpenOption.READ)) {
             final Format format = new Scanner(
-                new PrintStream(Logger.stream(Level.INFO, this))
+                new PrintStream(Logger.stream(Level.FINE, this))
             ).run(new ReadableChannelWrapper(chan));
             final Header header = format.getHeader();
             Logger.debug(this, "header: %s", header.toString());
