@@ -153,6 +153,7 @@ SOFTWARE.
           <configuration>
             <excludes combine.children="append">
               <exclude>checkstyle:/src/test/resources-binary/.*</exclude>
+              <exclude>checkstyle:/src/test/resources-binary/rpms/.*</exclude>
             </excludes>
           </configuration>
         </plugin>

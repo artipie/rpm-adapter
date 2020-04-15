@@ -29,11 +29,16 @@ import com.artipie.asto.fs.FileStorage;
 import com.artipie.asto.rx.RxStorageWrapper;
 import io.reactivex.Observable;
 import io.vertx.reactivex.core.Vertx;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -56,8 +61,10 @@ import org.testcontainers.containers.GenericContainer;
  *  FileAlreadyExistException in PrimaryXml.close in Files.move, but it's using
  *  REPLACE_EXISTING options, so it should not fail and it's not failing on Linux.
  *  Let's discover the problem, fix it, and remove DisabledOnOs(OS.WINDOWS) annotation.
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 @DisabledOnOs(OS.WINDOWS)
+@EnabledIfSystemProperty(named = "it.longtests.enabled", matches = "true")
 final class RpmITCase {
 
     /**
@@ -76,71 +83,61 @@ final class RpmITCase {
     }
 
     @Test
-    void generatesMetadata(@TempDir final Path tmp) {
+    void generatesMetadata(@TempDir final Path tmp) throws Exception {
         final Storage storage = new FileStorage(tmp, this.vertx.fileSystem());
-        Observable.fromArray(
-            "aom-1.0.0-8.20190810git9666276.el8.aarch64.rpm",
-            "nginx-1.16.1-1.el8.ngx.x86_64.rpm"
+        final List<String> rpms = resources("rpms");
+        Observable.fromIterable(
+            rpms
         ).flatMapCompletable(
-            rpm -> new RxStorageWrapper(storage).save(new Key.From(rpm), new TestContent(rpm))
+            rpm -> new RxStorageWrapper(storage)
+                .save(new Key.From(rpm), new TestContent(String.format("rpms/%s", rpm)))
         ).blockingAwait();
         new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
     }
 
+    @Test
+    void updateMetadata(@TempDir final Path repo) throws Exception {
+        final Centos centos = new Centos().withCommand("tail", "-f", "/dev/null");
+        centos.start();
+        centos.exec("yum -yq update").yum()
+            .download(
+                String.join(
+                    " ",
+                    "firefox",
+                    "vim",
+                    "zsh",
+                    "java-11-openjdk-devel perl dotnet python3 ruby golang-bin",
+                    "git-core zlib zlib-devel gcc-c++ patch readline readline-devel",
+                    "libffi-devel openssl-devel make bzip2 autoconf",
+                    "automake libtool bison curl sqlite-devel",
+                    "ant",
+                    "maven",
+                    "tex texlive-ms",
+                    "qt5-linguist",
+                    "iptables",
+                    "xorg-x11-server-Xwayland",
+                    "gnome-autoar mesa-libGLw",
+                    "rrdtool cups",
+                    "httpd  epel-release nginx"
+                )
+            ).back().exec("rm -fr /repo/*").close();
+        new Rpm(new FileStorage(repo, this.vertx.fileSystem())).batchUpdate(Key.ROOT)
+            .blockingAwait();
+    }
+
     /**
-     * This class downloads about 400 RPM packages from Centos repository
-     * and updates it using Rpm.
-     * @since 0.7
+     * Test resources by name.
+     * @param dir Resource directory
+     * @return List of resource name
+     * @throws Exception On error
      */
-    @Nested
-    @EnabledIfSystemProperty(named = "it.longtests.enabled", matches = "true")
-    final class WithDockerPackages {
-
-        /**
-         * Vertx.
-         */
-        private Vertx vertx;
-
-        @BeforeEach
-        void setUp() {
-            this.vertx = Vertx.vertx();
-        }
-
-        @AfterEach
-        void tearDown() {
-            this.vertx.rxClose().blockingAwait();
-        }
-
-        @Test
-        void updateMetadata(@TempDir final Path repo) throws Exception {
-            final Centos centos = new Centos().withCommand("tail", "-f", "/dev/null");
-            centos.start();
-            centos.exec("yum -yq update").yum()
-                .download(
-                    String.join(
-                        " ",
-                        "firefox",
-                        "vim",
-                        "zsh",
-                        "java-11-openjdk-devel perl dotnet python3 ruby golang-bin",
-                        "git-core zlib zlib-devel gcc-c++ patch readline readline-devel",
-                        "libffi-devel openssl-devel make bzip2 autoconf",
-                        "automake libtool bison curl sqlite-devel",
-                        "ant",
-                        "maven",
-                        "tex texlive-ms",
-                        "qt5-linguist",
-                        "iptables",
-                        "xorg-x11-server-Xwayland",
-                        "gnome-autoar mesa-libGLw",
-                        "rrdtool cups",
-                        "httpd  epel-release nginx"
-                    )
-                ).back().exec("rm -fr /repo/*").close();
-            new Rpm(new FileStorage(repo, this.vertx.fileSystem())).batchUpdate(Key.ROOT)
-                .blockingAwait();
+    private static List<String> resources(final String dir) throws Exception {
+        final ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        try (InputStream stream = Objects.requireNonNull(loader.getResourceAsStream(dir))) {
+            return new BufferedReader(new InputStreamReader(stream))
+                .lines().collect(Collectors.toList());
         }
     }
 
