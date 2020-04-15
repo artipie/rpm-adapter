@@ -42,9 +42,6 @@ import javax.xml.stream.XMLStreamWriter;
  * </p>
  *
  * @since 0.6
- * @todo #69:30min Create a unit test to verify that this class
- *  can write `primary.xml` file correctly. The example of primary.xml can
- *  be found at test resources.
  */
 @SuppressWarnings({"PMD.TooManyMethods", "PMD.AvoidDuplicateLiterals"})
 public final class XmlPrimary implements Closeable {
@@ -78,14 +75,16 @@ public final class XmlPrimary implements Closeable {
 
     /**
      * Start packages section.
+     * @return Self
      * @throws XMLStreamException On error
      */
-    public void startPackages() throws XMLStreamException {
+    public XmlPrimary startPackages() throws XMLStreamException {
         this.xml.writer().writeStartDocument(StandardCharsets.UTF_8.displayName(), "1.0");
         this.xml.writer().writeStartElement("metadata");
         this.xml.writer().writeDefaultNamespace("http://linux.duke.edu/metadata/common");
         this.xml.writer().writeNamespace("rpm", "http://linux.duke.edu/metadata/rpm");
         this.xml.writer().writeAttribute("packages", "-1");
+        return this;
     }
 
     /**
