@@ -30,7 +30,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * RPM package output.
@@ -153,13 +152,9 @@ public interface PackageOutput extends Closeable {
                 }
             }
             if (!errors.isEmpty()) {
-                throw new IOException(
-                    String.format(
-                        "There are some errors in underlying outputs: %s",
-                        errors.stream().map(Throwable::getMessage)
-                            .collect(Collectors.joining("; "))
-                    )
-                );
+                final IOException exc = new IOException("Couldn't close underlying outputs");
+                errors.forEach(exc::addSuppressed);
+                throw exc;
             }
         }
     }
