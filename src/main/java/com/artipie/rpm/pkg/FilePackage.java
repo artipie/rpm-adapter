@@ -74,6 +74,12 @@ public final class FilePackage implements Package {
     @Override
     public void save(final PackageOutput out, final Digest digest) throws IOException {
         out.accept(new FilePackage.Headers(this.header(), this.file, digest));
+        Files.delete(this.file);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s[%s]", this.getClass().getSimpleName(), this.file.getFileName());
     }
 
     /**

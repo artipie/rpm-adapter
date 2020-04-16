@@ -74,9 +74,11 @@ public final class FileChecksum implements Checksum {
     public String hex() throws IOException {
         final MessageDigest digest = this.dgst.messageDigest();
         try (FileChannel chan = FileChannel.open(this.file, StandardOpenOption.READ)) {
-            final ByteBuffer buf = ByteBuffer.allocate(FileChecksum.BUF_SIZE);
+            final ByteBuffer buf = ByteBuffer.allocateDirect(FileChecksum.BUF_SIZE);
             while (chan.read(buf) > 0) {
+                buf.flip();
                 digest.update(buf);
+                buf.clear();
             }
         }
         return DatatypeConverter.printHexBinary(digest.digest())
