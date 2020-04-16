@@ -80,6 +80,19 @@ final class Repository implements PackageOutput {
         return this;
     }
 
+    @Override
+    public void accept(final Package.Meta meta) throws IOException {
+        synchronized (this.metadata) {
+            new PackageOutput.Multiple(this.metadata).accept(meta);
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        new PackageOutput.Multiple(this.metadata).close();
+        Logger.info(this, "repository closed");
+    }
+
     /**
      * Save metadata files and gzip.
      * @param naming Naming policy
@@ -98,18 +111,5 @@ final class Repository implements PackageOutput {
         outs.add(Files.move(file, file.getParent().resolve("repomd.xml")));
         Logger.info(this, "repomd.xml closed");
         return outs;
-    }
-
-    @Override
-    public void accept(final Package.Meta meta) throws IOException {
-        synchronized (this.metadata) {
-            new PackageOutput.Multiple(this.metadata).accept(meta);
-        }
-    }
-
-    @Override
-    public void close() throws IOException {
-        new PackageOutput.Multiple(this.metadata).close();
-        Logger.info(this, "repository closed");
     }
 }
