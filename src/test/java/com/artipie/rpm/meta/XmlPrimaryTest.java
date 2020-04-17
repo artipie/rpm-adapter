@@ -21,32 +21,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm;
+package com.artipie.rpm.meta;
 
-import org.apache.commons.cli.ParseException;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.Disabled;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Test case for {@link Cli}.
+ * Tests for {@link XmlPrimary}.
  *
  * @since 0.6
  */
-@Disabled
-class CliTest {
-
+public final class XmlPrimaryTest {
+    // @todo #83:30min This test only creates a temporary file for XmlPrimary,
+    //  now some assertion should be added to verify that this class
+    //  can write `primary.xml` file correctly. The example of primary can
+    //  be found at test resources. If #86 is fixed then remove the DisabledOnOs
+    //  annotation.
     @Test
-    void testWrongArgumentCount() {
-        try {
-            Cli.main(new String[]{"a"});
-        } catch (final ParseException exception) {
-            MatcherAssert.assertThat(
-                String.format("Exception occurred: %s", exception.getMessage()),
-                "Wrong arguments count, something is missing",
-                IsEqual.equalTo(exception.getMessage())
-            );
+    @DisabledOnOs(OS.WINDOWS)
+    public void writesFile(@TempDir final Path temp) throws Exception {
+        final Path file = temp.resolve("primary.xml");
+        try (XmlPrimary prim = new XmlPrimary(file)) {
+            prim.startPackages()
+                .startPackage()
+                .files(
+                    new String[] {"file" },
+                    new String[] {"dir" },
+                    new int[] {0 }
+                ).startFormat()
+                .license("license")
+                .close()
+                .close();
         }
     }
 }

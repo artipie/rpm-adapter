@@ -23,30 +23,31 @@
  */
 package com.artipie.rpm;
 
-import org.apache.commons.cli.ParseException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.cactoos.io.InputOf;
+import org.cactoos.io.Sha256DigestOf;
+import org.cactoos.text.HexOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Test case for {@link Cli}.
+ * Test case for {@link FileChecksum}.
  *
- * @since 0.6
+ * @since 0.8
  */
-@Disabled
-class CliTest {
+final class FileChecksumTest {
 
     @Test
-    void testWrongArgumentCount() {
-        try {
-            Cli.main(new String[]{"a"});
-        } catch (final ParseException exception) {
-            MatcherAssert.assertThat(
-                String.format("Exception occurred: %s", exception.getMessage()),
-                "Wrong arguments count, something is missing",
-                IsEqual.equalTo(exception.getMessage())
-            );
-        }
+    void generatesValidChecksum(@TempDir final Path tmp) throws Exception {
+        final Path target = tmp.resolve("test.bin");
+        Files.write(target, "hello".getBytes(StandardCharsets.UTF_8));
+        MatcherAssert.assertThat(
+            new FileChecksum(target, Digest.SHA256).hex(),
+            new IsEqual<>(new HexOf(new Sha256DigestOf(new InputOf(target))).asString())
+        );
     }
 }

@@ -21,32 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm;
+package com.artipie.rpm.http;
 
-import org.apache.commons.cli.ParseException;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import com.artipie.asto.Storage;
+import com.artipie.http.Slice;
+import com.artipie.http.rq.RqMethod;
+import com.artipie.http.rt.RtRule;
+import com.artipie.http.rt.SliceRoute;
+import com.artipie.http.slice.SliceDownload;
 
 /**
- * Test case for {@link Cli}.
- *
- * @since 0.6
+ * Artipie {@link Slice} for RPM repository HTTP API.
+ * @since 0.7
  */
-@Disabled
-class CliTest {
+public final class RpmSlice extends Slice.Wrap {
 
-    @Test
-    void testWrongArgumentCount() {
-        try {
-            Cli.main(new String[]{"a"});
-        } catch (final ParseException exception) {
-            MatcherAssert.assertThat(
-                String.format("Exception occurred: %s", exception.getMessage()),
-                "Wrong arguments count, something is missing",
-                IsEqual.equalTo(exception.getMessage())
-            );
-        }
+    /**
+     * New RPM repository HTTP API.
+     * @param storage Storage
+     */
+    public RpmSlice(final Storage storage) {
+        super(
+            new SliceRoute(
+                new SliceRoute.Path(new RtRule.ByMethod(RqMethod.GET), new SliceDownload(storage))
+            )
+        );
     }
 }

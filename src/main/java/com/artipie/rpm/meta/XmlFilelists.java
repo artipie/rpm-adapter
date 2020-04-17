@@ -117,7 +117,7 @@ public final class XmlFilelists implements Closeable {
 
     /**
      * Package writer.
-     * @since 0.7
+     * @since 0.6
      */
     public static final class Package {
 
