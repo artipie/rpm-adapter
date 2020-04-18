@@ -71,7 +71,7 @@ public class XmlWriterWrap implements XMLStreamWriter {
         final String localname,
         final String value
     ) throws XMLStreamException {
-        // Not implemeneted.
+        this.xml.writeAttribute(prefix, namespaceuri, localname, value);
     }
 
     @Override
@@ -80,7 +80,7 @@ public class XmlWriterWrap implements XMLStreamWriter {
         final String localname,
         final String value
     ) throws XMLStreamException {
-        // Not implemeneted.
+        this.xml.writeAttribute(namespaceuri, localname, value);
     }
 
     @Override
@@ -105,14 +105,14 @@ public class XmlWriterWrap implements XMLStreamWriter {
 
     @Override
     public void writeComment(final String data) throws XMLStreamException {
-        // Not implemeneted.
+        this.xml.writeComment(data);
     }
 
     @Override
     public void writeProcessingInstruction(
         final String target
     ) throws XMLStreamException {
-        // Not implemeneted.
+        this.xml.writeProcessingInstruction(target);
     }
 
     @Override
@@ -120,32 +120,32 @@ public class XmlWriterWrap implements XMLStreamWriter {
         final String target,
         final String data
     ) throws XMLStreamException {
-        // Not implemeneted.
+        this.xml.writeProcessingInstruction(target, data);
     }
 
     @Override
     public void writeCData(final String data) throws XMLStreamException {
-        // Not implemeneted.
+        this.xml.writeCData(data);
     }
 
     @Override
     public void writeDTD(final String dtd) throws XMLStreamException {
-        // Not implemeneted.
+        this.xml.writeDTD(dtd);
     }
 
     @Override
     public void writeEntityRef(final String name) throws XMLStreamException {
-        // Not implemeneted.
+        this.xml.writeEntityRef(name);
     }
 
     @Override
     public void writeStartDocument() throws XMLStreamException {
-        // Not implemeneted.
+        this.xml.writeStartDocument();
     }
 
     @Override
     public void writeStartDocument(final String version) throws XMLStreamException {
-        // Not implemeneted.
+        this.xml.writeStartDocument(version);
     }
 
     @Override
@@ -160,7 +160,7 @@ public class XmlWriterWrap implements XMLStreamWriter {
 
     @Override
     public void flush() throws XMLStreamException {
-        // Not implemeneted.
+        this.xml.flush();
     }
 
     @Override
@@ -179,39 +179,39 @@ public class XmlWriterWrap implements XMLStreamWriter {
         final int start,
         final int len
     ) throws XMLStreamException {
-        // Not implemeneted.
+        this.xml.writeCharacters(text, start, len);
     }
 
     @Override
     public String getPrefix(final String uri) throws XMLStreamException {
-        return null;
+        return this.xml.getPrefix(uri);
     }
 
     @Override
     public void setPrefix(final String prefix, final String uri) throws XMLStreamException {
-        // Not implemeneted.
+        this.xml.setPrefix(prefix, uri);
     }
 
     @Override
     public void setDefaultNamespace(final String uri) throws XMLStreamException {
-        // Not implemeneted.
+        this.xml.setDefaultNamespace(uri);
     }
 
     @Override
     public void setNamespaceContext(
         final NamespaceContext context
     ) throws XMLStreamException {
-        // Not implemeneted.
+        this.xml.setNamespaceContext(context);
     }
 
     @Override
     public NamespaceContext getNamespaceContext() {
-        return null;
+        return this.xml.getNamespaceContext();
     }
 
     @Override
     public Object getProperty(final String name) throws IllegalArgumentException {
-        return null;
+        return this.xml.getProperty(name);
     }
 
     @Override
@@ -236,7 +236,7 @@ public class XmlWriterWrap implements XMLStreamWriter {
         final String localname,
         final String namespaceuri
     ) throws XMLStreamException {
-        // Not implemeneted.
+        this.xml.writeEmptyElement(prefix, localname, namespaceuri);
     }
 
     @Override
@@ -253,6 +253,6 @@ public class XmlWriterWrap implements XMLStreamWriter {
         final String localname,
         final String namespaceuri
     ) throws XMLStreamException {
-        // Not implemeneted.
+        this.xml.writeStartElement(prefix, localname, namespaceuri);
     }
 }
