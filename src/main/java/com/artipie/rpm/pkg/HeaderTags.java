@@ -52,7 +52,7 @@ public final class HeaderTags {
      * @return Value of header tag NAME.
      */
     public String name() {
-        return this.meta.header(Header.HeaderTag.NAME, "");
+        return this.meta.header(Header.HeaderTag.NAME).asString("");
     }
 
     /**
@@ -60,7 +60,7 @@ public final class HeaderTags {
      * @return Value of header tag ARCH.
      */
     public String arch() {
-        return this.meta.header(Header.HeaderTag.ARCH, "");
+        return this.meta.header(Header.HeaderTag.ARCH).asString("");
     }
 
     /**
@@ -68,7 +68,7 @@ public final class HeaderTags {
      * @return Value of header tag EPOCH.
      */
     public int epoch() {
-        return this.meta.header(Header.HeaderTag.EPOCH, 0);
+        return this.meta.header(Header.HeaderTag.EPOCH).asInt(0);
     }
 
     /**
@@ -76,7 +76,7 @@ public final class HeaderTags {
      * @return Value of header tag VERSION.
      */
     public String version() {
-        return this.meta.header(Header.HeaderTag.VERSION, "");
+        return this.meta.header(Header.HeaderTag.VERSION).asString("");
     }
 
     /**
@@ -84,7 +84,7 @@ public final class HeaderTags {
      * @return Value of header tag RELEASE.
      */
     public String release() {
-        return this.meta.header(Header.HeaderTag.RELEASE, "");
+        return this.meta.header(Header.HeaderTag.RELEASE).asString("");
     }
 
     /**
@@ -92,7 +92,7 @@ public final class HeaderTags {
      * @return Value of header tag SUMMARY.
      */
     public String summary() {
-        return this.meta.header(Header.HeaderTag.SUMMARY, "");
+        return this.meta.header(Header.HeaderTag.SUMMARY).asString("");
     }
 
     /**
@@ -100,7 +100,7 @@ public final class HeaderTags {
      * @return Value of header tag DESCRIPTION.
      */
     public String description() {
-        return this.meta.header(Header.HeaderTag.DESCRIPTION, "");
+        return this.meta.header(Header.HeaderTag.DESCRIPTION).asString("");
     }
 
     /**
@@ -108,7 +108,7 @@ public final class HeaderTags {
      * @return Value of header tag PACKAGER.
      */
     public String packager() {
-        return this.meta.header(Header.HeaderTag.PACKAGER, "");
+        return this.meta.header(Header.HeaderTag.PACKAGER).asString("");
     }
 
     /**
@@ -116,7 +116,7 @@ public final class HeaderTags {
      * @return Value of header tag URL.
      */
     public String url() {
-        return this.meta.header(Header.HeaderTag.URL, "");
+        return this.meta.header(Header.HeaderTag.URL).asString("");
     }
 
     /**
@@ -124,7 +124,7 @@ public final class HeaderTags {
      * @return Value of header tag FILEMTIMES.
      */
     public int fileTimes() {
-        return this.meta.header(Header.HeaderTag.FILEMTIMES, 0);
+        return this.meta.header(Header.HeaderTag.FILEMTIMES).asInt(0);
     }
 
     /**
@@ -132,7 +132,7 @@ public final class HeaderTags {
      * @return Value of header tag BUILDTIME.
      */
     public int buildTime() {
-        return this.meta.header(Header.HeaderTag.BUILDTIME, 0);
+        return this.meta.header(Header.HeaderTag.BUILDTIME).asInt(0);
     }
 
     /**
@@ -140,7 +140,7 @@ public final class HeaderTags {
      * @return Value of header tag SIZE.
      */
     public int installedSize() {
-        return this.meta.header(Header.HeaderTag.SIZE, 0);
+        return this.meta.header(Header.HeaderTag.SIZE).asInt(0);
     }
 
     /**
@@ -148,7 +148,7 @@ public final class HeaderTags {
      * @return Value of header tag ARCHIVESIZE.
      */
     public int archiveSize() {
-        return this.meta.header(Header.HeaderTag.ARCHIVESIZE, 0);
+        return this.meta.header(Header.HeaderTag.ARCHIVESIZE).asInt(0);
     }
 
     /**
@@ -156,7 +156,7 @@ public final class HeaderTags {
      * @return Value of header tag LICENSE.
      */
     public String license() {
-        return this.meta.header(Header.HeaderTag.LICENSE, "");
+        return this.meta.header(Header.HeaderTag.LICENSE).asString("");
     }
 
     /**
@@ -164,7 +164,7 @@ public final class HeaderTags {
      * @return Value of header tag VENDOR.
      */
     public String vendor() {
-        return this.meta.header(Header.HeaderTag.VENDOR, "");
+        return this.meta.header(Header.HeaderTag.VENDOR).asString("");
     }
 
     /**
@@ -172,7 +172,7 @@ public final class HeaderTags {
      * @return Value of header tag GROUP.
      */
     public String group() {
-        return this.meta.header(Header.HeaderTag.GROUP, "");
+        return this.meta.header(Header.HeaderTag.GROUP).asString("");
     }
 
     /**
@@ -180,7 +180,7 @@ public final class HeaderTags {
      * @return Value of header tag BUILDHOST.
      */
     public String buildHost() {
-        return this.meta.header(Header.HeaderTag.BUILDHOST, "");
+        return this.meta.header(Header.HeaderTag.BUILDHOST).asString("");
     }
 
     /**
@@ -188,7 +188,7 @@ public final class HeaderTags {
      * @return Value of header tag SOURCERPM.
      */
     public String sourceRmp() {
-        return this.meta.header(Header.HeaderTag.SOURCERPM, "");
+        return this.meta.header(Header.HeaderTag.SOURCERPM).asString("");
     }
 
     /**
@@ -196,7 +196,7 @@ public final class HeaderTags {
      * @return Value of header tag PROVIDENAME.
      */
     public List<String> providers() {
-        return this.meta.headers(Header.HeaderTag.PROVIDENAME);
+        return this.meta.header(Header.HeaderTag.PROVIDENAME).asStrings();
     }
 
     /**
@@ -204,7 +204,7 @@ public final class HeaderTags {
      * @return Value of header tag REQUIRENAME.
      */
     public List<String> requires() {
-        return this.meta.headers(Header.HeaderTag.REQUIRENAME);
+        return this.meta.header(Header.HeaderTag.REQUIRENAME).asStrings();
     }
 
     /**
@@ -212,7 +212,7 @@ public final class HeaderTags {
      * @return Value of header tag BASENAMES.
      */
     public List<String> baseNames() {
-        return this.meta.headers(Header.HeaderTag.BASENAMES);
+        return this.meta.header(Header.HeaderTag.BASENAMES).asStrings();
     }
 
     /**
@@ -220,7 +220,7 @@ public final class HeaderTags {
      * @return Value of header tag DIRNAMES.
      */
     public List<String> dirNames() {
-        return this.meta.headers(Header.HeaderTag.DIRNAMES);
+        return this.meta.header(Header.HeaderTag.DIRNAMES).asStrings();
     }
 
     /**
@@ -228,6 +228,6 @@ public final class HeaderTags {
      * @return Value of header tag DIRINDEXES.
      */
     public int[] dirIndexes() {
-        return this.meta.intHeaders(Header.HeaderTag.DIRINDEXES);
+        return this.meta.header(Header.HeaderTag.DIRINDEXES).asInts();
     }
 }

@@ -39,6 +39,7 @@ import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import io.reactivex.schedulers.Schedulers;
 import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -185,6 +186,7 @@ public final class Rpm {
                     ).andThen(Single.just(new FilePackage(tmpdir.resolve(file))));
                 }
             )
+            .observeOn(Schedulers.io())
             .reduceWith(
                 () -> {
                     final XmlRepomd repomd = new XmlRepomd(
