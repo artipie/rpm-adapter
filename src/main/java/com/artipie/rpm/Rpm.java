@@ -48,6 +48,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.xml.stream.XMLStreamException;
 
 /**
  * The RPM front.
@@ -188,37 +189,7 @@ public final class Rpm {
             )
             .observeOn(Schedulers.io())
             .reduceWith(
-                () -> {
-                    final XmlRepomd repomd = new XmlRepomd(
-                        Files.createTempFile("repomd-", ".xml")
-                    );
-                    repomd.begin(System.currentTimeMillis() / Tv.THOUSAND);
-                    final List<MetadataFile> files = Arrays.asList(
-                        new MetadataFile(
-                            "primary",
-                            new PrimaryOutput(Files.createTempFile("primary-", ".xml"))
-                                .start(),
-                            repomd
-                        ),
-                        new MetadataFile(
-                            "others",
-                            new OthersOutput(Files.createTempFile("others-", ".xml"))
-                                .start(),
-                            repomd
-                        )
-                    );
-                    if (this.filelists) {
-                        files.add(
-                            new MetadataFile(
-                                "filelists",
-                                new FilelistsOutput(Files.createTempFile("filelists-", ".xml"))
-                                    .start(),
-                                repomd
-                            )
-                        );
-                    }
-                    return new Repository(repomd, files, this.digest);
-                },
+                this::repository,
                 Repository::update
             )
             .doOnSuccess(rep -> Logger.info(this, "repository updated"))
@@ -250,6 +221,47 @@ public final class Rpm {
     private static void cleanup(final Path dir) throws IOException {
         for (final Path item : Files.list(dir).collect(Collectors.toList())) {
             Files.delete(item);
+        }
+    }
+
+    /**
+     * Get repository for file updates.
+     * @return Repository
+     * @throws IOException If IO Exception occurs.
+     */
+    private Repository repository() throws IOException {
+        try {
+            final XmlRepomd repomd = new XmlRepomd(
+                Files.createTempFile("repomd-", ".xml")
+            );
+            repomd.begin(System.currentTimeMillis() / Tv.THOUSAND);
+            final List<MetadataFile> files = Arrays.asList(
+                new MetadataFile(
+                    "primary",
+                    new PrimaryOutput(Files.createTempFile("primary-", ".xml"))
+                        .start(),
+                    repomd
+                ),
+                new MetadataFile(
+                    "others",
+                    new OthersOutput(Files.createTempFile("others-", ".xml"))
+                        .start(),
+                    repomd
+                )
+            );
+            if (this.filelists) {
+                files.add(
+                    new MetadataFile(
+                        "filelists",
+                        new FilelistsOutput(Files.createTempFile("filelists-", ".xml"))
+                            .start(),
+                        repomd
+                    )
+                );
+            }
+            return new Repository(repomd, files, this.digest);
+        } catch (final XMLStreamException ex) {
+            throw new IOException(ex);
         }
     }
 }
