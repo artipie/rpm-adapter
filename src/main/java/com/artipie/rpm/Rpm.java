@@ -92,6 +92,14 @@ public final class Rpm {
     private final boolean filelists;
 
     /**
+     * New Rpm for repository in storage. Does not include filelists.xml in update.
+     * @param stg The storage which contains repository
+     */
+    public Rpm(final Storage stg) {
+        this(stg, StandardNamingPolicy.PLAIN, Digest.SHA256, false);
+    }
+
+    /**
      * New Rpm for repository in storage.
      * @param stg The storage which contains repository
      * @param filelists Include file lists in update
