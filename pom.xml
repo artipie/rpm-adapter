@@ -138,6 +138,11 @@ SOFTWARE.
       <version>${junit-platform.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.jcabi</groupId>
+      <artifactId>jcabi-xml</artifactId>
+      <version>0.21.5</version>
+    </dependency>
   </dependencies>
   <build>
     <testResources>
