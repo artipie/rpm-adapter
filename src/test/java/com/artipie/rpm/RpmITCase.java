@@ -82,7 +82,7 @@ final class RpmITCase {
             rpm -> new RxStorageWrapper(storage)
                 .save(new Key.From(rpm), new TestContent(String.format("rpms/%s", rpm)))
         ).blockingAwait();
-        new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256)
+        new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
     }
