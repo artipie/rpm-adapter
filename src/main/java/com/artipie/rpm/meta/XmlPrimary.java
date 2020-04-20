@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamWriter;
 
 /**
  * XML {@code primary.xml} metadata imperative writer.
@@ -79,11 +78,11 @@ public final class XmlPrimary implements Closeable {
      * @throws XMLStreamException On error
      */
     public XmlPrimary startPackages() throws XMLStreamException {
-        this.xml.writer().writeStartDocument(StandardCharsets.UTF_8.displayName(), "1.0");
-        this.xml.writer().writeStartElement("metadata");
-        this.xml.writer().writeDefaultNamespace("http://linux.duke.edu/metadata/common");
-        this.xml.writer().writeNamespace("rpm", "http://linux.duke.edu/metadata/rpm");
-        this.xml.writer().writeAttribute("packages", "-1");
+        this.xml.writeStartDocument(StandardCharsets.UTF_8.displayName(), "1.0");
+        this.xml.writeStartElement("metadata");
+        this.xml.writeDefaultNamespace("http://linux.duke.edu/metadata/common");
+        this.xml.writeNamespace("rpm", "http://linux.duke.edu/metadata/rpm");
+        this.xml.writeAttribute("packages", "-1");
         return this;
     }
 
@@ -93,17 +92,17 @@ public final class XmlPrimary implements Closeable {
      * @throws XMLStreamException On error
      */
     public Package startPackage() throws XMLStreamException {
-        this.xml.writer().writeStartElement("package");
-        this.xml.writer().writeAttribute("type", "rpm");
-        return new Package(this.xml.writer(), this);
+        this.xml.writeStartElement("package");
+        this.xml.writeAttribute("type", "rpm");
+        return new Package(this.xml, this);
     }
 
     @Override
     public void close() throws IOException {
         try {
-            this.xml.writer().writeEndElement();
-            this.xml.writer().writeEndDocument();
-            this.xml.writer().close();
+            this.xml.writeEndElement();
+            this.xml.writeEndDocument();
+            this.xml.close();
             this.xml.alterTag(
                 "metadata",
                 "packages",
@@ -123,7 +122,7 @@ public final class XmlPrimary implements Closeable {
         /**
          * XML stream.
          */
-        private final XMLStreamWriter xml;
+        private final XmlFile xml;
 
         /**
          * Primary.
@@ -135,7 +134,7 @@ public final class XmlPrimary implements Closeable {
          * @param xml XML stream
          * @param primary XML primary
          */
-        public Package(final XMLStreamWriter xml, final XmlPrimary primary) {
+        public Package(final XmlFile xml, final XmlPrimary primary) {
             this.xml = xml;
             this.primary = primary;
         }
@@ -355,7 +354,7 @@ public final class XmlPrimary implements Closeable {
         /**
          * XML writer.
          */
-        private final XMLStreamWriter xml;
+        private final XmlFile xml;
 
         /**
          * Primary package reference.
@@ -367,7 +366,7 @@ public final class XmlPrimary implements Closeable {
          * @param xml XML writer
          * @param pkg Pacakge reference
          */
-        Format(final XMLStreamWriter xml, final XmlPrimary.Package pkg) {
+        Format(final XmlFile xml, final XmlPrimary.Package pkg) {
             this.xml = xml;
             this.pkg = pkg;
         }

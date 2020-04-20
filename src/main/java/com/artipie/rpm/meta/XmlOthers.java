@@ -29,7 +29,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamWriter;
 
 /**
  * XML {@code others.xml} metadata imperative writer.
@@ -74,10 +73,10 @@ public final class XmlOthers implements Closeable {
      * @throws XMLStreamException On error
      */
     public XmlOthers startPackages() throws XMLStreamException {
-        this.xml.writer().writeStartDocument(StandardCharsets.UTF_8.name(), "1.0");
-        this.xml.writer().writeStartElement("otherdata");
-        this.xml.writer().writeDefaultNamespace("http://linux.duke.edu/metadata/other");
-        this.xml.writer().writeAttribute("packages", "-1");
+        this.xml.writeStartDocument(StandardCharsets.UTF_8.name(), "1.0");
+        this.xml.writeStartElement("otherdata");
+        this.xml.writeDefaultNamespace("http://linux.duke.edu/metadata/other");
+        this.xml.writeAttribute("packages", "-1");
         return this;
     }
 
@@ -91,19 +90,19 @@ public final class XmlOthers implements Closeable {
      */
     public XmlOthers.Package addPackage(final String name, final String arch, final String checksum)
         throws XMLStreamException {
-        this.xml.writer().writeStartElement("package");
-        this.xml.writer().writeAttribute("pkgid", checksum);
-        this.xml.writer().writeAttribute("name", name);
-        this.xml.writer().writeAttribute("arch", arch);
-        return new XmlOthers.Package(this, this.xml.writer());
+        this.xml.writeStartElement("package");
+        this.xml.writeAttribute("pkgid", checksum);
+        this.xml.writeAttribute("name", name);
+        this.xml.writeAttribute("arch", arch);
+        return new XmlOthers.Package(this, this.xml);
     }
 
     @Override
     public void close() throws IOException {
         try {
-            this.xml.writer().writeEndElement();
-            this.xml.writer().writeEndDocument();
-            this.xml.writer().close();
+            this.xml.writeEndElement();
+            this.xml.writeEndDocument();
+            this.xml.close();
             this.xml.alterTag(
                 "otherdata",
                 "packages",
@@ -128,14 +127,14 @@ public final class XmlOthers implements Closeable {
         /**
          * XML writer.
          */
-        private final XMLStreamWriter xml;
+        private final XmlFile xml;
 
         /**
          * Ctor.
          * @param others Others reference
          * @param xml XML writer
          */
-        Package(final XmlOthers others, final XMLStreamWriter xml) {
+        Package(final XmlOthers others, final XmlFile xml) {
             this.others = others;
             this.xml = xml;
         }
