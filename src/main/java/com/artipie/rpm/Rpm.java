@@ -27,6 +27,7 @@ import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.asto.rx.RxStorageWrapper;
+import com.artipie.rpm.meta.XmlPrimaryChecksums;
 import com.artipie.rpm.meta.XmlRepomd;
 import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.FilelistsOutput;
@@ -46,6 +47,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -217,7 +219,93 @@ public final class Rpm {
             .doOnSuccess(rep -> Logger.info(this, "repository updated"))
             .doOnSuccess(Repository::close)
             .doOnSuccess(rep -> Logger.info(this, "repository closed"))
-            .flatMapObservable(repo -> Observable.fromIterable(repo.save(this.naming, this.digest)))
+            .flatMapObservable(repo -> Observable.fromIterable(repo.save(this.naming)))
+            .doOnNext(file -> Files.move(file, tmpdir.resolve(file.getFileName())))
+            .flatMapCompletable(
+                path -> new RxStorageWrapper(local)
+                    .value(new Key.From(path.getFileName().toString()))
+                    .flatMapCompletable(
+                        content -> new RxStorageWrapper(this.storage).save(
+                            new Key.From("repodata", path.getFileName().toString()), content
+                        )
+                    )
+            ).doOnTerminate(
+                () -> {
+                    Rpm.cleanup(tmpdir);
+                    vertx.close();
+                }
+            );
+    }
+
+    /**
+     * Updates repository incrementally.
+     * @param prefix Repo prefix
+     * @return Completable action
+     */
+    public Completable updateBatchIncrementally(final Key prefix) {
+        final Path tmpdir;
+        try {
+            tmpdir = Files.createTempDirectory("repo-");
+        } catch (final IOException err) {
+            throw new IllegalStateException("Failed to create temp dir", err);
+        }
+        final Vertx vertx = Vertx.vertx();
+        final Storage local = new FileStorage(tmpdir, vertx.fileSystem());
+        final List<String> hexes = new XmlPrimaryChecksums(Paths.get(prefix.string())).read();
+        return SingleInterop.fromFuture(this.storage.list(prefix))
+            .flatMapObservable(Observable::fromIterable)
+            .filter(key -> key.string().endsWith(".rpm"))
+            .flatMapSingle(
+                key -> {
+                    final String file = Paths.get(key.string()).getFileName().toString();
+                    return new RxStorageWrapper(this.storage).value(key).flatMapCompletable(
+                        content -> new RxStorageWrapper(local).save(new Key.From(file), content)
+                    ).andThen(Single.just(new FilePackage(tmpdir.resolve(file))));
+                }
+            )
+            .observeOn(Schedulers.io())
+            .reduceWith(
+                () -> {
+                    final XmlRepomd repomd = new XmlRepomd(
+                        Files.createTempFile("repomd-", ".xml")
+                    );
+                    repomd.begin(System.currentTimeMillis() / Tv.THOUSAND);
+                    return new ModifiableRepository(
+                        hexes,
+                        repomd,
+                        Arrays.asList(
+                            new MetadataFile(
+                                "primary",
+                                new PrimaryOutput(
+                                    Paths.get(prefix.string(), "repodata", "primary.xml.gz")
+                                ),
+                                repomd
+                            ),
+                            new MetadataFile(
+                                "others",
+                                new OthersOutput(
+                                    Paths.get(prefix.string(), "repodata", "primary.xml.gz")
+                                ),
+                                repomd
+                            ),
+                            new MetadataFile(
+                                "filelists",
+                                new FilelistsOutput(
+                                    Paths.get(prefix.string(), "repodata", "primary.xml.gz")
+                                ),
+                                repomd
+                            )
+                        ),
+                        this.digest
+                    );
+                },
+                ModifiableRepository::update
+            )
+            .doOnSuccess(ModifiableRepository::extract)
+            .doOnSuccess(rep -> Logger.info(this, "repository updated"))
+            .doOnSuccess(ModifiableRepository::close)
+            .doOnSuccess(rep -> Logger.info(this, "repository closed"))
+            .flatMapObservable(repo -> Observable.fromIterable(repo.save(this.naming)))
             .doOnNext(file -> Files.move(file, tmpdir.resolve(file.getFileName())))
             .flatMapCompletable(
                 path -> new RxStorageWrapper(local)

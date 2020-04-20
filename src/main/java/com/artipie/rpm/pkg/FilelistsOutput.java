@@ -33,6 +33,9 @@ import javax.xml.stream.XMLStreamException;
 /**
  * Package output for {@code filelists.xml}.
  * @since 0.6
+ * @todo #124:30min Modify this class and XmlFilelists to be able to work with already existing
+ *  filelists.xml: we need to accept this this xml data about new packages and delete data about
+ *  package by package id (checksum). Do fot forget about tests.
  */
 public final class FilelistsOutput implements PackageOutput.FileOutput {
 

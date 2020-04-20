@@ -24,33 +24,39 @@
 package com.artipie.rpm;
 
 import com.artipie.rpm.meta.XmlRepomd;
+import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.MetadataFile;
+import com.artipie.rpm.pkg.ModifiableMetadata;
 import com.artipie.rpm.pkg.Package;
 import com.artipie.rpm.pkg.PackageOutput;
-import com.jcabi.log.Logger;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * Repository aggregate {@link PackageOutput}. It accepts package metadata
- * and proxies to all outputs. On complete, it saves summary metadata to
- * {@code repomd.xml} file.
+ * Repository aggregate {@link PackageOutput}, decorator for {@link Repository}. It accepts repo
+ * metadata, checks whether package is already exists in metadata files, if not,
+ * it adds package data to metadata. On save it also extracts not existing packages from
+ * metadatas and saves summary {@code repomd.xml} file.
  * @since 0.6
  */
-final class Repository implements PackageOutput {
+public final class ModifiableRepository implements PackageOutput {
 
     /**
-     * Repom XML output.
+     * Origin.
      */
-    private final XmlRepomd repomd;
+    private final Repository origin;
+
+    /**
+     * List of existing packages ids (checksums) from primary.xml.
+     */
+    private final List<String> existing;
 
     /**
      * Metadata outputs.
      */
-    private final List<MetadataFile> metadata;
+    private final List<ModifiableMetadata> metadata;
 
     /**
      * Digest algorithm.
@@ -59,14 +65,18 @@ final class Repository implements PackageOutput {
 
     /**
      * Ctor.
-     * @param repomd Repomd XML
-     * @param files Metadata files outputs
-     * @param digest Digest algorithm
+     * @param existing Existing packages hexes list
+     * @param repomd Repomd
+     * @param metadata Metadata files
+     * @param digest Hashing algorithm
+     * @checkstyle ParameterNumberCheck (3 lines)
      */
-    Repository(final XmlRepomd repomd, final List<MetadataFile> files, final Digest digest) {
-        this.repomd = repomd;
-        this.metadata = files;
+    public ModifiableRepository(final List<String> existing, final XmlRepomd repomd,
+        final List<MetadataFile> metadata, final Digest digest) {
+        this.existing = existing;
+        this.metadata = metadata.stream().map(ModifiableMetadata::new).collect(Collectors.toList());
         this.digest = digest;
+        this.origin = new Repository(repomd, metadata, digest);
     }
 
     /**
@@ -75,22 +85,31 @@ final class Repository implements PackageOutput {
      * @return Itself
      * @throws IOException On error
      */
-    public Repository update(final Package pkg) throws IOException {
-        pkg.save(this, this.digest);
+    public ModifiableRepository update(final FilePackage pkg) throws IOException {
+        final String hex = new FileChecksum(pkg.path(), this.digest).hex();
+        if (!this.existing.remove(hex)) {
+            this.origin.update(pkg);
+        }
+        return this;
+    }
+
+    /**
+     * Deletes extra packages data from metadata.
+     * @return Itself
+     */
+    public ModifiableRepository extract() {
+        this.metadata.forEach(item -> item.delete(this.existing));
         return this;
     }
 
     @Override
     public void accept(final Package.Meta meta) throws IOException {
-        synchronized (this.metadata) {
-            new PackageOutput.Multiple(this.metadata).accept(meta);
-        }
+        this.origin.accept(meta);
     }
 
     @Override
     public void close() throws IOException {
-        new PackageOutput.Multiple(this.metadata).close();
-        Logger.info(this, "repository closed");
+        this.origin.close();
     }
 
     /**
@@ -100,15 +119,6 @@ final class Repository implements PackageOutput {
      * @throws IOException On error
      */
     public List<Path> save(final NamingPolicy naming) throws IOException {
-        final List<Path> outs = new ArrayList<>(this.metadata.size() + 1);
-        for (final MetadataFile item : this.metadata) {
-            outs.add(item.save(naming, this.digest));
-            Logger.info(this, "metadata file saved: %s", item);
-        }
-        this.repomd.close();
-        final Path file = this.repomd.file();
-        outs.add(Files.move(file, file.getParent().resolve("repomd.xml")));
-        Logger.info(this, "repomd.xml closed");
-        return outs;
+        return this.origin.save(naming);
     }
 }
