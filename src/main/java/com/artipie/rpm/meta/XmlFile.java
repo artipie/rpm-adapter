@@ -65,8 +65,6 @@ final class XmlFile extends XmlWriterWrap {
     private static final XMLOutputFactory FACTORY = XMLOutputFactory.newInstance();
 
     /**
-
-    /**
      * Output stream.
      */
     private final OutputStream stream;

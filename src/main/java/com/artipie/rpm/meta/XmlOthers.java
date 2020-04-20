@@ -36,9 +36,6 @@ import javax.xml.stream.XMLStreamException;
  * This object is not thread safe and depends on order of method calls.
  * </p>
  * @since 0.6
- * @todo #69:30min Create a unit test to verify that this class
- *  can write `others.xml` file correctly. The example of others.xml can
- *  be found at test resources.
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class XmlOthers implements Closeable {
