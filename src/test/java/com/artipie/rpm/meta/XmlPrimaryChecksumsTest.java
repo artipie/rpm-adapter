@@ -43,7 +43,7 @@ public class XmlPrimaryChecksumsTest {
                 Paths.get("src/test/resources-binary/repodata", "primary.xml.example")
             ).read(),
             new IsIterableContainingInAnyOrder<>(
-                new ListOf<>(
+                new ListOf<org.hamcrest.Matcher<? super String>>(
                     new IsEqual<>(
                         "7eaefd1cb4f9740558da7f12f9cb5a6141a47f5d064a98d46c29959869af1a44"
                     ),
