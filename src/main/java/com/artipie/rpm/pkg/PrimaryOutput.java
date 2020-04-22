@@ -33,9 +33,8 @@ import javax.xml.stream.XMLStreamException;
 /**
  * Package output for {@code primary} metadata.
  * @since 0.4
- * @todo #124:30min Modify this class and XmlPrimary to be able to work with already existing
- *  primary.xml: we need to accept this this xml data about new packages and delete data about
- *  package by package id (checksum). Do fot forget about tests.
+ * @todo #138:30min Make this class be able to work this already existing primary by
+ *  adding corresponding ctor and test it.
  */
 public final class PrimaryOutput implements PackageOutput.FileOutput {
 

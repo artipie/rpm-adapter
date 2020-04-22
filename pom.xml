@@ -143,6 +143,18 @@ SOFTWARE.
       <artifactId>jcabi-xml</artifactId>
       <version>0.21.5</version>
     </dependency>
+    <dependency>
+      <groupId>org.xmlunit</groupId>
+      <artifactId>xmlunit-core</artifactId>
+      <version>2.6.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.xmlunit</groupId>
+      <artifactId>xmlunit-matchers</artifactId>
+      <version>2.6.3</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <testResources>
