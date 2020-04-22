@@ -46,9 +46,6 @@ import javax.xml.transform.stream.StreamResult;
  * Xml file.
  *
  * @since 1.0
- * @todo #81:30min Introduce an envelope for XMLStreamWriter so that XmlFile
- *  can extend it and wrap the XMLStreamWriter created in the constructor
- *  instead of exposing its internal state via the writer() method.
  * @todo #81:30min Introduce a new class named XmlPackagesFile that should be responsible
  *  of writing the start of the document (as in {XmlFilelists, XmlOthers, XmlPrimary}.startPackages
  *  and XmlRepomd.begin) as well as writing the end of the document (as in
@@ -59,17 +56,13 @@ import javax.xml.transform.stream.StreamResult;
  *  Once it is done, use XmlPackagesFile in XmlFilelists, XmlOthers, XmlPrimary and keep
  *  using XmlFile in XmlRepomd.
  */
-final class XmlFile {
+@SuppressWarnings("PMD.TooManyMethods")
+final class XmlFile extends XmlWriterWrap {
 
     /**
      * XML factory.
      */
     private static final XMLOutputFactory FACTORY = XMLOutputFactory.newInstance();
-
-    /**
-     * XML stream.
-     */
-    private final XMLStreamWriter xml;
 
     /**
      * Output stream.
@@ -105,18 +98,9 @@ final class XmlFile {
      * @param xml XML stream writer
      */
     private XmlFile(final Path path, final OutputStream out, final XMLStreamWriter xml) {
+        super(xml);
         this.path = path;
         this.stream = out;
-        this.xml = xml;
-    }
-
-    /**
-     * Underlying XML writer.
-     *
-     * @return XML stream writer
-     */
-    public XMLStreamWriter writer() {
-        return this.xml;
     }
 
     /**

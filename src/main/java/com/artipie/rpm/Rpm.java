@@ -49,6 +49,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.xml.stream.XMLStreamException;
 
 /**
  * The RPM front.
@@ -66,11 +67,6 @@ import java.util.stream.Collectors;
  * <pre> rpm.batchUpdate(new Key.From("rmp-repo"));</pre>
  *
  * @since 0.1
- * @todo #69:30min Add option to exclude `filelists.xml` metadata file from
- *  updates. Som RPM repositories contains too many files in RPM packages,
- *  so it may take too many time to update the filelists. Just add an option
- *  to `Rpm` constructor and exclude filelists output from `Repository`
- *  list of metadata files in `batchUpdate` method.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
@@ -92,11 +88,25 @@ public final class Rpm {
     private final Digest digest;
 
     /**
-     * New Rpm for repository in storage.
+     * Include filelists?
+     */
+    private final boolean filelists;
+
+    /**
+     * New Rpm for repository in storage. Does not include filelists.xml in update.
      * @param stg The storage which contains repository
      */
     public Rpm(final Storage stg) {
-        this(stg, StandardNamingPolicy.PLAIN, Digest.SHA256);
+        this(stg, StandardNamingPolicy.PLAIN, Digest.SHA256, false);
+    }
+
+    /**
+     * New Rpm for repository in storage.
+     * @param stg The storage which contains repository
+     * @param filelists Include file lists in update
+     */
+    public Rpm(final Storage stg, final boolean filelists) {
+        this(stg, StandardNamingPolicy.PLAIN, Digest.SHA256, filelists);
     }
 
     /**
@@ -104,11 +114,15 @@ public final class Rpm {
      * @param stg The storage
      * @param naming RPM files naming policy
      * @param dgst Hashing sum computation algorithm
+     * @param filelists Include file lists in update
+     * @checkstyle ParameterNumberCheck (3 lines)
      */
-    public Rpm(final Storage stg, final NamingPolicy naming, final Digest dgst) {
+    public Rpm(final Storage stg, final NamingPolicy naming, final Digest dgst,
+        final boolean filelists) {
         this.storage = stg;
         this.naming = naming;
         this.digest = dgst;
+        this.filelists = filelists;
     }
 
     /**
@@ -184,36 +198,7 @@ public final class Rpm {
             )
             .observeOn(Schedulers.io())
             .reduceWith(
-                () -> {
-                    final XmlRepomd repomd = new XmlRepomd(
-                        Files.createTempFile("repomd-", ".xml")
-                    );
-                    repomd.begin(System.currentTimeMillis() / Tv.THOUSAND);
-                    return new Repository(
-                        repomd,
-                        Arrays.asList(
-                            new MetadataFile(
-                                "primary",
-                                new PrimaryOutput(Files.createTempFile("primary-", ".xml"))
-                                    .start(),
-                                repomd
-                            ),
-                            new MetadataFile(
-                                "others",
-                                new OthersOutput(Files.createTempFile("others-", ".xml"))
-                                    .start(),
-                                repomd
-                            ),
-                            new MetadataFile(
-                                "filelists",
-                                new FilelistsOutput(Files.createTempFile("filelists-", ".xml"))
-                                    .start(),
-                                repomd
-                            )
-                        ),
-                        this.digest
-                    );
-                },
+                this::repository,
                 Repository::update
             )
             .doOnSuccess(rep -> Logger.info(this, "repository updated"))
@@ -331,6 +316,47 @@ public final class Rpm {
     private static void cleanup(final Path dir) throws IOException {
         for (final Path item : Files.list(dir).collect(Collectors.toList())) {
             Files.delete(item);
+        }
+    }
+
+    /**
+     * Get repository for file updates.
+     * @return Repository
+     * @throws IOException If IO Exception occurs.
+     */
+    private Repository repository() throws IOException {
+        try {
+            final XmlRepomd repomd = new XmlRepomd(
+                Files.createTempFile("repomd-", ".xml")
+            );
+            repomd.begin(System.currentTimeMillis() / Tv.THOUSAND);
+            final List<MetadataFile> files = Arrays.asList(
+                new MetadataFile(
+                    "primary",
+                    new PrimaryOutput(Files.createTempFile("primary-", ".xml"))
+                        .start(),
+                    repomd
+                ),
+                new MetadataFile(
+                    "others",
+                    new OthersOutput(Files.createTempFile("others-", ".xml"))
+                        .start(),
+                    repomd
+                )
+            );
+            if (this.filelists) {
+                files.add(
+                    new MetadataFile(
+                        "filelists",
+                        new FilelistsOutput(Files.createTempFile("filelists-", ".xml"))
+                            .start(),
+                        repomd
+                    )
+                );
+            }
+            return new Repository(repomd, files, this.digest);
+        } catch (final XMLStreamException ex) {
+            throw new IOException(ex);
         }
     }
 }
