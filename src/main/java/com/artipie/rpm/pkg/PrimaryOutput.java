@@ -33,9 +33,10 @@ import javax.xml.stream.XMLStreamException;
 /**
  * Package output for {@code primary} metadata.
  * @since 0.4
- * @checkstyle LineLengthCheck (500 lines)
+ * @todo #124:30min Modify this class and XmlPrimary to be able to work with already existing
+ *  primary.xml: we need to accept this this xml data about new packages and delete data about
+ *  package by package id (checksum). Do fot forget about tests.
  */
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class PrimaryOutput implements PackageOutput.FileOutput {
 
     /**

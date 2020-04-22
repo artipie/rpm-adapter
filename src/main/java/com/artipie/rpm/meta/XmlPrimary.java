@@ -197,6 +197,7 @@ public final class XmlPrimary implements Closeable {
             this.xml.writeAttribute("pkgid", id);
             this.xml.writeCharacters(sum);
             this.xml.writeEndElement();
+            this.xml.writeStartElement("");
             return this;
         }
 
