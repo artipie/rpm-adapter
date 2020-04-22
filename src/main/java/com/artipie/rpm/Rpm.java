@@ -286,7 +286,7 @@ public final class Rpm {
                 },
                 ModifiableRepository::update
             )
-            .doOnSuccess(ModifiableRepository::extract)
+            .doOnSuccess(ModifiableRepository::clear)
             .doOnSuccess(rep -> Logger.info(this, "repository updated"))
             .doOnSuccess(ModifiableRepository::close)
             .doOnSuccess(rep -> Logger.info(this, "repository closed"))
