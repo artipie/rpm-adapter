@@ -94,11 +94,12 @@ public final class ModifiableRepository implements PackageOutput {
     }
 
     /**
-     * Deletes extra packages data from metadata.
+     * Clears records about packages that does not present in the repository any more
+     * from metadata files.
      * @return Itself
      */
-    public ModifiableRepository extract() {
-        this.metadata.forEach(item -> item.delete(this.existing));
+    public ModifiableRepository clear() {
+        this.metadata.forEach(item -> item.clear(this.existing));
         return this;
     }
 

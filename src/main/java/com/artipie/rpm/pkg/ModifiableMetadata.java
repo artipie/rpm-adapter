@@ -47,15 +47,15 @@ public final class ModifiableMetadata implements PackageOutput {
     }
 
     /**
-     * Deletes info from metadata file by package id (checksum).
-     * @param pkgs Packages to delete.
+     * Clears records about packages that does not present in the repository any more.
+     * @param pkgs List of the package's ids (checksums) to clear
      * @todo #124:30min Implement this method to extract from metadata files data about
      *  packages that are already not presented if the repository. This should be done after
      *  PrimaryOutput, FilelistsOutput and OthersOutput will be able to modify their packages. Also
      *  when this method will be implemented, rpm.Rpm#updateBatchIncrementally(com.artipie.asto.Key)
      *  and use this method to update repos.
      */
-    public void delete(final List<String> pkgs) {
+    public void clear(final List<String> pkgs) {
         throw new NotImplementedException("Method is not yet implemented");
     }
 
