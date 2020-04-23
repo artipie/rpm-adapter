@@ -33,9 +33,8 @@ import javax.xml.stream.XMLStreamException;
 /**
  * Generates other.xml metadata file.
  * @since 0.4
- * @todo #124:30min Modify this class and XmlOthers to be able to work with already existing
- *  others.xml: we need to accept this this xml data about new packages and delete data about
- *  package by package id (checksum). Do fot forget about tests.
+ * @todo #124:30min Modify this class to be able to work with already existing others.xml. To
+ *  delete data use {@link com.artipie.rpm.meta.XmlMaid.ByPkgidAttr}. Do fot forget about tests.
  */
 public final class OthersOutput implements PackageOutput.FileOutput {
 
