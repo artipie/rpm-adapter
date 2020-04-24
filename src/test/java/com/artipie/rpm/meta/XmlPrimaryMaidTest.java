@@ -24,6 +24,7 @@
 package com.artipie.rpm.meta;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.cactoos.list.ListOf;
@@ -41,10 +42,13 @@ class XmlPrimaryMaidTest {
 
     @Test
     void clearsFirstItem(@TempDir final Path temp) throws IOException {
-        final Path file = temp.resolve("primary1.xml");
-        new XmlPrimaryMaid(
-            Paths.get("src/test/resources-binary/repodata", "primary.xml.example"), file
-        ).clean(new ListOf<>("7eaefd1cb4f9740558da7f12f9cb5a6141a47f5d064a98d46c29959869af1a44"));
+        final Path file = Files.copy(
+            Paths.get("src/test/resources-binary/repodata", "primary.xml.example"),
+            temp.resolve("primary1.xml")
+        );
+        new XmlPrimaryMaid(file).clean(
+            new ListOf<>("7eaefd1cb4f9740558da7f12f9cb5a6141a47f5d064a98d46c29959869af1a44")
+        );
         MatcherAssert.assertThat(
             file,
             CompareMatcher.isIdenticalTo(
@@ -55,10 +59,13 @@ class XmlPrimaryMaidTest {
 
     @Test
     void clearsLastItem(@TempDir final Path temp) throws IOException {
-        final Path file = temp.resolve("primary2.xml");
-        new XmlPrimaryMaid(
-            Paths.get("src/test/resources-binary/repodata", "primary.xml.example"), file
-        ).clean(new ListOf<>("54f1d9a1114fa85cd748174c57986004857b800fe9545fbf23af53f4791b31e2"));
+        final Path file = Files.copy(
+            Paths.get("src/test/resources-binary/repodata", "primary.xml.example"),
+            temp.resolve("primary2.xml")
+        );
+        new XmlPrimaryMaid(file).clean(
+            new ListOf<>("54f1d9a1114fa85cd748174c57986004857b800fe9545fbf23af53f4791b31e2")
+        );
         MatcherAssert.assertThat(
             file,
             CompareMatcher.isIdenticalTo(

@@ -23,12 +23,12 @@
  */
 package com.artipie.rpm.meta;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -49,23 +49,16 @@ import javax.xml.stream.events.XMLEvent;
 public final class XmlPrimaryMaid {
 
     /**
-     * Source, what to clear.
+     * File to clear.
      */
-    private final Path source;
-
-    /**
-     * Where to write clean data.
-     */
-    private final Path target;
+    private final Path file;
 
     /**
      * Ctor.
-     * @param source What to clear
-     * @param target Where to write
+     * @param file File to clear
      */
-    public XmlPrimaryMaid(final Path source, final Path target) {
-        this.source = source;
-        this.target = target;
+    public XmlPrimaryMaid(final Path file) {
+        this.file = file;
     }
 
     /**
@@ -73,9 +66,12 @@ public final class XmlPrimaryMaid {
      * @param checksums What to clear
      * @throws IOException When smth wrong
      */
-    void clean(final List<String> checksums) throws IOException {
-        try (InputStream in = Files.newInputStream(this.source);
-            OutputStream out = Files.newOutputStream(this.target)) {
+    public void clean(final List<String> checksums) throws IOException {
+        final Path tmp = this.file.getParent().resolve(
+            String.format("%s.part", this.file.getFileName().toString())
+        );
+        try (InputStream in = Files.newInputStream(this.file);
+            OutputStream out = Files.newOutputStream(tmp)) {
             final XMLEventReader reader = XMLInputFactory.newInstance().createXMLEventReader(in);
             final XMLEventWriter writer = XMLOutputFactory.newInstance().createXMLEventWriter(out);
             final XMLEventFactory events = XMLEventFactory.newFactory();
@@ -86,9 +82,10 @@ public final class XmlPrimaryMaid {
             XmlPrimaryMaid.processPackages(checksums, reader, writer);
             writer.add(events.createSpace("\n"));
             writer.add(events.createEndElement(new QName("metadata"), Collections.emptyIterator()));
-        } catch (final XMLStreamException | FileNotFoundException ex) {
+        } catch (final XMLStreamException ex) {
             throw new IOException(ex);
         }
+        Files.move(tmp, this.file, StandardCopyOption.REPLACE_EXISTING);
     }
 
     /**
