@@ -25,9 +25,7 @@ package com.artipie.rpm.meta;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.xml.stream.XMLStreamException;
 
 /**
@@ -46,9 +44,9 @@ public final class XmlOthers implements Closeable {
     private final XmlFile xml;
 
     /**
-     * Processed packages counter.
+     * XmlPackagesFile writer.
      */
-    private final AtomicInteger packages;
+    private final XmlPackagesFile packages;
 
     /**
      * Ctor.
@@ -64,7 +62,9 @@ public final class XmlOthers implements Closeable {
      */
     private XmlOthers(final XmlFile xml) {
         this.xml = xml;
-        this.packages = new AtomicInteger();
+        this.packages = new XmlPackagesFile(
+            xml, "otherdata", "http://linux.duke.edu/metadata/other"
+        );
     }
 
     /**
@@ -72,12 +72,8 @@ public final class XmlOthers implements Closeable {
      * @return Self
      * @throws XMLStreamException On error
      */
-    public XmlOthers startPackages() throws XMLStreamException {
-        this.xml.writeStartDocument(StandardCharsets.UTF_8.name(), "1.0");
-        this.xml.writeStartElement("otherdata");
-        this.xml.writeDefaultNamespace("http://linux.duke.edu/metadata/other");
-        this.xml.writeAttribute("packages", "-1");
-        return this;
+    public XmlFile startPackages() throws XMLStreamException {
+        return this.packages.startPackages();
     }
 
     /**
@@ -99,18 +95,7 @@ public final class XmlOthers implements Closeable {
 
     @Override
     public void close() throws IOException {
-        try {
-            this.xml.writeEndElement();
-            this.xml.writeEndDocument();
-            this.xml.close();
-            this.xml.alterTag(
-                "otherdata",
-                "packages",
-                String.valueOf(this.packages.get())
-            );
-        } catch (final XMLStreamException err) {
-            throw new IOException("Failed to close", err);
-        }
+        this.packages.close();
     }
 
     /**
@@ -178,7 +163,7 @@ public final class XmlOthers implements Closeable {
          */
         public XmlOthers close() throws XMLStreamException {
             this.xml.writeEndElement();
-            this.others.packages.incrementAndGet();
+            this.others.packages.packageClose();
             return this.others;
         }
     }

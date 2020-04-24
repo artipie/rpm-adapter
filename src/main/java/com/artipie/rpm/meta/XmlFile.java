@@ -46,15 +46,6 @@ import javax.xml.transform.stream.StreamResult;
  * Xml file.
  *
  * @since 1.0
- * @todo #81:30min Introduce a new class named XmlPackagesFile that should be responsible
- *  of writing the start of the document (as in {XmlFilelists, XmlOthers, XmlPrimary}.startPackages
- *  and XmlRepomd.begin) as well as writing the end of the document (as in
- *  {XmlFilelists, XmlOthers, XmlPrimary}.close) by taking the needed information in
- *  its constructor + a XmlFile. It should also be responsible of counting the number
- *  of packages added. With all this information, the alter method can then be moved
- *  to XmlPackagesFile and renamed close by exploiting directly that information.
- *  Once it is done, use XmlPackagesFile in XmlFilelists, XmlOthers, XmlPrimary and keep
- *  using XmlFile in XmlRepomd.
  */
 @SuppressWarnings("PMD.TooManyMethods")
 final class XmlFile extends XmlWriterWrap {
@@ -112,8 +103,7 @@ final class XmlFile extends XmlWriterWrap {
      * @throws IOException when XML alteration causes error
      */
     public void alterTag(
-        final String tag, final String attribute, final String value
-    ) throws IOException {
+        final String tag, final String attribute, final String value) throws IOException {
         this.stream.close();
         final Path trf = Files.createTempFile("", ".xml");
         try {
@@ -124,8 +114,7 @@ final class XmlFile extends XmlWriterWrap {
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             try (
                 InputStream input = Files.newInputStream(this.path);
-                OutputStream out = Files.newOutputStream(trf)
-            ) {
+                OutputStream out = Files.newOutputStream(trf)) {
                 transformer.transform(
                     new StAXSource(
                         new AlterAttributeEventReader(
@@ -139,7 +128,7 @@ final class XmlFile extends XmlWriterWrap {
             Files.move(trf, this.path, StandardCopyOption.REPLACE_EXISTING);
         } catch (final XMLStreamException | TransformerException err) {
             throw new IOException("Failed to alter file", err);
-        }  finally {
+        } finally {
             Files.deleteIfExists(trf);
         }
     }
