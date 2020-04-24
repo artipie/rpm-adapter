@@ -33,9 +33,8 @@ import javax.xml.stream.XMLStreamException;
 /**
  * Package output for {@code filelists.xml}.
  * @since 0.6
- * @todo #136:30min Modify this class to be able to work with already existing
- *  filelists.xml, to delete data use {@link com.artipie.rpm.meta.XmlMaid.ByPkgidAttr}.
- *  Do fot forget about tests.
+ * @todo #136:30min Make this class be able to work this already existing filelists.xml by
+ *  adding corresponding ctor and test it.
  */
 public final class FilelistsOutput implements PackageOutput.FileOutput {
 

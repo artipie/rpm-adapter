@@ -23,14 +23,13 @@
  */
 package com.artipie.rpm.meta;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLEventWriter;
@@ -42,6 +41,10 @@ import javax.xml.stream.events.XMLEvent;
 /**
  * Xml maid.
  * @since 0.3
+ * @todo #136:30min We need to use this interface to clear metadata from not existing packages.
+ *  Implement it in the following steps: 1) make XmlPrimaryMaid implement this interface too,
+ *  2) add it as a field to ModifiableMetadata, 3) find a way to correct packages count after
+ *  clearing it (method XmlFile#alterTag() does it)
  */
 public interface XmlMaid {
 
@@ -49,7 +52,7 @@ public interface XmlMaid {
      * Cleans xml by ids (checksums) and returns actual package count.
      * @param ids Checksums
      * @return Packages count
-     * @throws IOException When smth wrong
+     * @throws IOException When something wrong
      */
     long clean(List<String> ids) throws IOException;
 
@@ -65,58 +68,75 @@ public interface XmlMaid {
         private static final String TAG = "package";
 
         /**
-         * Source, what to clear.
+         * File to clear.
          */
-        private final Path source;
-
-        /**
-         * Where to write clean data.
-         */
-        private final Path target;
+        private final Path file;
 
         /**
          * Ctor.
-         * @param source What to clear
-         * @param target Where to write
+         * @param file What to clear
          */
-        public ByPkgidAttr(final Path source, final Path target) {
-            this.source = source;
-            this.target = target;
+        public ByPkgidAttr(final Path file) {
+            this.file = file;
         }
 
         @Override
         public long clean(final List<String> ids) throws IOException {
-            try (InputStream in = Files.newInputStream(this.source);
-                OutputStream out = Files.newOutputStream(this.target)) {
+            final Path tmp = this.file.getParent().resolve(
+                String.format("%s.part", this.file.getFileName().toString())
+            );
+            final long res;
+            try (InputStream in = Files.newInputStream(this.file);
+                OutputStream out = Files.newOutputStream(tmp)) {
                 final XMLEventReader reader =
                     XMLInputFactory.newInstance().createXMLEventReader(in);
                 final XMLEventWriter writer =
                     XMLOutputFactory.newInstance().createXMLEventWriter(out);
-                XMLEvent event;
-                boolean valid = true;
-                final AtomicLong cnt = new AtomicLong();
-                while (reader.hasNext()) {
-                    event = reader.nextEvent();
-                    if (event.isStartElement()
-                        && event.asStartElement().getName().getLocalPart().equals(ByPkgidAttr.TAG)
-                    ) {
-                        cnt.incrementAndGet();
-                        valid = !ids.contains(
-                            event.asStartElement().getAttributeByName(new QName("pkgid")).getValue()
-                        );
-                    }
-                    if (valid) {
-                        writer.add(event);
-                    }
-                    if (event.isEndElement()
-                        && event.asEndElement().getName().getLocalPart().equals(ByPkgidAttr.TAG)) {
-                        valid = true;
-                    }
-                }
-                return cnt.get();
-            } catch (final XMLStreamException | FileNotFoundException ex) {
+                res = ByPkgidAttr.process(ids, reader, writer);
+            } catch (final XMLStreamException ex) {
                 throw new IOException(ex);
             }
+            Files.move(tmp, this.file, StandardCopyOption.REPLACE_EXISTING);
+            return res;
         }
+
+        /**
+         * Process lines.
+         * @param ids Not valid ids list
+         * @param reader Reader
+         * @param writer Writes
+         * @return Valid packages count
+         * @throws XMLStreamException When error occurs
+         */
+        private static long process(final List<String> ids, final XMLEventReader reader,
+            final XMLEventWriter writer) throws XMLStreamException {
+            boolean valid = true;
+            long cnt = 0;
+            XMLEvent event;
+            while (reader.hasNext()) {
+                event = reader.nextEvent();
+                if (event.isStartElement()
+                    && event.asStartElement().getName().getLocalPart().equals(ByPkgidAttr.TAG)
+                ) {
+                    if (ids.contains(
+                        event.asStartElement().getAttributeByName(new QName("pkgid")).getValue()
+                    )) {
+                        valid = false;
+                    } else {
+                        valid = true;
+                        cnt = cnt + 1;
+                    }
+                }
+                if (valid) {
+                    writer.add(event);
+                }
+                if (event.isEndElement()
+                    && event.asEndElement().getName().getLocalPart().equals(ByPkgidAttr.TAG)) {
+                    valid = true;
+                }
+            }
+            return cnt;
+        }
+
     }
 }

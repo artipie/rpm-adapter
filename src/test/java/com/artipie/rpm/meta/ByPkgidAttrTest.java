@@ -24,6 +24,7 @@
 package com.artipie.rpm.meta;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.cactoos.list.ListOf;
@@ -45,10 +46,13 @@ public final class ByPkgidAttrTest {
 
     @Test
     void clearsFirstItem(@TempDir final Path temp) throws IOException {
-        final Path file = temp.resolve("other.xml");
-        new XmlMaid.ByPkgidAttr(
-            Paths.get(ByPkgidAttrTest.REPODATA, "other.xml.example"), file
-        ).clean(new ListOf<>("7eaefd1cb4f9740558da7f12f9cb5a6141a47f5d064a98d46c29959869af1a44"));
+        final Path file = Files.copy(
+            Paths.get(ByPkgidAttrTest.REPODATA, "other.xml.example"),
+            temp.resolve("other.xml")
+        );
+        new XmlMaid.ByPkgidAttr(file).clean(
+            new ListOf<>("7eaefd1cb4f9740558da7f12f9cb5a6141a47f5d064a98d46c29959869af1a44")
+        );
         MatcherAssert.assertThat(
             file,
             CompareMatcher.isIdenticalTo(
@@ -59,14 +63,17 @@ public final class ByPkgidAttrTest {
 
     @Test
     void clearsLastItem(@TempDir final Path temp) throws IOException {
-        final Path file = temp.resolve("filelist.xml");
-        new XmlMaid.ByPkgidAttr(
-            Paths.get(ByPkgidAttrTest.REPODATA, "filelists.xml.example"), file
-        ).clean(new ListOf<>("54f1d9a1114fa85cd748174c57986004857b800fe9545fbf23af53f4791b31e2"));
+        final Path file = Files.copy(
+            Paths.get(ByPkgidAttrTest.REPODATA, "filelists.xml.example"),
+            temp.resolve("filelist.xml")
+        );
+        new XmlMaid.ByPkgidAttr(file).clean(
+            new ListOf<>("54f1d9a1114fa85cd748174c57986004857b800fe9545fbf23af53f4791b31e2")
+        );
         MatcherAssert.assertThat(
             file,
             CompareMatcher.isIdenticalTo(
-                Paths.get(ByPkgidAttrTest.REPODATA, "filelist.xml.example.first")
+                Paths.get(ByPkgidAttrTest.REPODATA, "filelists.xml.example.first")
             )
         );
     }
