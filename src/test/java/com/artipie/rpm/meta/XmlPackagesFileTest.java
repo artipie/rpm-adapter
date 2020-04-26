@@ -24,6 +24,7 @@
 package com.artipie.rpm.meta;
 
 import com.jcabi.matchers.XhtmlMatchers;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,10 +47,7 @@ public final class XmlPackagesFileTest {
         try (XmlPackagesFile packs = new XmlPackagesFile(new XmlFile(file), expected, "")) {
             packs.startPackages();
         }
-        MatcherAssert.assertThat(
-            new String(Files.readAllBytes(file), StandardCharsets.UTF_8),
-            XhtmlMatchers.hasXPath(String.format("/%s", expected))
-        );
+        XmlPackagesFileTest.assertion(file, String.format("/%s", expected));
     }
 
     @Test
@@ -59,10 +57,7 @@ public final class XmlPackagesFileTest {
         try (XmlPackagesFile packs = new XmlPackagesFile(new XmlFile(file), "whenever", expected)) {
             packs.startPackages();
         }
-        MatcherAssert.assertThat(
-            new String(Files.readAllBytes(file), StandardCharsets.UTF_8),
-            XhtmlMatchers.hasXPath(String.format("/*[namespace-uri(.)='%s']", expected))
-        );
+        XmlPackagesFileTest.assertion(file, String.format("/*[namespace-uri(.)='%s']", expected));
     }
 
     @Test
@@ -75,9 +70,13 @@ public final class XmlPackagesFileTest {
                 packs.packageClose();
             }
         }
+        XmlPackagesFileTest.assertion(file, String.format("/*[@packages='%s']", expected));
+    }
+
+    private static void assertion(final Path file, final String expected) throws IOException {
         MatcherAssert.assertThat(
             new String(Files.readAllBytes(file), StandardCharsets.UTF_8),
-            XhtmlMatchers.hasXPath(String.format("/*[@packages='%s']", expected))
+            XhtmlMatchers.hasXPath(expected)
         );
     }
 }
