@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.xml.stream.XMLStreamException;
 
@@ -48,9 +47,9 @@ public final class XmlFilelists implements Closeable {
     private final XmlFile xml;
 
     /**
-     * Processed packages counter.
+     * XmlPackagesFile writer.
      */
-    private final AtomicInteger packages;
+    private final XmlPackagesFile packages;
 
     /**
      * Ctor.
@@ -66,7 +65,9 @@ public final class XmlFilelists implements Closeable {
      */
     public XmlFilelists(final XmlFile xml) {
         this.xml = xml;
-        this.packages = new AtomicInteger();
+        this.packages = new XmlPackagesFile(
+            xml, "filelists", "http://linux.duke.edu/metadata/filelists"
+        );
     }
 
     /**
@@ -75,10 +76,7 @@ public final class XmlFilelists implements Closeable {
      * @throws XMLStreamException when XML generation causes error
      */
     public XmlFilelists startPackages() throws XMLStreamException {
-        this.xml.writeStartDocument("UTF-8", "1.0");
-        this.xml.writeStartElement("filelists");
-        this.xml.writeDefaultNamespace("http://linux.duke.edu/metadata/filelists");
-        this.xml.writeAttribute("packages", "-1");
+        this.packages.startPackages();
         return this;
     }
 
@@ -101,18 +99,7 @@ public final class XmlFilelists implements Closeable {
 
     @Override
     public void close() throws IOException {
-        try {
-            this.xml.writeEndElement();
-            this.xml.writeEndDocument();
-            this.xml.close();
-            this.xml.alterTag(
-                "filelists",
-                "packages",
-                String.valueOf(this.packages.get())
-            );
-        } catch (final XMLStreamException err) {
-            throw new IOException("Failed to close", err);
-        }
+        this.packages.close();
     }
 
     /**
@@ -193,7 +180,7 @@ public final class XmlFilelists implements Closeable {
          */
         public XmlFilelists close() throws XMLStreamException {
             this.xml.writeEndElement();
-            this.filelists.packages.incrementAndGet();
+            this.filelists.packages.packageClose();
             return this.filelists;
         }
     }
