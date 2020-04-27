@@ -23,11 +23,13 @@
  */
 package com.artipie.rpm.pkg;
 
+import com.artipie.rpm.meta.XmlMaid;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -55,6 +57,18 @@ public interface PackageOutput extends Closeable {
          * @return Path
          */
         Path file();
+
+        /**
+         * Returns {@link XmlMaid} instance.
+         * @return Xml maid
+         */
+        XmlMaid maid();
+
+        /**
+         * File tag.
+         * @return String tag
+         */
+        String tag();
 
         /**
          * Fake {@link FileOutput}.
@@ -104,6 +118,16 @@ public interface PackageOutput extends Closeable {
             public Path file() {
                 return this.file;
             }
+
+            @Override
+            public XmlMaid maid() {
+                return null;
+            }
+
+            @Override
+            public String tag() {
+                return "fake";
+            }
         }
     }
 
@@ -116,13 +140,13 @@ public interface PackageOutput extends Closeable {
         /**
          * List of outputs.
          */
-        private final Iterable<? extends PackageOutput> list;
+        private final Iterable<? extends Metadata> list;
 
         /**
          * Ctor.
          * @param outs Outputs
          */
-        public Multiple(final PackageOutput... outs) {
+        public Multiple(final Metadata... outs) {
             this(Arrays.asList(outs));
         }
 
@@ -130,7 +154,7 @@ public interface PackageOutput extends Closeable {
          * Ctor.
          * @param outs Outputs
          */
-        public Multiple(final Iterable<? extends PackageOutput> outs) {
+        public Multiple(final Iterable<? extends Metadata> outs) {
             this.list = outs;
         }
 
@@ -144,9 +168,10 @@ public interface PackageOutput extends Closeable {
         @Override
         public void close() throws IOException {
             final List<IOException> errors = new LinkedList<>();
-            for (final PackageOutput out : this.list) {
+            for (final Metadata out : this.list) {
                 try {
                     out.close();
+                    out.brash(Collections.emptyList());
                 } catch (final IOException err) {
                     errors.add(err);
                 }

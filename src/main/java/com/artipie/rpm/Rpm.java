@@ -31,6 +31,7 @@ import com.artipie.rpm.meta.XmlPrimaryChecksums;
 import com.artipie.rpm.meta.XmlRepomd;
 import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.FilelistsOutput;
+import com.artipie.rpm.pkg.Metadata;
 import com.artipie.rpm.pkg.MetadataFile;
 import com.artipie.rpm.pkg.OthersOutput;
 import com.artipie.rpm.pkg.PrimaryOutput;
@@ -263,22 +264,19 @@ public final class Rpm {
                                 "primary",
                                 new PrimaryOutput(
                                     Paths.get(prefix.string(), "repodata", "primary.xml.gz")
-                                ),
-                                repomd
+                                )
                             ),
                             new MetadataFile(
                                 "others",
                                 new OthersOutput(
                                     Paths.get(prefix.string(), "repodata", "primary.xml.gz")
-                                ),
-                                repomd
+                                )
                             ),
                             new MetadataFile(
                                 "filelists",
                                 new FilelistsOutput(
                                     Paths.get(prefix.string(), "repodata", "primary.xml.gz")
-                                ),
-                                repomd
+                                )
                             )
                         ),
                         this.digest
@@ -330,18 +328,16 @@ public final class Rpm {
                 Files.createTempFile("repomd-", ".xml")
             );
             repomd.begin(System.currentTimeMillis() / Tv.THOUSAND);
-            final List<MetadataFile> files = Arrays.asList(
+            final List<Metadata> files = Arrays.asList(
                 new MetadataFile(
                     "primary",
                     new PrimaryOutput(Files.createTempFile("primary-", ".xml"))
-                        .start(),
-                    repomd
+                        .start()
                 ),
                 new MetadataFile(
                     "others",
                     new OthersOutput(Files.createTempFile("others-", ".xml"))
-                        .start(),
-                    repomd
+                        .start()
                 )
             );
             if (this.filelists) {
@@ -349,8 +345,7 @@ public final class Rpm {
                     new MetadataFile(
                         "filelists",
                         new FilelistsOutput(Files.createTempFile("filelists-", ".xml"))
-                            .start(),
-                        repomd
+                            .start()
                     )
                 );
             }

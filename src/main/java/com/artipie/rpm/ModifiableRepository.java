@@ -25,7 +25,7 @@ package com.artipie.rpm;
 
 import com.artipie.rpm.meta.XmlRepomd;
 import com.artipie.rpm.pkg.FilePackage;
-import com.artipie.rpm.pkg.MetadataFile;
+import com.artipie.rpm.pkg.Metadata;
 import com.artipie.rpm.pkg.ModifiableMetadata;
 import com.artipie.rpm.pkg.Package;
 import com.artipie.rpm.pkg.PackageOutput;
@@ -56,7 +56,7 @@ public final class ModifiableRepository implements PackageOutput {
     /**
      * Metadata outputs.
      */
-    private final List<ModifiableMetadata> metadata;
+    private final List<Metadata> metadata;
 
     /**
      * Digest algorithm.
@@ -72,7 +72,7 @@ public final class ModifiableRepository implements PackageOutput {
      * @checkstyle ParameterNumberCheck (3 lines)
      */
     public ModifiableRepository(final List<String> existing, final XmlRepomd repomd,
-        final List<MetadataFile> metadata, final Digest digest) {
+        final List<Metadata> metadata, final Digest digest) {
         this.existing = existing;
         this.metadata = metadata.stream().map(ModifiableMetadata::new).collect(Collectors.toList());
         this.digest = digest;
@@ -97,9 +97,12 @@ public final class ModifiableRepository implements PackageOutput {
      * Clears records about packages that does not present in the repository any more
      * from metadata files.
      * @return Itself
+     * @throws IOException On error
      */
-    public ModifiableRepository clear() {
-        this.metadata.forEach(item -> item.clear(this.existing));
+    public ModifiableRepository clear() throws IOException {
+        for (final Metadata item : this.metadata) {
+            item.brash(this.existing);
+        }
         return this;
     }
 

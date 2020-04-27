@@ -54,10 +54,11 @@ public final class MetadataFileTest {
         );
         try (MetadataFile meta = new MetadataFile(
             "type",
-            new PackageOutput.FileOutput.Fake(fake).start(),
-            repomd
+            new PackageOutput.FileOutput.Fake(fake).start()
         )) {
-            final Path gzip = meta.save(new NamingPolicy.HashPrefixed(Digest.SHA1), Digest.SHA1);
+            final Path gzip = meta.save(
+                new NamingPolicy.HashPrefixed(Digest.SHA1), Digest.SHA1, repomd
+            );
             Files.deleteIfExists(gzip);
         }
     }

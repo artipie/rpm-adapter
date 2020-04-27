@@ -24,30 +24,18 @@
 package com.artipie.rpm.meta;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stax.StAXSource;
-import javax.xml.transform.stream.StreamResult;
 
 /**
  * Xml file.
  *
  * @since 1.0
  */
-@SuppressWarnings("PMD.TooManyMethods")
 final class XmlFile extends XmlWriterWrap {
 
     /**
@@ -56,108 +44,25 @@ final class XmlFile extends XmlWriterWrap {
     private static final XMLOutputFactory FACTORY = XMLOutputFactory.newInstance();
 
     /**
-     * Output stream.
-     */
-    private final OutputStream stream;
-
-    /**
-     * XML file path.
-     */
-    private final Path path;
-
-    /**
      * Primary ctor.
      * @param path File path
      */
     XmlFile(final Path path) {
-        this(path, outputStream(path));
-    }
-
-    /**
-     * Primary ctor.
-     * @param path File path
-     * @param out Underlying output stream
-     */
-    private XmlFile(final Path path, final OutputStream out) {
-        this(path, out, xmlStreamWriter(out));
-    }
-
-    /**
-     * Primary ctor.
-     * @param path File path
-     * @param out Underlying output stream
-     * @param xml XML stream writer
-     */
-    private XmlFile(final Path path, final OutputStream out, final XMLStreamWriter xml) {
-        super(xml);
-        this.path = path;
-        this.stream = out;
-    }
-
-    /**
-     * Override attribute value in the specified tag.
-     *
-     * @param tag Tag to find
-     * @param attribute Attribute to find
-     * @param value Value to be replace
-     * @throws IOException when XML alteration causes error
-     */
-    public void alterTag(
-        final String tag, final String attribute, final String value) throws IOException {
-        this.stream.close();
-        final Path trf = Files.createTempFile("", ".xml");
-        try {
-            final Transformer transformer = TransformerFactory.newInstance().newTransformer();
-            transformer.setOutputProperty(OutputKeys.VERSION, "1.0");
-            transformer.setOutputProperty(OutputKeys.ENCODING, StandardCharsets.UTF_8.name());
-            transformer.setOutputProperty(OutputKeys.STANDALONE, "no");
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            try (
-                InputStream input = Files.newInputStream(this.path);
-                OutputStream out = Files.newOutputStream(trf)) {
-                transformer.transform(
-                    new StAXSource(
-                        new AlterAttributeEventReader(
-                            XMLInputFactory.newFactory().createXMLEventReader(input),
-                            tag, attribute, value
-                        )
-                    ),
-                    new StreamResult(out)
-                );
-            }
-            Files.move(trf, this.path, StandardCopyOption.REPLACE_EXISTING);
-        } catch (final XMLStreamException | TransformerException err) {
-            throw new IOException("Failed to alter file", err);
-        } finally {
-            Files.deleteIfExists(trf);
-        }
-    }
-
-    /**
-     * New stream from path.
-     * @param path File path
-     * @return Output stream
-     */
-    private static OutputStream outputStream(final Path path) {
-        try {
-            return Files.newOutputStream(path);
-        } catch (final IOException err) {
-            throw new UncheckedIOException("Failed to open file stream", err);
-        }
+        super(xmlStreamWriter(path));
     }
 
     /**
      * New XML stream writer from path.
-     * @param out Output stream
+     * @param path Output path
      * @return XML stream writer
      */
-    private static XMLStreamWriter xmlStreamWriter(final OutputStream out) {
+    private static XMLStreamWriter xmlStreamWriter(final Path path) {
         try {
             return XmlFile.FACTORY.createXMLStreamWriter(
-                out,
+                Files.newOutputStream(path),
                 StandardCharsets.UTF_8.name()
             );
-        } catch (final XMLStreamException err) {
+        } catch (final XMLStreamException | IOException err) {
             throw new IllegalStateException("Failed to create XML stream", err);
         }
     }

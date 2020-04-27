@@ -96,11 +96,6 @@ public final class XmlPackagesFile implements Closeable {
             this.xml.writeEndElement();
             this.xml.writeEndDocument();
             this.xml.close();
-            this.xml.alterTag(
-                this.tag,
-                XmlPackagesFile.PACKAGES_ATTR,
-                String.valueOf(this.packages.get())
-            );
         } catch (final XMLStreamException err) {
             throw new IOException("Failed to close", err);
         }
