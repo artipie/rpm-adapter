@@ -23,13 +23,15 @@
  */
 package com.artipie.rpm.files;
 
+import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.cactoos.Scalar;
+import org.cactoos.io.OutputStreamTo;
+import org.cactoos.io.TeeInputStream;
 
 /**
  * Downloads test bundle into temp dir.
@@ -42,25 +44,35 @@ public final class DownloadBundle implements Scalar<Path> {
     /**
      * Size of the bundle.
      */
-    private final Size type;
+    private final URL url;
 
     /**
      * Ctor.
-     * @param type Bundle size
+     * @param url URL
      */
-    public DownloadBundle(final Size type) {
-        this.type = type;
+    public DownloadBundle(final URL url) {
+        this.url = url;
+    }
+
+    /**
+     * Ctor.
+     * @param size Bundle size
+     */
+    public DownloadBundle(final Size size) {
+        this(size.url());
     }
 
     @Override
     public Path value() throws IOException {
-        final Path gzip = Files.createTempDirectory("downloads").resolve("bundle.tar.gz");
-        gzip.toFile().createNewFile();
-        FileChannel.open(gzip).transferFrom(
-            Channels.newChannel(URI.create(this.type.url).toURL().openStream()),
-            0, Long.MAX_VALUE
-        );
-        return gzip;
+        final String[] parts = this.url.getPath().split("/");
+        final String name = parts[parts.length - 1];
+        final File gzip = Files.createTempDirectory("downloads").resolve(name).toFile();
+        gzip.createNewFile();
+        try (TeeInputStream tee =
+            new TeeInputStream(this.url.openStream(), new OutputStreamTo(gzip))) {
+            tee.read();
+        }
+        return gzip.toPath();
     }
 
     /**
@@ -81,14 +93,27 @@ public final class DownloadBundle implements Scalar<Path> {
         /**
          * Value.
          */
-        private final String url;
+        private final String val;
 
         /**
          * Ctor.
-         * @param url Value
+         * @param val Value
          */
-        Size(final String url) {
-            this.url = url;
+        Size(final String val) {
+            this.val = val;
         }
+
+        /**
+         * Returns ULR instance.
+         * @return Url
+         */
+        URL url() {
+            try {
+                return new URL(this.val);
+            } catch (final MalformedURLException ex) {
+                throw new IllegalArgumentException("Invalid url", ex);
+            }
+        }
+
     }
 }

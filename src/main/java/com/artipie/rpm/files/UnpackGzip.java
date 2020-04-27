@@ -33,6 +33,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.utils.IOUtils;
 import org.cactoos.Scalar;
+import org.cactoos.io.OutputStreamTo;
 
 /**
  * Unpacks given gzip to the temp dir.
@@ -67,7 +68,7 @@ public final class UnpackGzip implements Scalar<Path> {
                 if (entry.isDirectory()) {
                     next.mkdirs();
                 } else {
-                    try (OutputStream out = Files.newOutputStream(next.toPath())) {
+                    try (OutputStream out = new OutputStreamTo(next)) {
                         IOUtils.copy(tar, out);
                     }
                 }
