@@ -32,15 +32,15 @@ import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 
 /**
- * Test for {@link UnpackGzip}.
+ * Test for {@link Gzip}.
  * @since 0.8
  */
-class UnpackGzipTest {
+class GzipTest {
 
     @Test
     void unpacks() throws IOException {
-        final Path path = new UnpackGzip(Paths.get("src/test/resources-binary/test.tar.gz"))
-            .value().resolve("test.txt");
+        final Path path = new Gzip(Paths.get("src/test/resources-binary/test.tar.gz"))
+            .unpack().resolve("test.txt");
         MatcherAssert.assertThat(
             Files.readAllLines(
                 path

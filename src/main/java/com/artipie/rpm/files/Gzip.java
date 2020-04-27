@@ -32,35 +32,37 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.utils.IOUtils;
-import org.cactoos.Scalar;
-import org.cactoos.io.OutputStreamTo;
 
 /**
- * Unpacks given gzip to the temp dir.
+ * Gzip.
  * @since 0.8
  */
-public final class UnpackGzip implements Scalar<Path> {
+public final class Gzip {
 
     /**
      * Path to gzip.
      */
-    private final Path gzip;
+    private final Path file;
 
     /**
      * Ctor.
-     * @param gzip Path
+     * @param file Path
      */
-    public UnpackGzip(final Path gzip) {
-        this.gzip = gzip;
+    public Gzip(final Path file) {
+        this.file = file;
     }
 
-    @Override
+    /**
+     * Unpacks gzip to the temp dir.
+     * @return Path to dir where gzip iz unpacked
+     * @throws IOException If fails
+     */
     @SuppressWarnings("PMD.AssignmentInOperand")
-    public Path value() throws IOException {
+    public Path unpack() throws IOException {
         final Path res = Files.createTempDirectory("unpack");
         res.toFile().mkdir();
         final GzipCompressorInputStream input =
-            new GzipCompressorInputStream(Files.newInputStream(this.gzip));
+            new GzipCompressorInputStream(Files.newInputStream(this.file));
         try (TarArchiveInputStream tar = new TarArchiveInputStream(input)) {
             TarArchiveEntry entry;
             while ((entry = (TarArchiveEntry) tar.getNextEntry()) != null) {
@@ -68,7 +70,7 @@ public final class UnpackGzip implements Scalar<Path> {
                 if (entry.isDirectory()) {
                     next.mkdirs();
                 } else {
-                    try (OutputStream out = new OutputStreamTo(next)) {
+                    try (OutputStream out = Files.newOutputStream(next.toPath())) {
                         IOUtils.copy(tar, out);
                     }
                 }
