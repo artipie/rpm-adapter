@@ -24,6 +24,8 @@
 package com.artipie.rpm.meta;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,25 +46,62 @@ final class XmlFile extends XmlWriterWrap {
     private static final XMLOutputFactory FACTORY = XMLOutputFactory.newInstance();
 
     /**
+     * Output stream.
+     */
+    private final OutputStream stream;
+
+    /**
      * Primary ctor.
      * @param path File path
      */
     XmlFile(final Path path) {
-        super(xmlStreamWriter(path));
+        this(outputStream(path));
+    }
+
+    /**
+     * Primary ctor.
+     * @param out Underlying output stream
+     */
+    private XmlFile(final OutputStream out) {
+        super(xmlStreamWriter(out));
+        this.stream = out;
+    }
+
+    @Override
+    public void close() throws XMLStreamException {
+        try {
+            this.stream.close();
+            super.close();
+        } catch (final IOException ex) {
+            throw new XMLStreamException("Failed to close", ex);
+        }
+    }
+
+    /**
+     * New stream from path.
+     * @param path File path
+     * @return Output stream
+     */
+    private static OutputStream outputStream(final Path path) {
+        try {
+            return Files.newOutputStream(path);
+        } catch (final IOException err) {
+            throw new UncheckedIOException("Failed to open file stream", err);
+        }
     }
 
     /**
      * New XML stream writer from path.
-     * @param path Output path
+     * @param stream Output stream
      * @return XML stream writer
      */
-    private static XMLStreamWriter xmlStreamWriter(final Path path) {
+    private static XMLStreamWriter xmlStreamWriter(final OutputStream stream) {
         try {
             return XmlFile.FACTORY.createXMLStreamWriter(
-                Files.newOutputStream(path),
+                stream,
                 StandardCharsets.UTF_8.name()
             );
-        } catch (final XMLStreamException | IOException err) {
+        } catch (final XMLStreamException err) {
             throw new IllegalStateException("Failed to create XML stream", err);
         }
     }
