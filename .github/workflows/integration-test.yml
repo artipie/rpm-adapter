@@ -1,5 +1,5 @@
 ---
-name: Maven Build
+name: Integration tests
 "on":
   push:
     branches:
