@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm.pkg;
 
+import com.artipie.rpm.misc.UncheckedConsumer;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,6 +31,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.StreamSupport;
 
 /**
  * RPM package output.
@@ -135,10 +137,10 @@ public interface PackageOutput extends Closeable {
         }
 
         @Override
-        public void accept(final Package.Meta meta) throws IOException {
-            for (final PackageOutput out : this.list) {
-                out.accept(meta);
-            }
+        public void accept(final Package.Meta meta) {
+            StreamSupport.stream(this.list.spliterator(), true).forEach(
+                new UncheckedConsumer<>(out -> out.accept(meta))
+            );
         }
 
         @Override
