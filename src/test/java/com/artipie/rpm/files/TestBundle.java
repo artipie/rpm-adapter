@@ -36,8 +36,6 @@ import org.cactoos.scalar.LengthOf;
 /**
  * Test bundle with RPM packages.
  * @since 0.8
- * @todo #120:30min Create test for this class and use it in RpmITCase to download and
- *  UnpackGzip to unpack rmps from tar.gz. Use longTests profile for mentioned tests.
  */
 public final class TestBundle {
 
