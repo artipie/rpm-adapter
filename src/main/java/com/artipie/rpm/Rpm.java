@@ -38,6 +38,7 @@ import com.jcabi.aspects.Tv;
 import com.jcabi.log.Logger;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Completable;
+import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.schedulers.Schedulers;
@@ -46,6 +47,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -186,21 +188,21 @@ public final class Rpm {
         final Vertx vertx = Vertx.vertx();
         final Storage local = new FileStorage(tmpdir, vertx.fileSystem());
         return SingleInterop.fromFuture(this.storage.list(prefix))
-            .flatMapObservable(Observable::fromIterable)
+            .flatMapPublisher(Flowable::fromIterable)
             .filter(key -> key.string().endsWith(".rpm"))
             .flatMapSingle(
                 key -> {
                     final String file = Paths.get(key.string()).getFileName().toString();
-                    return new RxStorageWrapper(this.storage).value(key).flatMapCompletable(
-                        content -> new RxStorageWrapper(local).save(new Key.From(file), content)
-                    ).andThen(Single.just(new FilePackage(tmpdir.resolve(file))));
+                    return new RxStorageWrapper(this.storage)
+                        .value(key)
+                        .flatMapCompletable(
+                            content -> new RxStorageWrapper(local).save(new Key.From(file), content)
+                        ).andThen(Single.fromCallable(() -> new FilePackage(tmpdir.resolve(file))));
                 }
-            )
-            .observeOn(Schedulers.io())
-            .reduceWith(
-                this::repository,
-                Repository::update
-            )
+            ).parallel().runOn(Schedulers.io())
+            .map(FilePackage::parsed)
+            .sequential().observeOn(Schedulers.io())
+            .reduceWith(this::repository, Repository::update)
             .doOnSuccess(rep -> Logger.info(this, "repository updated"))
             .doOnSuccess(Repository::close)
             .doOnSuccess(rep -> Logger.info(this, "repository closed"))
@@ -330,18 +332,20 @@ public final class Rpm {
                 Files.createTempFile("repomd-", ".xml")
             );
             repomd.begin(System.currentTimeMillis() / Tv.THOUSAND);
-            final List<MetadataFile> files = Arrays.asList(
-                new MetadataFile(
-                    "primary",
-                    new PrimaryOutput(Files.createTempFile("primary-", ".xml"))
-                        .start(),
-                    repomd
-                ),
-                new MetadataFile(
-                    "others",
-                    new OthersOutput(Files.createTempFile("others-", ".xml"))
-                        .start(),
-                    repomd
+            final List<MetadataFile> files = new ArrayList<>(
+                Arrays.asList(
+                    new MetadataFile(
+                        "primary",
+                        new PrimaryOutput(Files.createTempFile("primary-", ".xml"))
+                            .start(),
+                        repomd
+                    ),
+                    new MetadataFile(
+                        "others",
+                        new OthersOutput(Files.createTempFile("others-", ".xml"))
+                            .start(),
+                        repomd
+                    )
                 )
             );
             if (this.filelists) {

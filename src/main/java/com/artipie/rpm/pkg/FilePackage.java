@@ -83,6 +83,15 @@ public final class FilePackage implements Package {
     }
 
     /**
+     * Parsed file package.
+     * @return Parsed package
+     * @throws IOException On error
+     */
+    public Package parsed() throws IOException {
+        return new ParsedFilePackage(this.header(), this.file);
+    }
+
+    /**
      * Get header.
      * @return The header
      * @throws IOException On error
@@ -105,7 +114,7 @@ public final class FilePackage implements Package {
      *  FilePackage headers can parse headers and header range correctly,
      *  can calculate file size and check-sums correctly.
      */
-    private static final class Headers implements Meta {
+    static final class Headers implements Meta {
 
         /**
          * Native headers.
