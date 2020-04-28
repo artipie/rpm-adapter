@@ -41,7 +41,7 @@ public interface Metadata extends PackageOutput {
      * @param ids Ids of the packages to clear
      * @throws IOException When error occurs
      */
-    void brash(List<String> ids) throws IOException;
+    void brush(List<String> ids) throws IOException;
 
     /**
      * Save metadata to repomd, produce gzipped output.

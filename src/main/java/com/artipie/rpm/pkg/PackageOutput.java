@@ -173,7 +173,7 @@ public interface PackageOutput extends Closeable {
             for (final Metadata out : this.list) {
                 try {
                     out.close();
-                    out.brash(Collections.emptyList());
+                    out.brush(Collections.emptyList());
                 } catch (final IOException err) {
                     errors.add(err);
                 }

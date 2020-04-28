@@ -25,7 +25,6 @@ package com.artipie.rpm;
 
 import com.artipie.rpm.meta.XmlRepomd;
 import com.artipie.rpm.misc.UncheckedFunc;
-import com.artipie.rpm.pkg.MetadataFile;
 import com.artipie.rpm.pkg.Metadata;
 import com.artipie.rpm.pkg.Package;
 import com.artipie.rpm.pkg.PackageOutput;

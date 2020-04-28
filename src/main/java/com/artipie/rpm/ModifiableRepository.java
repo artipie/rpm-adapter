@@ -24,6 +24,7 @@
 package com.artipie.rpm;
 
 import com.artipie.rpm.meta.XmlRepomd;
+import com.artipie.rpm.misc.UncheckedConsumer;
 import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.Metadata;
 import com.artipie.rpm.pkg.ModifiableMetadata;
@@ -99,10 +100,10 @@ public final class ModifiableRepository implements PackageOutput {
      * @return Itself
      * @throws IOException On error
      */
-    public ModifiableRepository clear() throws IOException {
-        for (final Metadata item : this.metadata) {
-            item.brash(this.existing);
-        }
+    public ModifiableRepository clear() {
+        this.metadata.stream().parallel().forEach(
+            new UncheckedConsumer<>(meta -> meta.brush(this.existing))
+        );
         return this;
     }
 

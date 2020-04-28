@@ -51,7 +51,7 @@ public final class ModifiableMetadata implements Metadata {
     }
 
     @Override
-    public void brash(final List<String> pkgs) throws IOException {
+    public void brush(final List<String> pkgs) throws IOException {
         new XmlAlter(this.origin.output().file()).pkgAttr(
             this.origin.output().tag(), String.valueOf(this.origin.output().maid().clean(pkgs))
         );
