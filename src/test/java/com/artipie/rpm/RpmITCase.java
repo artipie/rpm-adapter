@@ -26,19 +26,11 @@ package com.artipie.rpm;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
-import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.files.TestBundle;
-import io.reactivex.Observable;
 import io.vertx.reactivex.core.Vertx;
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -82,30 +74,9 @@ final class RpmITCase {
         final Path repo = Files.createDirectory(tmp.resolve("repo"));
         new Gzip(bundle).unpack(repo);
         Files.delete(bundle);
-        final Storage storage = new FileStorage(bundle, this.vertx.fileSystem());
-        final List<String> rpms = resources("rpms");
-        Observable.fromIterable(
-            rpms
-        ).flatMapCompletable(
-            rpm -> new RxStorageWrapper(storage)
-                .save(new Key.From(rpm), new TestContent(String.format("rpms/%s", rpm)))
-        ).blockingAwait();
+        final Storage storage = new FileStorage(repo, this.vertx.fileSystem());
         new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
-    }
-
-    /**
-     * Test resources by name.
-     * @param dir Resource directory
-     * @return List of resource name
-     * @throws Exception On error
-     */
-    private static List<String> resources(final String dir) throws Exception {
-        final ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        try (InputStream stream = Objects.requireNonNull(loader.getResourceAsStream(dir))) {
-            return new BufferedReader(new InputStreamReader(stream))
-                .lines().collect(Collectors.toList());
-        }
     }
 }

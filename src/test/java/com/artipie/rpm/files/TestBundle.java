@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm.files;
 
+import com.jcabi.log.Logger;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -70,6 +71,8 @@ public final class TestBundle {
         final String[] parts = this.url.getPath().split("/");
         final String name = parts[parts.length - 1];
         final Path bundle = path.resolve(name);
+        final long start = System.currentTimeMillis();
+        Logger.info(this, "Loading bundle %s from %s to %s", name, this.url, bundle);
         try (TeeInputStream tee =
             new TeeInputStream(
                 new BufferedInputStream(this.url.openStream()),
@@ -77,6 +80,13 @@ public final class TestBundle {
             )
         ) {
             new LengthOf(new InputOf(tee)).intValue();
+        }
+        if (Logger.isInfoEnabled(this)) {
+            Logger.info(
+                this,
+                "Downloaded bundle %s in %[ms]s",
+                name, System.currentTimeMillis() - start
+            );
         }
         return bundle;
     }

@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm.files;
 
+import com.jcabi.log.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -74,5 +75,6 @@ public final class Gzip {
                 }
             }
         }
+        Logger.debug(this, "Unpacked %s to %s", this.file, dest);
     }
 }
