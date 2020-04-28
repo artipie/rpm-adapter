@@ -76,6 +76,7 @@ public final class MetadataFile implements Metadata {
 
     @Override
     public void accept(final Package.Meta meta) throws IOException {
+        Logger.debug(this, "accepting %s", this.type);
         this.out.accept(meta);
         this.cnt.incrementAndGet();
     }

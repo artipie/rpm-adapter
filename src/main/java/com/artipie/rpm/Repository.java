@@ -24,6 +24,8 @@
 package com.artipie.rpm;
 
 import com.artipie.rpm.meta.XmlRepomd;
+import com.artipie.rpm.misc.UncheckedFunc;
+import com.artipie.rpm.pkg.MetadataFile;
 import com.artipie.rpm.pkg.Metadata;
 import com.artipie.rpm.pkg.Package;
 import com.artipie.rpm.pkg.PackageOutput;
@@ -31,8 +33,8 @@ import com.jcabi.log.Logger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Repository aggregate {@link PackageOutput}. It accepts package metadata
@@ -82,9 +84,7 @@ final class Repository implements PackageOutput {
 
     @Override
     public void accept(final Package.Meta meta) throws IOException {
-        synchronized (this.metadata) {
-            new PackageOutput.Multiple(this.metadata).accept(meta);
-        }
+        new PackageOutput.Multiple(this.metadata).accept(meta);
     }
 
     @Override
@@ -100,11 +100,9 @@ final class Repository implements PackageOutput {
      * @throws IOException On error
      */
     public List<Path> save(final NamingPolicy naming) throws IOException {
-        final List<Path> outs = new ArrayList<>(this.metadata.size() + 1);
-        for (final Metadata item : this.metadata) {
-            outs.add(item.save(naming, this.digest, this.repomd));
-            Logger.info(this, "metadata file saved: %s", item);
-        }
+        final List<Path> outs = this.metadata.stream()
+            .map(new UncheckedFunc<>(meta -> meta.save(naming, this.digest, this.repomd)))
+            .collect(Collectors.toList());
         this.repomd.close();
         final Path file = this.repomd.file();
         outs.add(Files.move(file, file.getParent().resolve("repomd.xml")));
