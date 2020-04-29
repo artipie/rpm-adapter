@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm.files;
 
+import com.jcabi.log.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -54,19 +55,17 @@ public final class Gzip {
 
     /**
      * Unpacks gzip to the temp dir.
-     * @return Path to dir where gzip iz unpacked
+     * @param dest Destination directory
      * @throws IOException If fails
      */
     @SuppressWarnings("PMD.AssignmentInOperand")
-    public Path unpack() throws IOException {
-        final Path res = Files.createTempDirectory("unpack");
-        res.toFile().mkdir();
+    public void unpack(final Path dest) throws IOException {
         final GzipCompressorInputStream input =
             new GzipCompressorInputStream(Files.newInputStream(this.file));
         try (TarArchiveInputStream tar = new TarArchiveInputStream(input)) {
             TarArchiveEntry entry;
             while ((entry = (TarArchiveEntry) tar.getNextEntry()) != null) {
-                final File next = res.resolve(entry.getName()).toFile();
+                final File next = dest.resolve(entry.getName()).toFile();
                 if (entry.isDirectory()) {
                     next.mkdirs();
                 } else {
@@ -76,6 +75,6 @@ public final class Gzip {
                 }
             }
         }
-        return res;
+        Logger.debug(this, "Unpacked %s to %s", this.file, dest);
     }
 }
