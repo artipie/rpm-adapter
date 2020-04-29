@@ -38,6 +38,7 @@ import org.junit.jupiter.api.io.TempDir;
  *
  * @since 0.6
  */
+@DisabledOnOs(OS.WINDOWS)
 public final class XmlPrimaryTest {
 
     /**
@@ -45,13 +46,12 @@ public final class XmlPrimaryTest {
      */
     private static final String FILE_NAME = "primary.xml";
 
-    // @todo #117:30min This test tests the creation of a package and addition of license,
+    // @todo #117:30min These tests the creation of a package and addition of license,
     //  now add some more assertion to verify that this class
     //  can write `primary.xml` file correctly. The example of primary can
     //  be found at test resources. If #86 is fixed then remove the DisabledOnOs
     //  annotation.
     @Test
-    @DisabledOnOs(OS.WINDOWS)
     public void writesFile(@TempDir final Path temp) throws Exception {
         final Path file = temp.resolve(XmlPrimaryTest.FILE_NAME);
         try (XmlPrimary prim = new XmlPrimary(file)) {
