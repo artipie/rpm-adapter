@@ -30,6 +30,7 @@ import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Test for {@link Gzip}.
@@ -38,13 +39,10 @@ import org.junit.jupiter.api.Test;
 class GzipTest {
 
     @Test
-    void unpacks() throws IOException {
-        final Path path = new Gzip(Paths.get("src/test/resources-binary/test.tar.gz"))
-            .unpack().resolve("test.txt");
+    void unpacks(final @TempDir Path tmp) throws IOException {
+        new Gzip(Paths.get("src/test/resources-binary/test.tar.gz")).unpack(tmp);
         MatcherAssert.assertThat(
-            Files.readAllLines(
-                path
-            ).iterator().next(),
+            Files.readAllLines(tmp.resolve("test.txt")).iterator().next(),
             new IsEqual<>("hello world")
         );
     }
