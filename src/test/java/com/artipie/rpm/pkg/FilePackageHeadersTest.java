@@ -46,11 +46,11 @@ public final class FilePackageHeadersTest {
     public void parseStringHeader(@TempDir final Path unused) {
         final Header.HeaderTag tag = Header.HeaderTag.NAME;
         final String expected = "string value";
-        final Header headers = new Header();
-        headers.createEntry(tag, expected);
+        final Header header = new Header();
+        header.createEntry(tag, expected);
         MatcherAssert.assertThat(
             new FilePackage.Headers(
-                headers, unused, Digest.SHA256
+                header, unused, Digest.SHA256
             ).header(tag).asString("default string"),
             new IsEqual<>(expected)
         );
