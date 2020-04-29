@@ -23,7 +23,11 @@
  */
 package com.artipie.rpm.meta;
 
+import com.jcabi.matchers.XhtmlMatchers;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -35,15 +39,21 @@ import org.junit.jupiter.api.io.TempDir;
  * @since 0.6
  */
 public final class XmlPrimaryTest {
-    // @todo #83:30min This test only creates a temporary file for XmlPrimary,
-    //  now some assertion should be added to verify that this class
+
+    /**
+     * Name for the xml file.
+     */
+    private static final String FILE_NAME = "primary.xml";
+
+    // @todo #117:30min This test tests the creation of a package and addition of license,
+    //  now add some more assertion to verify that this class
     //  can write `primary.xml` file correctly. The example of primary can
     //  be found at test resources. If #86 is fixed then remove the DisabledOnOs
     //  annotation.
     @Test
     @DisabledOnOs(OS.WINDOWS)
     public void writesFile(@TempDir final Path temp) throws Exception {
-        final Path file = temp.resolve("primary.xml");
+        final Path file = temp.resolve(XmlPrimaryTest.FILE_NAME);
         try (XmlPrimary prim = new XmlPrimary(file)) {
             prim.startPackages()
                 .startPackage()
@@ -56,5 +66,44 @@ public final class XmlPrimaryTest {
                 .close()
                 .close();
         }
+    }
+
+    @Test
+    public void writesPackageWithFiles(@TempDir final Path temp) throws Exception {
+        final Path file = temp.resolve(XmlPrimaryTest.FILE_NAME);
+        try (XmlPrimary prim = new XmlPrimary(file)) {
+            prim.startPackages()
+                .startPackage()
+                .files(
+                    new String[] {"afile" },
+                    new String[] {"another" },
+                    new int[] {0 }
+                ).startFormat()
+                .close()
+                .close();
+        }
+        MatcherAssert.assertThat(
+            new String(Files.readAllBytes(file), StandardCharsets.UTF_8),
+            // @checkstyle LineLengthCheck (1 line)
+            XhtmlMatchers.hasXPath("/*[local-name()='metadata']/*[local-name()='package' and @type='rpm']/*[local-name()='file']")
+        );
+    }
+
+    @Test
+    public void writesPackageWithLicence(@TempDir final Path temp) throws Exception {
+        final Path file = temp.resolve(XmlPrimaryTest.FILE_NAME);
+        try (XmlPrimary prim = new XmlPrimary(file)) {
+            prim.startPackages()
+                .startPackage()
+                .startFormat()
+                .license("alicense")
+                .close()
+                .close();
+        }
+        MatcherAssert.assertThat(
+            new String(Files.readAllBytes(file), StandardCharsets.UTF_8),
+            // @checkstyle LineLengthCheck (1 line)
+            XhtmlMatchers.hasXPath("/*[local-name()='metadata']/*[local-name()='package' and @type='rpm']/*[local-name()='format']/*[local-name()='license' and text()='alicense']")
+        );
     }
 }
