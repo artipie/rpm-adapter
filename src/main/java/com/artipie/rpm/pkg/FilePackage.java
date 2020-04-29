@@ -47,6 +47,12 @@ import org.redline_rpm.header.Header;
  * Single package in a file.
  *
  * @since 0.1
+ * @todo #75:30min Create tests to validate that FilePackage,
+ *  given a rpm file and a PackageOutput, correctly parse the
+ *  file. The main objective here is to validate that parsing of
+ *  rpm file is happening correctly, so the chosen PackageOutput
+ *  should do something with Package.Meta to exercise the parsing
+ *  of the file.
  */
 public final class FilePackage implements Package {
 
@@ -110,9 +116,6 @@ public final class FilePackage implements Package {
     /**
      * File package metadata.
      * @since 0.6
-     * @todo #69:30min Create unit tests to verify that
-     *  FilePackage headers can parse headers and header range correctly,
-     *  can calculate file size and check-sums correctly.
      */
     static final class Headers implements Meta {
 

@@ -21,30 +21,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm.files;
+package com.artipie.rpm.pkg;
 
-import java.io.IOException;
-import java.nio.file.Files;
+import com.artipie.rpm.Digest;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.redline_rpm.header.Header;
 
 /**
- * Test for {@link Gzip}.
- * @since 0.8
+ * Tests for {@link FilePackage.Headers}.
+ *
+ * @since 0.6.3
+ * @todo #75:30min Transform the parseStringHeader test below
+ *  to a parameterized test that test each of the asXXX method
+ *  of MetaHeader with two test method: one for the tag being
+ *  present and one for when it is absent (and default value is
+ *  returned).
  */
-class GzipTest {
-
+public final class FilePackageHeadersTest {
     @Test
-    void unpacks(final @TempDir Path tmp) throws IOException {
-        new Gzip(Paths.get("src/test/resources-binary/test.tar.gz")).unpack(tmp);
+    public void parseStringHeader(@TempDir final Path unused) {
+        final Header.HeaderTag tag = Header.HeaderTag.NAME;
+        final String expected = "string value";
+        final Header header = new Header();
+        header.createEntry(tag, expected);
         MatcherAssert.assertThat(
-            Files.readAllLines(tmp.resolve("test.txt")).iterator().next(),
-            new IsEqual<>("hello world")
+            new FilePackage.Headers(
+                header, unused, Digest.SHA256
+            ).header(tag).asString("default string"),
+            new IsEqual<>(expected)
         );
     }
-
 }

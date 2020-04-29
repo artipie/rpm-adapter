@@ -23,23 +23,22 @@
  */
 package com.artipie.rpm.files;
 
-import java.io.File;
+import com.jcabi.log.Logger;
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import org.cactoos.Scalar;
+import org.cactoos.io.InputOf;
 import org.cactoos.io.OutputStreamTo;
 import org.cactoos.io.TeeInputStream;
+import org.cactoos.scalar.LengthOf;
 
 /**
- * Downloads test bundle into temp dir.
+ * Test bundle with RPM packages.
  * @since 0.8
- * @todo #120:30min Create test for this class and use it in RpmITCase to download and
- *  UnpackGzip to unpack rmps from tar.gz. Use longTests profile for mentioned tests.
  */
-public final class DownloadBundle implements Scalar<Path> {
+public final class TestBundle {
 
     /**
      * Size of the bundle.
@@ -50,7 +49,7 @@ public final class DownloadBundle implements Scalar<Path> {
      * Ctor.
      * @param url URL
      */
-    public DownloadBundle(final URL url) {
+    public TestBundle(final URL url) {
         this.url = url;
     }
 
@@ -58,27 +57,44 @@ public final class DownloadBundle implements Scalar<Path> {
      * Ctor.
      * @param size Bundle size
      */
-    public DownloadBundle(final Size size) {
+    public TestBundle(final Size size) {
         this(size.url());
     }
 
-    @Override
-    public Path value() throws IOException {
+    /**
+     * Unpack bundle to path.
+     * @param path Destination path
+     * @return Bundle archive file
+     * @throws IOException On error
+     */
+    public Path unpack(final Path path) throws IOException {
         final String[] parts = this.url.getPath().split("/");
         final String name = parts[parts.length - 1];
-        final File gzip = Files.createTempDirectory("downloads").resolve(name).toFile();
-        gzip.createNewFile();
+        final Path bundle = path.resolve(name);
+        final long start = System.currentTimeMillis();
+        Logger.info(this, "Loading bundle %s from %s to %s", name, this.url, bundle);
         try (TeeInputStream tee =
-            new TeeInputStream(this.url.openStream(), new OutputStreamTo(gzip))) {
-            tee.read();
+            new TeeInputStream(
+                new BufferedInputStream(this.url.openStream()),
+                new OutputStreamTo(bundle)
+            )
+        ) {
+            new LengthOf(new InputOf(tee)).intValue();
         }
-        return gzip.toPath();
+        if (Logger.isInfoEnabled(this)) {
+            Logger.info(
+                this,
+                "Downloaded bundle %s in %[ms]s",
+                name, System.currentTimeMillis() - start
+            );
+        }
+        return bundle;
     }
 
     /**
      * Bundle size.
      */
-    enum Size {
+    public enum Size {
 
         /**
          * Hundred rpms bundle.
