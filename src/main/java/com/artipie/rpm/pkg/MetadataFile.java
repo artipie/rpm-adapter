@@ -26,6 +26,7 @@ package com.artipie.rpm.pkg;
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.FileChecksum;
 import com.artipie.rpm.NamingPolicy;
+import com.artipie.rpm.meta.XmlAlter;
 import com.artipie.rpm.meta.XmlRepomd;
 import com.jcabi.log.Logger;
 import java.io.IOException;
@@ -33,6 +34,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPOutputStream;
 import javax.xml.stream.XMLStreamException;
 
@@ -43,7 +46,7 @@ import javax.xml.stream.XMLStreamException;
  * all metadata to {@code repomd.xml}.
  * @since 0.6
  */
-public final class MetadataFile implements PackageOutput {
+public final class MetadataFile implements Metadata {
 
     /**
      * Metadata type.
@@ -53,46 +56,46 @@ public final class MetadataFile implements PackageOutput {
     /**
      * Output.
      */
-    private final FileOutput output;
+    private final FileOutput out;
 
     /**
-     * Repomd XML.
+     * Packages count.
      */
-    private final XmlRepomd repomd;
+    private final AtomicLong cnt;
 
     /**
      * Ctor.
      * @param type Metadata type
-     * @param output Output
-     * @param repomd Repomd XML
+     * @param out Output
      */
-    public MetadataFile(final String type, final FileOutput output, final XmlRepomd repomd) {
+    public MetadataFile(final String type, final FileOutput out) {
         this.type = type;
-        this.output = output;
-        this.repomd = repomd;
+        this.out = out;
+        this.cnt = new AtomicLong();
     }
 
     @Override
     public void accept(final Package.Meta meta) throws IOException {
         Logger.debug(this, "accepting %s", this.type);
-        this.output.accept(meta);
+        this.out.accept(meta);
+        this.cnt.incrementAndGet();
     }
 
     @Override
     public void close() throws IOException {
-        this.output.close();
-        Logger.info(this, "output %s closed", this.output);
+        this.out.close();
+        Logger.info(this, "output %s closed", this.out);
     }
 
-    /**
-     * Save metadata to repomd, produce gzipped output.
-     * @param naming Naming policy
-     * @param digest Digest
-     * @return Gzip metadata file
-     * @throws IOException On error
-     */
-    public Path save(final NamingPolicy naming, final Digest digest) throws IOException {
-        final Path open = this.output.file();
+    @Override
+    public void brush(final List<String> ids) throws IOException {
+        new XmlAlter(this.out.file()).pkgAttr(this.out.tag(), String.valueOf(this.cnt.get()));
+    }
+
+    @Override
+    public Path save(final NamingPolicy naming, final Digest digest, final XmlRepomd repomd)
+        throws IOException {
+        final Path open = this.out.file();
         Path gzip = Files.createTempFile(this.type, ".gz");
         MetadataFile.gzip(open, gzip);
         gzip = Files.move(
@@ -100,7 +103,7 @@ public final class MetadataFile implements PackageOutput {
             gzip.getParent().resolve(String.format("%s.xml.gz", naming.name(this.type, gzip)))
         );
         Logger.info(this, "gzipped %s to %s", open, gzip);
-        try (XmlRepomd.Data data = this.repomd.beginData(this.type)) {
+        try (XmlRepomd.Data data = repomd.beginData(this.type)) {
             data.gzipChecksum(new FileChecksum(gzip, digest));
             data.openChecksum(new FileChecksum(open, digest));
             data.location(String.format("repodata/%s", gzip.getFileName()));
@@ -111,6 +114,11 @@ public final class MetadataFile implements PackageOutput {
         }
         Files.delete(open);
         return gzip;
+    }
+
+    @Override
+    public FileOutput output() {
+        return this.out;
     }
 
     @Override

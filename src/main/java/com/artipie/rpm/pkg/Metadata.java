@@ -25,61 +25,39 @@ package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.NamingPolicy;
-import com.artipie.rpm.meta.XmlAlter;
 import com.artipie.rpm.meta.XmlRepomd;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Modifiable package.
+ * Metadata output.
  * @since 0.8
  */
-public final class ModifiableMetadata implements Metadata {
+public interface Metadata extends PackageOutput {
 
     /**
-     * Origin.
+     * Brushes metadata by cleaning not existing packages and setting packages count.
+     * @param ids Ids of the packages to clear
+     * @throws IOException When error occurs
      */
-    private final Metadata origin;
+    void brush(List<String> ids) throws IOException;
 
     /**
-     * Ctor.
-     * @param origin Origin
+     * Save metadata to repomd, produce gzipped output.
+     * @param naming Naming policy
+     * @param digest Digest
+     * @param repomd Repomd to update
+     * @return Gzip metadata file
+     * @throws IOException On error
      */
-    public ModifiableMetadata(final Metadata origin) {
-        this.origin = origin;
-    }
+    Path save(NamingPolicy naming, Digest digest, XmlRepomd repomd)
+        throws IOException;
 
-    @Override
-    public void brush(final List<String> pkgs) throws IOException {
-        new XmlAlter(this.origin.output().file()).pkgAttr(
-            this.origin.output().tag(), String.valueOf(this.origin.output().maid().clean(pkgs))
-        );
-    }
+    /**
+     * Underling metadata file output.
+     * @return File output
+     */
+    PackageOutput.FileOutput output();
 
-    @Override
-    public Path save(final NamingPolicy naming, final Digest digest,
-        final XmlRepomd repomd) throws IOException {
-        return this.origin.save(naming, digest, repomd);
-    }
-
-    @Override
-    public FileOutput output() {
-        return this.origin.output();
-    }
-
-    @Override
-    public void accept(final Package.Meta meta) throws IOException {
-        this.origin.accept(meta);
-    }
-
-    @Override
-    public void close() throws IOException {
-        this.origin.close();
-    }
-
-    @Override
-    public String toString() {
-        return this.origin.toString();
-    }
 }

@@ -23,7 +23,9 @@
  */
 package com.artipie.rpm.pkg;
 
+import com.artipie.rpm.meta.XmlMaid;
 import com.artipie.rpm.meta.XmlPrimary;
+import com.artipie.rpm.meta.XmlPrimaryMaid;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -126,5 +128,15 @@ public final class PrimaryOutput implements PackageOutput.FileOutput {
     @Override
     public Path file() {
         return this.path;
+    }
+
+    @Override
+    public XmlMaid maid() {
+        return new XmlPrimaryMaid(this.path);
+    }
+
+    @Override
+    public String tag() {
+        return "metadata";
     }
 }

@@ -24,6 +24,7 @@
 package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.meta.XmlFilelists;
+import com.artipie.rpm.meta.XmlMaid;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -105,5 +106,15 @@ public final class FilelistsOutput implements PackageOutput.FileOutput {
     @Override
     public Path file() {
         return this.path;
+    }
+
+    @Override
+    public XmlMaid maid() {
+        return new XmlMaid.ByPkgidAttr(this.path);
+    }
+
+    @Override
+    public String tag() {
+        return "filelists";
     }
 }

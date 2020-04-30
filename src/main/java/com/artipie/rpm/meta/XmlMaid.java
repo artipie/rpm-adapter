@@ -41,10 +41,6 @@ import javax.xml.stream.events.XMLEvent;
 /**
  * Xml maid.
  * @since 0.3
- * @todo #136:30min We need to use this interface to clear metadata from not existing packages.
- *  Implement it in the following steps: 1) make XmlPrimaryMaid implement this interface too,
- *  2) add it as a field to ModifiableMetadata, 3) find a way to correct packages count after
- *  clearing it (method XmlFile#alterTag() does it)
  */
 public interface XmlMaid {
 

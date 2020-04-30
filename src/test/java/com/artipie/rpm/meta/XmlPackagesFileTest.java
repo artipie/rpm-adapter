@@ -64,13 +64,17 @@ public final class XmlPackagesFileTest {
     public void writesCorrectPackageCount(@TempDir final Path temp) throws Exception {
         final Path file = temp.resolve("packs.xml");
         final int expected = new Random().nextInt(10);
-        try (XmlPackagesFile packs = new XmlPackagesFile(new XmlFile(file), "when", "what")) {
+        final String tag = "when";
+        try (XmlPackagesFile packs = new XmlPackagesFile(new XmlFile(file), tag, "what")) {
             packs.startPackages();
             for (int idx = 0; idx < expected; ++idx) {
                 packs.packageClose();
             }
         }
-        XmlPackagesFileTest.assertion(file, String.format("/*[@packages='%s']", expected));
+        new XmlAlter(file).pkgAttr(tag, String.valueOf(expected));
+        XmlPackagesFileTest.assertion(
+            file, String.format("/*[@packages='%s']", expected)
+        );
     }
 
     private static void assertion(final Path file, final String expected) throws IOException {
