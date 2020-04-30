@@ -28,9 +28,14 @@ import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.files.TestBundle;
+import com.jcabi.matchers.XhtmlMatchers;
+import io.reactivex.Flowable;
 import io.vertx.reactivex.core.Vertx;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,14 +45,12 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Integration test for {@link Rpm}.
  * @since 0.6
- * @todo #69:30min I've checked that this test generates metadata correctly,
- *  but we need to automate it. Let's check all metadata files after
- *  `Rpm.batchUpdate()` using xpath matchers. The files to check:
- *  primary.xml, others.xml, filelists.xml, repomd.xml.
- *  These files are stored in storage at path: `repomd/SHA1-TYPE.xml.gz`,
- *  where SHA1 is a HEX from SHA1 of file content and TYPE is a type of file
- *  (primary, others, filelists). Don't forget to uncompress it first.
- *  repomd.xml is not compressed and stored at `repodata/repomd.xml`.
+ * @todo #85:30min Continue the automation of batchUpdate tests.
+ *  We still need to check the files to check primary.xml, others.xml and
+ *  filelists.xml. These files are stored in storage at path:
+ *  `repomd/SHA1-TYPE.xml.gz`, where SHA1 is a HEX from SHA1 of file content
+ *  and TYPE is a type of file (primary, others, filelists). Don't forget to
+ *  uncompress it first.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 @EnabledIfSystemProperty(named = "it.longtests.enabled", matches = "true")
@@ -78,5 +81,43 @@ final class RpmITCase {
         new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
+    }
+
+    @Test
+    void generatesRepomdMetadata(@TempDir final Path tmp) throws Exception {
+        final Path bundle = new TestBundle(TestBundle.Size.HUNDRED).unpack(tmp);
+        final Path repo = Files.createDirectory(
+            tmp.resolve("generatesRepomdMetadata")
+        );
+        new Gzip(bundle).unpack(repo);
+        Files.delete(bundle);
+        final Storage storage = new FileStorage(repo, this.vertx.fileSystem());
+        new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
+            .batchUpdate(Key.ROOT)
+            .blockingAwait();
+        MatcherAssert.assertThat(
+            new String(
+                Flowable.fromPublisher(
+                    storage.value(new Key.From("repodata/repomd.xml")).get()
+                )
+                .concatMap(
+                    buffer -> Flowable.just(buffer.array())
+                ).reduce(
+                    (arr1, arr2) ->
+                        ByteBuffer.wrap(
+                            new byte[arr1.length + arr2.length]
+                        ).put(arr1).put(arr2).array()
+                ).blockingGet(),
+                Charset.defaultCharset()
+            ),
+            XhtmlMatchers.hasXPaths(
+                //@checkstyle LineLengthCheck (1 line)
+                "/*[namespace-uri()='http://linux.duke.edu/metadata/repo' and local-name()='repomd']",
+                "/*[name()='repomd']/*[name()='revision']",
+                "/*[name()='repomd']/*[name()='data' and @type='primary']",
+                "/*[name()='repomd']/*[name()='data' and @type='others']",
+                "/*[name()='repomd']/*[name()='data' and @type='filelists']"
+            )
+        );
     }
 }
