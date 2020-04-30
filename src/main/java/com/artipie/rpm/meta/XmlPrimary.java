@@ -103,11 +103,6 @@ public final class XmlPrimary implements Closeable {
             this.xml.writeEndElement();
             this.xml.writeEndDocument();
             this.xml.close();
-            this.xml.alterTag(
-                "metadata",
-                "packages",
-                String.valueOf(this.packages.get())
-            );
         } catch (final XMLStreamException err) {
             throw new IOException("Failed to close", err);
         }

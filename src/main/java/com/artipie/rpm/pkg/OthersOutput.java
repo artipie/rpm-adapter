@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm.pkg;
 
+import com.artipie.rpm.meta.XmlMaid;
 import com.artipie.rpm.meta.XmlOthers;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -102,5 +103,15 @@ public final class OthersOutput implements PackageOutput.FileOutput {
     @Override
     public Path file() {
         return this.path;
+    }
+
+    @Override
+    public XmlMaid maid() {
+        return new XmlMaid.ByPkgidAttr(this.path);
+    }
+
+    @Override
+    public String tag() {
+        return "others";
     }
 }
