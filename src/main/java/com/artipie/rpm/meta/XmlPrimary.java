@@ -25,14 +25,14 @@ package com.artipie.rpm.meta;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.xml.stream.XMLStreamException;
+import org.cactoos.map.MapEntry;
+import org.cactoos.map.MapOf;
 
 /**
  * XML {@code primary.xml} metadata imperative writer.
@@ -46,14 +46,14 @@ import javax.xml.stream.XMLStreamException;
 public final class XmlPrimary implements Closeable {
 
     /**
-     * Packages counter.
-     */
-    private final AtomicInteger packages;
-
-    /**
      * Xml file.
      */
     private final XmlFile xml;
+
+    /**
+     * XmlPackagesFile writer.
+     */
+    private final XmlPackagesFile packages;
 
     /**
      * Ctor.
@@ -67,9 +67,16 @@ public final class XmlPrimary implements Closeable {
      * Primary ctor.
      * @param xml Xml file
      */
+    @SuppressWarnings("unchecked")
     public XmlPrimary(final XmlFile xml) {
         this.xml = xml;
-        this.packages = new AtomicInteger();
+        this.packages = new XmlPackagesFile(
+            xml, "metadata",
+            new MapOf<>(
+                new MapEntry<>("", "http://linux.duke.edu/metadata/common"),
+                new MapEntry<>("rpm", "http://linux.duke.edu/metadata/rpm")
+            )
+        );
     }
 
     /**
@@ -78,11 +85,7 @@ public final class XmlPrimary implements Closeable {
      * @throws XMLStreamException On error
      */
     public XmlPrimary startPackages() throws XMLStreamException {
-        this.xml.writeStartDocument(StandardCharsets.UTF_8.displayName(), "1.0");
-        this.xml.writeStartElement("metadata");
-        this.xml.writeDefaultNamespace("http://linux.duke.edu/metadata/common");
-        this.xml.writeNamespace("rpm", "http://linux.duke.edu/metadata/rpm");
-        this.xml.writeAttribute("packages", "-1");
+        this.packages.startPackages();
         return this;
     }
 
@@ -99,13 +102,7 @@ public final class XmlPrimary implements Closeable {
 
     @Override
     public void close() throws IOException {
-        try {
-            this.xml.writeEndElement();
-            this.xml.writeEndDocument();
-            this.xml.close();
-        } catch (final XMLStreamException err) {
-            throw new IOException("Failed to close", err);
-        }
+        this.packages.close();
     }
 
     /**
@@ -335,7 +332,7 @@ public final class XmlPrimary implements Closeable {
          */
         public XmlPrimary close() throws XMLStreamException {
             this.xml.writeEndElement();
-            this.primary.packages.incrementAndGet();
+            this.primary.packages.packageClose();
             return this.primary;
         }
     }
