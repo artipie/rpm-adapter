@@ -39,16 +39,23 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Unit tests for {@link Rpm}.
+ *
+ * @since 0.9
  * @todo #63:30min Don't change metadata when invalid package is sent.
  *  Currently Rpm is recalculating metadata when an invalid package is sent.
  *  It should not. Correct that and enable the test below.
  */
 final class RpmTest {
 
+    /**
+     * Path of repomd.xml fil.
+     */
+    private static final String REPOMD = "repodata/repomd.xml";
+
     @Test
     @Disabled
     void doesntBrakeMetadataWhenInvalidPackageSent(@TempDir final Path tmp)
-    throws Exception {
+        throws Exception {
         final Storage storage = new InMemoryStorage();
         final Rpm repo =  new Rpm(
             storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
@@ -60,7 +67,7 @@ final class RpmTest {
         repo.batchUpdate(Key.ROOT).blockingAwait();
         final String repomd = new String(
             Flowable.fromPublisher(
-                storage.value(new Key.From("repodata/repomd.xml")).get()
+                storage.value(new Key.From(RpmTest.REPOMD)).get()
             ).concatMap(
                 buffer -> Flowable.just(buffer.array())
             ).reduce(
@@ -71,7 +78,7 @@ final class RpmTest {
             ).blockingGet(),
             Charset.defaultCharset()
         );
-        final byte[] broken = { 0x00, 0x01, 0x02 };
+        final byte[] broken = {0x00, 0x01, 0x02 };
         storage.save(
             new Key.From("repo/broken.txt"),
             new Content.From(
@@ -82,7 +89,7 @@ final class RpmTest {
         MatcherAssert.assertThat(
             new String(
                 Flowable.fromPublisher(
-                    storage.value(new Key.From("repodata/repomd.xml")).get()
+                    storage.value(new Key.From(RpmTest.REPOMD)).get()
                 ).concatMap(
                     buffer -> Flowable.just(buffer.array())
                 ).reduce(
