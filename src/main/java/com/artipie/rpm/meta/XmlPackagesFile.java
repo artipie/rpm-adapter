@@ -79,15 +79,13 @@ public final class XmlPackagesFile implements Closeable {
 
     /**
      * Start packages section.
-     * @return Self
      * @throws XMLStreamException On error
      */
-    public XmlFile startPackages() throws XMLStreamException {
+    public void startPackages() throws XMLStreamException {
         this.xml.writeStartDocument(StandardCharsets.UTF_8.displayName(), "1.0");
         this.xml.writeStartElement(this.tag);
         this.xml.writeDefaultNamespace(this.namespace);
         this.xml.writeAttribute(XmlPackagesFile.PACKAGES_ATTR, "-1");
-        return this.xml;
     }
 
     @Override
