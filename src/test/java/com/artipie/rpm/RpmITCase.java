@@ -23,15 +23,14 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.asto.Concatenation;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.files.TestBundle;
 import com.jcabi.matchers.XhtmlMatchers;
-import io.reactivex.Flowable;
 import io.vertx.reactivex.core.Vertx;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -97,17 +96,10 @@ final class RpmITCase {
             .blockingAwait();
         MatcherAssert.assertThat(
             new String(
-                Flowable.fromPublisher(
+                new Concatenation(
                     storage.value(new Key.From("repodata/repomd.xml")).get()
                 )
-                .concatMap(
-                    buffer -> Flowable.just(buffer.array())
-                ).reduce(
-                    (arr1, arr2) ->
-                        ByteBuffer.wrap(
-                            new byte[arr1.length + arr2.length]
-                        ).put(arr1).put(arr2).array()
-                ).blockingGet(),
+                .single().blockingGet().array(),
                 Charset.defaultCharset()
             ),
             XhtmlMatchers.hasXPaths(
