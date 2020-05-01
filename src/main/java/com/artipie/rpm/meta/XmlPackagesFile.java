@@ -26,6 +26,8 @@ package com.artipie.rpm.meta;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.xml.stream.XMLStreamException;
 
@@ -33,9 +35,6 @@ import javax.xml.stream.XMLStreamException;
  * Starting tag and ending tag writer for metadata writers. Counts and writes packages count.
  *
  * @since 0.6
- * @todo #104:30min XmlPackagesFile is now used in XmlOthers and XmlFilelists. Add a support for
- *  additional namespaces (in addition to the default namespace) so it can be used in XmlPrimary
- *  as well.
  */
 public final class XmlPackagesFile implements Closeable {
 
@@ -60,20 +59,32 @@ public final class XmlPackagesFile implements Closeable {
     private final String tag;
 
     /**
-     * Default namespace.
+     * Namespaces.
      */
-    private final String namespace;
+    private final Map<String, String> namespaces;
 
     /**
-     * Primary ctor.
+     * Ctor.
      * @param xml Xml file
      * @param tag Starting tag
      * @param namespace Default namespace
      */
     public XmlPackagesFile(final XmlFile xml, final String tag, final String namespace) {
+        this(xml, tag, Collections.singletonMap("", namespace));
+    }
+
+    /**
+     * Primary ctor.
+     * @param xml Xml file
+     * @param tag Starting tag
+     * @param namespaces Namespaces
+     */
+    public XmlPackagesFile(
+        final XmlFile xml, final String tag, final Map<String, String> namespaces
+    ) {
         this.xml = xml;
         this.tag = tag;
-        this.namespace = namespace;
+        this.namespaces = namespaces;
         this.packages = new AtomicInteger();
     }
 
@@ -84,7 +95,9 @@ public final class XmlPackagesFile implements Closeable {
     public void startPackages() throws XMLStreamException {
         this.xml.writeStartDocument(StandardCharsets.UTF_8.displayName(), "1.0");
         this.xml.writeStartElement(this.tag);
-        this.xml.writeDefaultNamespace(this.namespace);
+        for (final Map.Entry<String, String> namespace: this.namespaces.entrySet()) {
+            this.xml.writeNamespace(namespace.getKey(), namespace.getValue());
+        }
         this.xml.writeAttribute(XmlPackagesFile.PACKAGES_ATTR, "-1");
     }
 
