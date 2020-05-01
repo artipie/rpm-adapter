@@ -23,12 +23,11 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.asto.Concatenation;
 import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.memory.InMemoryStorage;
-import io.reactivex.Flowable;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
@@ -66,16 +65,9 @@ final class RpmTest {
         );
         repo.batchUpdate(Key.ROOT).blockingAwait();
         final String repomd = new String(
-            Flowable.fromPublisher(
+            new Concatenation(
                 storage.value(new Key.From(RpmTest.REPOMD)).get()
-            ).concatMap(
-                buffer -> Flowable.just(buffer.array())
-            ).reduce(
-                (arr1, arr2) ->
-                    ByteBuffer.wrap(
-                        new byte[arr1.length + arr2.length]
-                    ).put(arr1).put(arr2).array()
-            ).blockingGet(),
+            ).single().blockingGet().array(),
             Charset.defaultCharset()
         );
         final byte[] broken = {0x00, 0x01, 0x02 };
@@ -88,16 +80,9 @@ final class RpmTest {
         repo.batchUpdate(Key.ROOT).blockingAwait();
         MatcherAssert.assertThat(
             new String(
-                Flowable.fromPublisher(
+                new Concatenation(
                     storage.value(new Key.From(RpmTest.REPOMD)).get()
-                ).concatMap(
-                    buffer -> Flowable.just(buffer.array())
-                ).reduce(
-                    (arr1, arr2) ->
-                        ByteBuffer.wrap(
-                            new byte[arr1.length + arr2.length]
-                        ).put(arr1).put(arr2).array()
-                ).blockingGet(),
+                ).single().blockingGet().array(),
                 Charset.defaultCharset()
             ),
             new IsEqual<>(repomd)
