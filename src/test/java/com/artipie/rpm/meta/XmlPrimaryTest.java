@@ -83,7 +83,7 @@ public final class XmlPrimaryTest {
                 .close();
         }
         MatcherAssert.assertThat(
-            new String(Files.readAllBytes(file), StandardCharsets.UTF_8),
+            this.readFile(file),
             // @checkstyle LineLengthCheck (1 line)
             XhtmlMatchers.hasXPath("/*[local-name()='metadata']/*[local-name()='package' and @type='rpm']/*[local-name()='file']")
         );
@@ -101,9 +101,13 @@ public final class XmlPrimaryTest {
                 .close();
         }
         MatcherAssert.assertThat(
-            new String(Files.readAllBytes(file), StandardCharsets.UTF_8),
+            this.readFile(file),
             // @checkstyle LineLengthCheck (1 line)
             XhtmlMatchers.hasXPath("/*[local-name()='metadata']/*[local-name()='package' and @type='rpm']/*[local-name()='format']/*[local-name()='license' and text()='alicense']")
         );
+    }
+
+    private String readFile(final Path file) throws Exception {
+        return new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
     }
 }
