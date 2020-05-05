@@ -46,7 +46,7 @@ import javax.xml.stream.events.XMLEvent;
  * @since 0.8
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-public final class XmlPrimaryMaid {
+public final class XmlPrimaryMaid implements XmlMaid {
 
     /**
      * File to clear.
@@ -61,15 +61,12 @@ public final class XmlPrimaryMaid {
         this.file = file;
     }
 
-    /**
-     * Clears records about packages by given checksums (checksums).
-     * @param checksums What to clear
-     * @throws IOException When smth wrong
-     */
-    public void clean(final List<String> checksums) throws IOException {
+    @Override
+    public long clean(final List<String> checksums) throws IOException {
         final Path tmp = this.file.getParent().resolve(
             String.format("%s.part", this.file.getFileName().toString())
         );
+        final long res;
         try (InputStream in = Files.newInputStream(this.file);
             OutputStream out = Files.newOutputStream(tmp)) {
             final XMLEventReader reader = XMLInputFactory.newInstance().createXMLEventReader(in);
@@ -79,13 +76,14 @@ public final class XmlPrimaryMaid {
             writer.add(events.createSpace("\n"));
             writer.add(reader.nextEvent());
             writer.add(reader.nextEvent());
-            XmlPrimaryMaid.processPackages(checksums, reader, writer);
+            res = XmlPrimaryMaid.processPackages(checksums, reader, writer);
             writer.add(events.createSpace("\n"));
             writer.add(events.createEndElement(new QName("metadata"), Collections.emptyIterator()));
         } catch (final XMLStreamException ex) {
             throw new IOException(ex);
         }
         Files.move(tmp, this.file, StandardCopyOption.REPLACE_EXISTING);
+        return res;
     }
 
     /**
@@ -93,13 +91,15 @@ public final class XmlPrimaryMaid {
      * @param checksums Checksums to skip
      * @param reader Where to read from
      * @param writer Where to write
+     * @return Valid packages count
      * @throws XMLStreamException If fails
      */
-    private static void processPackages(final List<String> checksums,
+    private static long processPackages(final List<String> checksums,
         final XMLEventReader reader, final XMLEventWriter writer) throws XMLStreamException {
         XMLEvent event;
         final List<XMLEvent> pckg = new ArrayList<>(10);
         boolean valid = true;
+        long cnt = 0;
         while (reader.hasNext()) {
             event = reader.nextEvent();
             if (XmlPrimaryMaid.isTag(event, "package")) {
@@ -115,11 +115,13 @@ public final class XmlPrimaryMaid {
             }
             if (event.isEndElement()
                 && event.asEndElement().getName().getLocalPart().equals("package") && valid) {
+                cnt = cnt + 1;
                 for (final XMLEvent item : pckg) {
                     writer.add(item);
                 }
             }
         }
+        return cnt;
     }
 
     /**

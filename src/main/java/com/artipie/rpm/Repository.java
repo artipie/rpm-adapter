@@ -25,7 +25,7 @@ package com.artipie.rpm;
 
 import com.artipie.rpm.meta.XmlRepomd;
 import com.artipie.rpm.misc.UncheckedFunc;
-import com.artipie.rpm.pkg.MetadataFile;
+import com.artipie.rpm.pkg.Metadata;
 import com.artipie.rpm.pkg.Package;
 import com.artipie.rpm.pkg.PackageOutput;
 import com.jcabi.log.Logger;
@@ -51,7 +51,7 @@ final class Repository implements PackageOutput {
     /**
      * Metadata outputs.
      */
-    private final List<MetadataFile> metadata;
+    private final List<Metadata> metadata;
 
     /**
      * Digest algorithm.
@@ -64,7 +64,7 @@ final class Repository implements PackageOutput {
      * @param files Metadata files outputs
      * @param digest Digest algorithm
      */
-    Repository(final XmlRepomd repomd, final List<MetadataFile> files, final Digest digest) {
+    Repository(final XmlRepomd repomd, final List<Metadata> files, final Digest digest) {
         this.repomd = repomd;
         this.metadata = files;
         this.digest = digest;
@@ -100,7 +100,7 @@ final class Repository implements PackageOutput {
      */
     public List<Path> save(final NamingPolicy naming) throws IOException {
         final List<Path> outs = this.metadata.stream()
-            .map(new UncheckedFunc<>(meta -> meta.save(naming, this.digest)))
+            .map(new UncheckedFunc<>(meta -> meta.save(naming, this.digest, this.repomd)))
             .collect(Collectors.toList());
         this.repomd.close();
         final Path file = this.repomd.file();
