@@ -46,13 +46,13 @@ public final class MetadataFileTest {
     @Test
     public void updatesRepomdOnSave(@TempDir final Path tmp) throws Exception {
         final Path fake = tmp.resolve("fake.xml");
-        final XmlRepomd repomd = new XmlRepomd(
-            tmp.resolve("repomd.xml")
-        );
-        try (MetadataFile meta = new MetadataFile(
-            "type",
-            new PackageOutput.FileOutput.Fake(fake).start()
-        )) {
+        try (
+            XmlRepomd repomd = new XmlRepomd(tmp.resolve("repomd.xml"));
+            MetadataFile meta = new MetadataFile(
+                "type", new PackageOutput.FileOutput.Fake(fake).start()
+            )
+        ) {
+            repomd.begin(System.currentTimeMillis());
             final Path gzip = meta.save(
                 new NamingPolicy.HashPrefixed(Digest.SHA1), Digest.SHA1, repomd
             );
