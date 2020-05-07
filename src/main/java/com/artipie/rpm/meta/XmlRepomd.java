@@ -26,6 +26,7 @@ package com.artipie.rpm.meta;
 import com.artipie.rpm.pkg.Checksum;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -65,6 +66,11 @@ public final class XmlRepomd implements Closeable {
     private final XMLStreamWriter xml;
 
     /**
+     * Output stream.
+     */
+    private final OutputStream stream;
+
+    /**
      * Repomd path.
      */
     private final Path path;
@@ -74,17 +80,18 @@ public final class XmlRepomd implements Closeable {
      * @param path Temporary file path
      */
     public XmlRepomd(final Path path) {
-        this(XmlRepomd.xmlStreamWriter(path), path);
+        this(path, XmlRepomd.outputStream(path));
     }
 
     /**
      * Ctor.
-     * @param xml XML writer
      * @param path Repomd path
+     * @param stream Underling stream
      */
-    private XmlRepomd(final XMLStreamWriter xml, final Path path) {
-        this.xml = xml;
+    private XmlRepomd(final Path path, final OutputStream stream) {
         this.path = path;
+        this.stream = stream;
+        this.xml = XmlRepomd.xmlStreamWriter(stream);
     }
 
     /**
@@ -126,25 +133,37 @@ public final class XmlRepomd implements Closeable {
         try {
             this.xml.writeEndElement();
             this.xml.close();
+            this.stream.close();
         } catch (final XMLStreamException err) {
             throw new IOException("Failed to close", err);
         }
     }
 
     /**
-     * New XML stream writer from path.
+     * New stream from path.
      * @param path File path
+     * @return Output stream
+     */
+    private static OutputStream outputStream(final Path path) {
+        try {
+            return Files.newOutputStream(path);
+        } catch (final IOException err) {
+            throw new UncheckedIOException("Failed to open file stream", err);
+        }
+    }
+
+    /**
+     * New XML stream writer from path.
+     * @param stream Output steam
      * @return XML stream writer
      */
-    private static XMLStreamWriter xmlStreamWriter(final Path path) {
+    private static XMLStreamWriter xmlStreamWriter(final OutputStream stream) {
         try {
             return XmlRepomd.FACTORY.createXMLStreamWriter(
-                Files.newOutputStream(path), StandardCharsets.UTF_8.name()
+                stream, StandardCharsets.UTF_8.name()
             );
         } catch (final XMLStreamException err) {
             throw new IllegalStateException("Failed to create XML stream", err);
-        } catch (final IOException err) {
-            throw new UncheckedIOException("Failed to open file stream", err);
         }
     }
 
