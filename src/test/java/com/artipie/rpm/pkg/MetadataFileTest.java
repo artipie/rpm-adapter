@@ -29,8 +29,6 @@ import com.artipie.rpm.meta.XmlRepomd;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
@@ -46,7 +44,6 @@ public final class MetadataFileTest {
     //  file correctly after save. If #101 is solved, remove the DisabledOnOs
     //  annotation.
     @Test
-    @DisabledOnOs(OS.WINDOWS)
     public void updatesRepomdOnSave(@TempDir final Path tmp) throws Exception {
         final Path fake = tmp.resolve("fake.xml");
         final XmlRepomd repomd = new XmlRepomd(
