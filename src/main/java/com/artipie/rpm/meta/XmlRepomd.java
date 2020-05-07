@@ -240,7 +240,6 @@ public final class XmlRepomd implements Closeable {
         public void close() throws IOException {
             try {
                 this.xml.writeEndElement();
-                this.xml.close();
             } catch (final XMLStreamException err) {
                 throw new IOException("Failed to close", err);
             }
