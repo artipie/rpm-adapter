@@ -25,8 +25,6 @@ package com.artipie.rpm.meta;
 
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
@@ -41,7 +39,6 @@ public final class XmlFilelistsTest {
     //  be found at test resources. If #86 is fixed then remove the DisabledOnOs
     //  annotation.
     @Test
-    @DisabledOnOs(OS.WINDOWS)
     public void writesFile(@TempDir final Path temp) throws Exception {
         final Path file = temp.resolve("filelists.xml");
         try (XmlFilelists list = new XmlFilelists(file)) {
