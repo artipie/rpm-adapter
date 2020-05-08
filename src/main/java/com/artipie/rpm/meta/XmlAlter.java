@@ -26,24 +26,25 @@ package com.artipie.rpm.meta;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import javax.xml.stream.XMLEventFactory;
+import javax.xml.stream.XMLEventReader;
+import javax.xml.stream.XMLEventWriter;
 import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stax.StAXSource;
-import javax.xml.transform.stream.StreamResult;
+import javax.xml.stream.events.Attribute;
+import javax.xml.stream.events.StartElement;
+import javax.xml.stream.events.XMLEvent;
 
 /**
  * Alter xml file.
  * @since 0.8
- * @todo #144:30min Create separate proper unit-test for this class, now it's tested in the
- *  XmlPackagesFileTest#writesCorrectPackageCount(java.nio.file.Path) method.
  */
 public final class XmlAlter {
 
@@ -68,31 +69,61 @@ public final class XmlAlter {
      */
     public void pkgAttr(final String tag, final String value) throws IOException {
         final Path trf = Files.createTempFile("", ".xml");
-        try {
-            final Transformer transformer = TransformerFactory.newInstance().newTransformer();
-            transformer.setOutputProperty(OutputKeys.VERSION, "1.0");
-            transformer.setOutputProperty(OutputKeys.ENCODING, StandardCharsets.UTF_8.name());
-            transformer.setOutputProperty(OutputKeys.STANDALONE, "no");
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            try (
-                InputStream input = Files.newInputStream(this.file);
-                OutputStream out = Files.newOutputStream(trf)) {
-                transformer.transform(
-                    new StAXSource(
-                        new AlterAttributeEventReader(
-                            XMLInputFactory.newFactory().createXMLEventReader(input),
-                            tag, "packages", value
-                        )
-                    ),
-                    new StreamResult(out)
-                );
+        try (
+            InputStream input = Files.newInputStream(this.file);
+            OutputStream out = Files.newOutputStream(trf)) {
+            final XMLEventReader reader = XMLInputFactory.newInstance().createXMLEventReader(input);
+            final XMLEventWriter writer = XMLOutputFactory.newInstance().createXMLEventWriter(out);
+            XMLEvent event;
+            while (reader.hasNext()) {
+                event = reader.nextEvent();
+                if (event.isStartElement()
+                    && event.asStartElement().getName().getLocalPart().equals(tag)) {
+                    writer.add(alterEvent(event, value));
+                } else {
+                    writer.add(event);
+                }
             }
-            Files.move(trf, this.file, StandardCopyOption.REPLACE_EXISTING);
-        } catch (final XMLStreamException | TransformerException err) {
+        } catch (final XMLStreamException err) {
             throw new IOException("Failed to alter file", err);
-        } finally {
-            Files.deleteIfExists(trf);
         }
+        Files.move(trf, this.file, StandardCopyOption.REPLACE_EXISTING);
     }
 
+    /**
+     * Alters event by changing packages attribute value.
+     * @param original Original event
+     * @param value New value
+     * @return Altered event
+     */
+    private static XMLEvent alterEvent(final XMLEvent original, final String value) {
+        final StartElement element = original.asStartElement();
+        final List<Attribute> newattrs = new ArrayList<>(0);
+        final XMLEventFactory events = XMLEventFactory.newFactory();
+        boolean replaced = false;
+        final Iterator<?> origattrs = element.getAttributes();
+        final XMLEvent res;
+        while (origattrs.hasNext()) {
+            final Attribute attr = (Attribute) origattrs.next();
+            if (attr.getName().getLocalPart().equals("packages")) {
+                newattrs.add(events.createAttribute(attr.getName(), value));
+                replaced = true;
+            } else {
+                newattrs.add(attr);
+            }
+        }
+        if (replaced) {
+            res = events.createStartElement(
+                element.getName().getPrefix(),
+                element.getName().getNamespaceURI(),
+                element.getName().getLocalPart(),
+                newattrs.iterator(),
+                element.getNamespaces(),
+                element.getNamespaceContext()
+            );
+        } else {
+            res = original;
+        }
+        return res;
+    }
 }
