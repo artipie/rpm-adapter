@@ -25,22 +25,14 @@ package com.artipie.rpm;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.fs.FileStorage;
+import com.artipie.rpm.CliArguments.CliParsedArguments;
 import io.vertx.reactivex.core.Vertx;
-import java.nio.file.Paths;
-import java.util.Locale;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+import java.nio.file.Path;
 
 /**
  * Cli tool main class.
  *
  * @since 0.6
- * @todo #89:30min Cli options are not parsed correctly. getOptionValue method always return
- *  default value for both options, so it's not possible to override them. But the tool is working
- *  correctly. To build it use `cli` maven profile, see the README.
  */
 public final class Cli {
 
@@ -61,10 +53,6 @@ public final class Cli {
      * Main method of Cli tool.
      *
      * @param args Arguments of command line
-     * @throws ParseException if parsing failed
-     * @todo #89:30min Refactor options parsing.
-     *  Extract the logic of parsing CLI arguments into separate class with
-     *  methods like naming, digest, path.
      * @todo #79:30min Right now Rpm always includes filelists - the flag is hard-coded to
      *  true. Let's make it a command line option to pass to the Rpm class.
      * @checkstyle IllegalCatchCheck (70 lines)
@@ -72,49 +60,25 @@ public final class Cli {
      */
     @SuppressWarnings(
         {
-            "PMD.SystemPrintln", "PMD.AvoidCatchingGenericException",
-            "PMD.DoNotCallSystemExit", "PMD.AvoidDuplicateLiterals"
+            "PMD.SystemPrintln",
+            "PMD.AvoidCatchingGenericException",
+            "PMD.AvoidDuplicateLiterals"
         }
     )
-    public static void main(final String... args) throws ParseException {
-        final CommandLine cli = new DefaultParser().parse(
-            new Options()
-                .addOption(
-                    Option.builder("n")
-                        .argName("np")
-                        .longOpt("naming-policy")
-                        .desc("(optional, default plain) configures NamingPolicy for Rpm: plain, sha256 or sha1")
-                        .hasArg()
-                        .build()
-                )
-                .addOption(
-                    Option.builder("d")
-                        .argName("dgst")
-                        .longOpt("digest")
-                        .desc("(optional, default sha256) configures Digest instance for Rpm: sha256 or sha1")
-                        .hasArg()
-                        .build()
-                ),
-            args
-        );
-        if (cli.getArgs().length != 1) {
-            System.err.println("expected repository path");
-            System.exit(1);
-        }
-        final StandardNamingPolicy naming = StandardNamingPolicy.valueOf(
-            cli.getOptionValue("np", "plain").toUpperCase(Locale.US)
-        );
+    public static void main(final String... args) {
+        final CliParsedArguments cliargs = new CliArguments().parsed(args);
+        final NamingPolicy naming = cliargs.naming();
         System.out.printf("RPM naming-policy=%s\n", naming);
-        final Digest digest = Digest.valueOf(
-            cli.getOptionValue("dgst", "sha256").toUpperCase(Locale.US)
-        );
+        final Digest digest = cliargs.digest();
         System.out.printf("RPM digest=%s\n", digest);
+        final Path repository = cliargs.repository();
+        System.out.printf("RPM repository=%s\n", repository);
         final Vertx vertx = Vertx.vertx();
         try {
             new Cli(
                 new Rpm(
                     new FileStorage(
-                        Paths.get(cli.getArgList().get(0)),
+                        repository,
                         vertx.fileSystem()
                     ),
                     naming,
