@@ -84,6 +84,8 @@ public final class XmlAlter {
                     writer.add(event);
                 }
             }
+            reader.close();
+            writer.close();
         } catch (final XMLStreamException err) {
             throw new IOException("Failed to alter file", err);
         }
