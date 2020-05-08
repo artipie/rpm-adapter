@@ -33,6 +33,7 @@ import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.FilelistsOutput;
 import com.artipie.rpm.pkg.Metadata;
 import com.artipie.rpm.pkg.MetadataFile;
+import com.artipie.rpm.pkg.ModifiableMetadata;
 import com.artipie.rpm.pkg.OthersOutput;
 import com.artipie.rpm.pkg.PrimaryOutput;
 import com.jcabi.aspects.Tv;
@@ -229,6 +230,12 @@ public final class Rpm {
      * Updates repository incrementally.
      * @param prefix Repo prefix
      * @return Completable action
+     * @todo #124:30min Finish incremental update: we need to obtain meta-files from repository we
+     *  are updating, these files are stored in `repodata` folder, are gziped (use Gzip to unzip)
+     *  their names are [file-checksum]-metafile.xml.gz.
+     *  Then add test to RpmITCase to check that this method works. After that we can think about
+     *  further optimization: for example we can read xml primary checksums and copy rpms at the
+     *  same time in different threads.
      */
     public Completable updateBatchIncrementally(final Key prefix) {
         final Path tmpdir;
@@ -262,23 +269,29 @@ public final class Rpm {
                         hexes,
                         repomd,
                         Arrays.asList(
-                            new MetadataFile(
-                                "primary",
-                                new PrimaryOutput(
-                                    Paths.get(prefix.string(), "repodata", "primary.xml.gz")
-                                )
+                            new ModifiableMetadata(
+                                new MetadataFile(
+                                    "primary",
+                                    new PrimaryOutput(Files.createTempFile("primary-", ".xml"))
+                                        .start()
+                                ),
+                                Paths.get(prefix.string(), "repodata", "primary.xml.gz")
                             ),
-                            new MetadataFile(
-                                "others",
-                                new OthersOutput(
-                                    Paths.get(prefix.string(), "repodata", "primary.xml.gz")
-                                )
+                            new ModifiableMetadata(
+                                new MetadataFile(
+                                    "others",
+                                    new OthersOutput(Files.createTempFile("others-", ".xml"))
+                                        .start()
+                                ),
+                                Paths.get(prefix.string(), "repodata", "others.xml.gz")
                             ),
-                            new MetadataFile(
-                                "filelists",
-                                new FilelistsOutput(
-                                    Paths.get(prefix.string(), "repodata", "primary.xml.gz")
-                                )
+                            new ModifiableMetadata(
+                                new MetadataFile(
+                                    "filelists",
+                                    new OthersOutput(Files.createTempFile("filelists-", ".xml"))
+                                        .start()
+                                ),
+                                Paths.get(prefix.string(), "repodata", "others.xml.gz")
                             )
                         ),
                         this.digest
