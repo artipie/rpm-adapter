@@ -72,8 +72,9 @@ public final class XmlOthers implements Closeable {
      * @return Self
      * @throws XMLStreamException On error
      */
-    public XmlFile startPackages() throws XMLStreamException {
-        return this.packages.startPackages();
+    public XmlOthers startPackages() throws XMLStreamException {
+        this.packages.startPackages();
+        return this;
     }
 
     /**

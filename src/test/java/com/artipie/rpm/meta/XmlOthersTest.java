@@ -29,8 +29,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
@@ -40,7 +38,6 @@ import org.junit.jupiter.api.io.TempDir;
  *  to do that you need to wait for  the changelog to be implemented first
  *  there's a puzzle for implementing it.
  */
-@DisabledOnOs(OS.WINDOWS)
 public class XmlOthersTest {
 
     /**

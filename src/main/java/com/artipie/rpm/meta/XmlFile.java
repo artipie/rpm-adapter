@@ -70,8 +70,8 @@ final class XmlFile extends XmlWriterWrap {
     @Override
     public void close() throws XMLStreamException {
         try {
-            this.stream.close();
             super.close();
+            this.stream.close();
         } catch (final IOException ex) {
             throw new XMLStreamException("Failed to close", ex);
         }
