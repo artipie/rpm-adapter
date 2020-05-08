@@ -32,6 +32,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import javax.xml.namespace.QName;
 import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLEventWriter;
@@ -115,10 +116,11 @@ public final class XmlAlter {
             }
         }
         if (replaced) {
+            final QName name = element.getName();
             res = events.createStartElement(
-                element.getName().getPrefix(),
-                element.getName().getNamespaceURI(),
-                element.getName().getLocalPart(),
+                name.getPrefix(),
+                name.getNamespaceURI(),
+                name.getLocalPart(),
                 newattrs.iterator(),
                 element.getNamespaces(),
                 element.getNamespaceContext()
