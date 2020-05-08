@@ -5,10 +5,10 @@ name: PDD linter
     branches:
       - master
   pull_request:
-    brranches:
+    branches:
       - master
 jobs:
-  build:
+  pdd-lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
