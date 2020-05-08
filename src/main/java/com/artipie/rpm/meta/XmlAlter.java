@@ -42,7 +42,7 @@ import javax.xml.transform.stream.StreamResult;
 /**
  * Alter xml file.
  * @since 0.8
- * @todo #144:30min Create separate proper unit-test for this class, now it's tested in the
+ * @todo #144:30min Create separate proper unit-test for this class, now it is tested in the
  *  XmlPackagesFileTest#writesCorrectPackageCount(java.nio.file.Path) method.
  */
 public final class XmlAlter {
