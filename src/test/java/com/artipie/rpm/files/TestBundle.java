@@ -102,7 +102,7 @@ public final class TestBundle {
         HUNDRED("https://artipie.s3.amazonaws.com/rpm-test/bundle100.tar.gz"),
 
         /**
-         * Hundred rpms bundle.
+         * Thousand rpms bundle.
          */
         THOUSAND("https://artipie.s3.amazonaws.com/rpm-test/bundle1000.tar.gz");
 
