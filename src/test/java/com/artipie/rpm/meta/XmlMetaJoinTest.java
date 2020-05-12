@@ -45,7 +45,7 @@ class XmlMetaJoinTest {
     private static final String REPO = "src/test/resources-binary/repodata";
 
     @Test
-    void joinsPrimary(@TempDir final Path temp) throws IOException {
+    void joinsTwoMetaXmlFiles(@TempDir final Path temp) throws IOException {
         final Path file = Files.copy(
             Paths.get(XmlMetaJoinTest.REPO, "primary.xml.example.first"), temp.resolve("target.xml")
         );
@@ -85,7 +85,8 @@ class XmlMetaJoinTest {
         new XmlMetaJoin("parent").merge(target, part);
         final Path expected = temp.resolve("expected.xml");
         Files.write(
-            expected, String.join(
+            expected,
+            String.join(
                 "\n",
                 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
                 "<parent>",

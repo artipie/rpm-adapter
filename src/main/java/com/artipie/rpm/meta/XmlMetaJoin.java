@@ -39,7 +39,7 @@ import javax.xml.stream.events.XMLEvent;
 
 /**
  * Joins two meta xml-files.
- * @since 0.8
+ * @since 0.9
  */
 public final class XmlMetaJoin {
 
@@ -88,11 +88,10 @@ public final class XmlMetaJoin {
         throws IOException, XMLStreamException {
         try (InputStream in = Files.newInputStream(target)) {
             final XMLEventReader reader = XMLInputFactory.newInstance().createXMLEventReader(in);
-            XMLEvent event;
             writer.add(reader.nextEvent());
             writer.add(XMLEventFactory.newFactory().createSpace("\n"));
             while (reader.hasNext()) {
-                event = reader.nextEvent();
+                final XMLEvent event = reader.nextEvent();
                 if (!(event.isEndElement()
                     && event.asEndElement().getName().getLocalPart().equals(this.tag))
                     && !event.isEndDocument()
@@ -115,9 +114,8 @@ public final class XmlMetaJoin {
         throws IOException, XMLStreamException {
         try (InputStream in = Files.newInputStream(part)) {
             final XMLEventReader reader = XMLInputFactory.newInstance().createXMLEventReader(in);
-            XMLEvent event;
             while (reader.hasNext()) {
-                event = reader.nextEvent();
+                final XMLEvent event = reader.nextEvent();
                 if (!(event.isStartElement()
                     && event.asStartElement().getName().getLocalPart().equals(this.tag))
                     && !event.isStartDocument()

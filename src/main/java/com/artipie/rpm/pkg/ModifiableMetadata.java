@@ -35,7 +35,7 @@ import java.util.List;
 /**
  * Modifiable package.
  * @since 0.8
- * @todo #124:30min Create tests for this class: we need standard unit test and IT Case long test,
+ * @todo #141:30min Create tests for this class: we need standard unit test and IT Case long test,
  *  which will use large xml from test bundles (I guess we can simply join meta-xml from hundred
  *  and thousand rpm bundles).
  */

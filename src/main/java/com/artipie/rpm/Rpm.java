@@ -230,8 +230,8 @@ public final class Rpm {
      * Updates repository incrementally.
      * @param prefix Repo prefix
      * @return Completable action
-     * @todo #124:30min Finish incremental update: we need to obtain meta-files from repository we
-     *  are updating, these files are stored in `repodata` folder, are gziped (use Gzip to unzip)
+     * @todo #141:30min Finish incremental update: we need to obtain meta-files from repository we
+     *  are updating, these files are stored in `repodata` folder, are gziped (use Gzip to unzip),
      *  their names are [file-checksum]-metafile.xml.gz.
      *  Then add test to RpmITCase to check that this method works. After that we can think about
      *  further optimization: for example we can read xml primary checksums and copy rpms at the
