@@ -23,29 +23,28 @@
  */
 package com.artipie.rpm;
 
-import org.apache.commons.cli.ParseException;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
  * Test case for {@link Cli}.
  *
  * @since 0.6
+ * @todo #114:30min Add some more tests in order to validate the all the
+ *  assumptions made in Cli and in CliArguments.
  */
-@Disabled
 class CliTest {
 
     @Test
     void testWrongArgumentCount() {
         try {
-            Cli.main(new String[]{"a"});
-        } catch (final ParseException exception) {
+            Cli.main(new String[]{});
+        } catch (final IllegalArgumentException exception) {
             MatcherAssert.assertThat(
                 String.format("Exception occurred: %s", exception.getMessage()),
-                "Wrong arguments count, something is missing",
-                IsEqual.equalTo(exception.getMessage())
+                "Expected repository path but got: []",
+                new IsEqual<>(exception.getMessage())
             );
         }
     }
