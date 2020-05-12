@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Random;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -58,23 +57,6 @@ public final class XmlPackagesFileTest {
             packs.startPackages();
         }
         XmlPackagesFileTest.assertion(file, String.format("/*[namespace-uri(.)='%s']", expected));
-    }
-
-    @Test
-    public void writesCorrectPackageCount(@TempDir final Path temp) throws Exception {
-        final Path file = temp.resolve("packs.xml");
-        final int expected = new Random().nextInt(10);
-        final String tag = "when";
-        try (XmlPackagesFile packs = new XmlPackagesFile(new XmlFile(file), tag, "what")) {
-            packs.startPackages();
-            for (int idx = 0; idx < expected; ++idx) {
-                packs.packageClose();
-            }
-        }
-        new XmlAlter(file).pkgAttr(tag, String.valueOf(expected));
-        XmlPackagesFileTest.assertion(
-            file, String.format("/*[@packages='%s']", expected)
-        );
     }
 
     private static void assertion(final Path file, final String expected) throws IOException {
