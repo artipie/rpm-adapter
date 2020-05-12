@@ -60,7 +60,7 @@ final class RpmTest {
             storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
         );
         storage.save(
-            new Key.From("repo/oldfile.txt"),
+            new Key.From("repo/oldfile.rpm"),
             new Content.From("anything".getBytes())
         );
         repo.batchUpdate(Key.ROOT).blockingAwait();
@@ -72,7 +72,7 @@ final class RpmTest {
         );
         final byte[] broken = {0x00, 0x01, 0x02 };
         storage.save(
-            new Key.From("repo/broken.txt"),
+            new Key.From("repo/broken.rpm"),
             new Content.From(
                 broken
             )
