@@ -27,8 +27,6 @@ import com.jcabi.matchers.XhtmlMatchers;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.cactoos.io.InputOf;
-import org.cactoos.text.TextOf;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -55,8 +53,8 @@ public final class XmlFilelistsTest {
         }
         MatcherAssert.assertThat(
             new String(Files.readAllBytes(file), StandardCharsets.UTF_8),
-            // @checkstyle LineLengthCheck (1 line)
             XhtmlMatchers.hasXPaths(
+                // @checkstyle LineLengthCheck (2 line)
                 "/*[local-name()='filelists']/*[local-name()='package' and @pkgid='packagechecksun' and @name='packagename' and @arch='packagearch']/*[local-name()='version' and @epoch='1' and @ver='packageversion' and @rel='packagerel']",
                 "/*[local-name()='filelists']/*[local-name()='package' and @pkgid='packagechecksun' and @name='packagename' and @arch='packagearch']/*[local-name()='file' and text()='dirfile']"
             )
