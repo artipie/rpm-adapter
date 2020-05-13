@@ -34,8 +34,6 @@ import javax.xml.stream.XMLStreamException;
 /**
  * Package output for {@code filelists.xml}.
  * @since 0.6
- * @todo #136:30min Make this class be able to work this already existing filelists.xml by
- *  adding corresponding ctor and test it.
  */
 public final class FilelistsOutput implements PackageOutput.FileOutput {
 

@@ -4,7 +4,6 @@
 [![DevOps By Rultor.com](http://www.rultor.com/b/artipie/rpm-adapter)](http://www.rultor.com/p/artipie/rpm-adapter)
 [![We recommend IntelliJ IDEA](https://www.elegantobjects.org/intellij-idea.svg)](https://www.jetbrains.com/idea/)
 
-[![Build Status](https://img.shields.io/travis/yegor256/rpm-files/master.svg)](https://travis-ci.org/yegor256/rpm-files)
 [![Javadoc](http://www.javadoc.io/badge/com.artipie/rpm-adapter.svg)](http://www.javadoc.io/doc/com.artipie/rpm-adapter)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/com.artipie/rpm-adapter/blob/master/LICENSE.txt)
 [![Hits-of-Code](https://hitsofcode.com/github/artipie/rpm-adapter)](https://hitsofcode.com/view/github/artipie/rpm-adapter)

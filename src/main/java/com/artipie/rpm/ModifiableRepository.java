@@ -27,13 +27,11 @@ import com.artipie.rpm.meta.XmlRepomd;
 import com.artipie.rpm.misc.UncheckedConsumer;
 import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.Metadata;
-import com.artipie.rpm.pkg.ModifiableMetadata;
 import com.artipie.rpm.pkg.Package;
 import com.artipie.rpm.pkg.PackageOutput;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Repository aggregate {@link PackageOutput}, decorator for {@link Repository}. It accepts repo
@@ -75,7 +73,7 @@ public final class ModifiableRepository implements PackageOutput {
     public ModifiableRepository(final List<String> existing, final XmlRepomd repomd,
         final List<Metadata> metadata, final Digest digest) {
         this.existing = existing;
-        this.metadata = metadata.stream().map(ModifiableMetadata::new).collect(Collectors.toList());
+        this.metadata = metadata;
         this.digest = digest;
         this.origin = new Repository(repomd, metadata, digest);
     }
