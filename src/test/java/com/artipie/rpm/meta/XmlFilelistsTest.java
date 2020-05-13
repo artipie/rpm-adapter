@@ -23,7 +23,13 @@
  */
 package com.artipie.rpm.meta;
 
+import com.jcabi.matchers.XhtmlMatchers;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import org.cactoos.io.InputOf;
+import org.cactoos.text.TextOf;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -33,11 +39,7 @@ import org.junit.jupiter.api.io.TempDir;
  * @since 0.6.3
  */
 public final class XmlFilelistsTest {
-    // @todo #84:30min This test only creates a temporary file for XmlFilelists,
-    //  now some assertion should be added to verify that this class
-    //  can write `filelists.xml` file correctly. The example of filelists can
-    //  be found at test resources. If #86 is fixed then remove the DisabledOnOs
-    //  annotation.
+
     @Test
     public void writesFile(@TempDir final Path temp) throws Exception {
         final Path file = temp.resolve("filelists.xml");
@@ -51,5 +53,13 @@ public final class XmlFilelistsTest {
                     new int[] {0 }
                 ).close();
         }
+        MatcherAssert.assertThat(
+            new String(Files.readAllBytes(file), StandardCharsets.UTF_8),
+            // @checkstyle LineLengthCheck (1 line)
+            XhtmlMatchers.hasXPaths(
+                "/*[local-name()='filelists']/*[local-name()='package' and @pkgid='packagechecksun' and @name='packagename' and @arch='packagearch']/*[local-name()='version' and @epoch='1' and @ver='packageversion' and @rel='packagerel']",
+                "/*[local-name()='filelists']/*[local-name()='package' and @pkgid='packagechecksun' and @name='packagename' and @arch='packagearch']/*[local-name()='file' and text()='dirfile']"
+            )
+        );
     }
 }
