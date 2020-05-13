@@ -150,11 +150,25 @@ public final class XmlOthers implements Closeable {
          *  be extracted from package headers. Check example RPM packages in test bin resources
          *  and `other.xml` file for this file in test resources.
          */
-        public Package changelog() throws XMLStreamException {
+        public Package changelog()
+            throws XMLStreamException {
             this.xml.writeStartElement("changelog");
             this.xml.writeCharacters("NOT_IMPLEMENTED");
             this.xml.writeEndElement();
             return this;
+        }
+
+        /**
+         * Adds changelog tag to others.xml file.
+         * @param author Changelog author
+         * @param epoch Epoch seconds
+         * @param content Changelog content
+         * @return Self
+         * @throws XMLStreamException On error
+         */
+        public Package changelog(final String author, final int epoch, final String content)
+            throws XMLStreamException {
+            return this.changelog();
         }
 
         /**

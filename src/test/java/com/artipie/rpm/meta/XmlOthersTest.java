@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -82,6 +83,31 @@ public class XmlOthersTest {
             new String(Files.readAllBytes(xml), StandardCharsets.UTF_8),
             // @checkstyle LineLengthCheck (1 line)
             XhtmlMatchers.hasXPath("/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='version' and @epoch='0' and @ver='1.0.0' and @rel='8.20190810git9666276.el8']")
+        );
+    }
+
+    /**
+     * Test adding a changelog for the package.
+     * @param tmp Temp path
+     * @throws Exception
+     */
+    @Test
+    @Disabled
+    void canAddChangelog(@TempDir final Path tmp) throws Exception {
+        final Path xml = tmp.resolve("changelog.xml");
+        try (XmlOthers others = new XmlOthers(xml)) {
+            others.startPackages();
+            others.addPackage(
+                "ddd", "eee",
+                "fff"
+            ).version(0, "2.0.0", "8.20190810git9666276.el9")
+            .changelog("Paulo Lobo", 0, "Test for changelog generation")
+            .close();
+        }
+        MatcherAssert.assertThat(
+            new String(Files.readAllBytes(xml), StandardCharsets.UTF_8),
+            // @checkstyle LineLengthCheck (1 line)
+            XhtmlMatchers.hasXPath("/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='changelog' and @epoch='0' and @author='Paulo Lobo' and text()='Test for changelog generation']")
         );
     }
 
