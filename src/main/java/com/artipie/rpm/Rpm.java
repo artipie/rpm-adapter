@@ -318,7 +318,7 @@ public final class Rpm {
      * @param key Key
      * @return Repository
      * @throws IOException If IO Exception occurs.
-     * @todo 178:30min Try to get rid of blocking operations here, at the same time keep in mind
+     * @todo #178:30min Try to get rid of blocking operations here, at the same time keep in mind
      *  that we need list of the existing rpm checksums from repomd.xml to start the update.
      */
     private ModifiableRepository mdfRepository(final Path dir, final Storage local, final Key key)
@@ -372,7 +372,7 @@ public final class Rpm {
      * Metadata files list.
      * @return Map with metadata files.
      * @throws IOException On error
-     * @todo 178:30min Create enum with metadata file items and get rid of string metadata names in
+     * @todo #178:30min Create enum with metadata file items and get rid of string metadata names in
      *  the project and this method. Each enum item has to have at least metadata tag name and
      *  PackageOutput.FileOutput instance.
      */
