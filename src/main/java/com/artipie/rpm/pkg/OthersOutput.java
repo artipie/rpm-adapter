@@ -110,6 +110,6 @@ public final class OthersOutput implements PackageOutput.FileOutput {
 
     @Override
     public String tag() {
-        return "others";
+        return "otherdata";
     }
 }

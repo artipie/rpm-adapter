@@ -29,11 +29,14 @@ import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.files.TestBundle;
+import com.jcabi.log.Logger;
 import com.jcabi.matchers.XhtmlMatchers;
 import io.vertx.reactivex.core.Vertx;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import org.apache.commons.io.FileUtils;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +56,20 @@ import org.junit.jupiter.api.io.TempDir;
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 @EnabledIfSystemProperty(named = "it.longtests.enabled", matches = "true")
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 final class RpmITCase {
+
+    /**
+     * Abc test rmp file.
+     */
+    private static final Path ABC =
+        Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm");
+
+    /**
+     * Libdeflt test rmp file.
+     */
+    private static final Path LIBDEFLT =
+        Paths.get("src/test/resources-binary/libdeflt1_0-2020.03.27-25.1.armv7hl.rpm");
 
     /**
      * VertX closeable instance.
@@ -74,12 +90,42 @@ final class RpmITCase {
     void generatesMetadata(@TempDir final Path tmp) throws Exception {
         final Path bundle = new TestBundle(TestBundle.Size.THOUSAND).unpack(tmp);
         final Path repo = Files.createDirectory(tmp.resolve("repo"));
-        new Gzip(bundle).unpack(repo);
+        new Gzip(bundle).unpackTar(repo);
         Files.delete(bundle);
         final Storage storage = new FileStorage(repo, this.vertx.fileSystem());
+        final long start = System.currentTimeMillis();
         new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
+        if (Logger.isInfoEnabled(this)) {
+            Logger.info(
+                this,
+                "Batch update completed in %[ms]s", System.currentTimeMillis() - start
+            );
+        }
+    }
+
+    @Test
+    void generatesMetadataWhenUpdatingIncrementally(@TempDir final Path tmp) throws Exception {
+        final Path bundle = new TestBundle(TestBundle.Size.THOUSAND).unpack(tmp);
+        final Path repo = Files.createDirectory(tmp.resolve("repo"));
+        new Gzip(bundle).unpackTar(repo);
+        Files.walk(repo).filter(file -> file.toString().contains("oxygen"))
+            .forEach(file -> FileUtils.deleteQuietly(file.toFile()));
+        Files.copy(RpmITCase.ABC, repo.resolve(RpmITCase.ABC.getFileName()));
+        Files.copy(RpmITCase.LIBDEFLT, repo.resolve(RpmITCase.LIBDEFLT.getFileName()));
+        Files.delete(bundle);
+        final Storage storage = new FileStorage(repo, this.vertx.fileSystem());
+        final long start = System.currentTimeMillis();
+        new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
+            .updateBatchIncrementally(Key.ROOT)
+            .blockingAwait();
+        if (Logger.isInfoEnabled(this)) {
+            Logger.info(
+                this,
+                "Incremental batch update completed in %[ms]s", System.currentTimeMillis() - start
+            );
+        }
     }
 
     @Test
@@ -88,18 +134,47 @@ final class RpmITCase {
         final Path repo = Files.createDirectory(
             tmp.resolve("generatesRepomdMetadata")
         );
-        new Gzip(bundle).unpack(repo);
+        new Gzip(bundle).unpackTar(repo);
         Files.delete(bundle);
         final Storage storage = new FileStorage(repo, this.vertx.fileSystem());
         new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
+        RpmITCase.assertion(storage);
+    }
+
+    @Test
+    void generatesRepomdMetadataWhenUpdatingIncrementally(@TempDir final Path tmp)
+        throws Exception {
+        final Path bundle = new TestBundle(TestBundle.Size.HUNDRED).unpack(tmp);
+        final Path repo = Files.createDirectory(tmp.resolve("generatesRepomdMetadata"));
+        new Gzip(bundle).unpackTar(repo);
+        Files.walk(repo).filter(file -> file.toString().contains("oxygen"))
+            .forEach(file -> FileUtils.deleteQuietly(file.toFile()));
+        Files.copy(RpmITCase.ABC, repo.resolve(RpmITCase.ABC.getFileName()));
+        Files.copy(RpmITCase.LIBDEFLT, repo.resolve(RpmITCase.LIBDEFLT.getFileName()));
+        Files.delete(bundle);
+        final Storage storage = new FileStorage(repo, this.vertx.fileSystem());
+        new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
+            .updateBatchIncrementally(Key.ROOT)
+            .blockingAwait();
+        RpmITCase.assertion(storage);
+    }
+
+    /**
+     * Assertion.
+     * @param storage Storage
+     * @throws InterruptedException on Error
+     * @throws java.util.concurrent.ExecutionException on Error
+     */
+    private static void assertion(final Storage storage)
+        throws InterruptedException, java.util.concurrent.ExecutionException {
         MatcherAssert.assertThat(
             new String(
                 new Concatenation(
                     storage.value(new Key.From("repodata/repomd.xml")).get()
                 )
-                .single().blockingGet().array(),
+                    .single().blockingGet().array(),
                 Charset.defaultCharset()
             ),
             XhtmlMatchers.hasXPaths(
@@ -107,7 +182,7 @@ final class RpmITCase {
                 "/*[namespace-uri()='http://linux.duke.edu/metadata/repo' and local-name()='repomd']",
                 "/*[name()='repomd']/*[name()='revision']",
                 "/*[name()='repomd']/*[name()='data' and @type='primary']",
-                "/*[name()='repomd']/*[name()='data' and @type='others']",
+                "/*[name()='repomd']/*[name()='data' and @type='other']",
                 "/*[name()='repomd']/*[name()='data' and @type='filelists']"
             )
         );
