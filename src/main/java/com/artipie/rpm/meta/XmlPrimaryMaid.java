@@ -79,6 +79,8 @@ public final class XmlPrimaryMaid implements XmlMaid {
             res = XmlPrimaryMaid.processPackages(checksums, reader, writer);
             writer.add(events.createSpace("\n"));
             writer.add(events.createEndElement(new QName("metadata"), Collections.emptyIterator()));
+            writer.close();
+            reader.close();
         } catch (final XMLStreamException ex) {
             throw new IOException(ex);
         }

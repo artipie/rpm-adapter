@@ -89,6 +89,8 @@ public interface XmlMaid {
                 final XMLEventWriter writer =
                     XMLOutputFactory.newInstance().createXMLEventWriter(out);
                 res = ByPkgidAttr.process(ids, reader, writer);
+                writer.close();
+                reader.close();
             } catch (final XMLStreamException ex) {
                 throw new IOException(ex);
             }
