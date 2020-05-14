@@ -51,6 +51,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.xml.stream.XMLStreamException;
@@ -210,13 +211,21 @@ public final class Rpm {
             .doOnSuccess(rep -> Logger.info(this, "repository closed"))
             .flatMapObservable(repo -> Observable.fromIterable(repo.save(this.naming)))
             .doOnNext(file -> Files.move(file, tmpdir.resolve(file.getFileName())))
-            .flatMapCompletable(
+            .flatMapSingle(
                 path -> new RxStorageWrapper(local)
                     .value(new Key.From(path.getFileName().toString()))
                     .flatMapCompletable(
                         content -> new RxStorageWrapper(this.storage).save(
                             new Key.From("repodata", path.getFileName().toString()), content
                         )
+                    ).toSingleDefault(path)
+            ).map(path -> String.format("repodata/%s", path.getFileName().toString()))
+            .toList().map(HashSet::new).flatMapCompletable(
+                preserve -> new RxStorageWrapper(this.storage).list(new Key.From("repodata"))
+                    .flatMapObservable(Observable::fromIterable)
+                    .filter(item -> !preserve.contains(item.string()))
+                    .flatMapCompletable(
+                        item -> new RxStorageWrapper(this.storage).delete(item)
                     )
             ).doOnTerminate(
                 () -> {
