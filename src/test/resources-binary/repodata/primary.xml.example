@@ -6,7 +6,7 @@
   <version epoch="0" ver="1.0.0" rel="8.20190810git9666276.el8"/>
   <checksum type="sha256" pkgid="YES">7eaefd1cb4f9740558da7f12f9cb5a6141a47f5d064a98d46c29959869af1a44</checksum>
   <summary>Royalty-free next-generation video format</summary>
-  <description>The Alliance for Open Media’s focus is to deliver a next-generation
+  <description>The Alliance for Open Media's focus is to deliver a next-generation
 video format that is:
 
  - Interoperable and open;
