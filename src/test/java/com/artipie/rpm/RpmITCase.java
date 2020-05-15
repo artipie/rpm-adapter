@@ -42,6 +42,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
@@ -57,7 +58,7 @@ import org.junit.jupiter.api.io.TempDir;
  * @checkstyle MagicNumberCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-//@EnabledIfSystemProperty(named = "it.longtests.enabled", matches = "true")
+@EnabledIfSystemProperty(named = "it.longtests.enabled", matches = "true")
 final class RpmITCase {
 
     /**
@@ -84,7 +85,7 @@ final class RpmITCase {
 
     @BeforeAll
     static void setUpClass() throws Exception {
-        RpmITCase.bundle = new TestBundle(TestBundle.Size.HUNDRED).unpack(RpmITCase.tmp);
+        RpmITCase.bundle = new TestBundle(TestBundle.Size.THOUSAND).unpack(RpmITCase.tmp);
     }
 
     @BeforeEach
