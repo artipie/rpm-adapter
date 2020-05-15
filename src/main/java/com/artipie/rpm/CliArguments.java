@@ -69,7 +69,7 @@ public final class CliArguments {
      */
     private static final Option FILE_LISTS = Option.builder("f")
         .argName("fl")
-        .longOpt("file-list")
+        .longOpt("filelists")
         .desc("(optional, default true) includes File Lists for Rpm: true or false")
         .hasArg()
         .build();
