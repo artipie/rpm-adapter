@@ -62,9 +62,7 @@ public final class XmlOthers implements Closeable {
      */
     private XmlOthers(final XmlFile xml) {
         this.xml = xml;
-        this.packages = new XmlPackagesFile(
-            xml, "otherdata", "http://linux.duke.edu/metadata/other"
-        );
+        this.packages = new XmlPackagesFile(xml, Metadata.OTHERS);
     }
 
     /**
@@ -178,7 +176,6 @@ public final class XmlOthers implements Closeable {
          */
         public XmlOthers close() throws XMLStreamException {
             this.xml.writeEndElement();
-            this.others.packages.packageClose();
             return this.others;
         }
     }

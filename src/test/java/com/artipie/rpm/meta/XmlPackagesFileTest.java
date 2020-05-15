@@ -42,21 +42,24 @@ public final class XmlPackagesFileTest {
     @Test
     public void writesCorrectTag(@TempDir final Path temp) throws Exception {
         final Path file = temp.resolve("tag.xml");
-        final String expected = "thetag";
-        try (XmlPackagesFile packs = new XmlPackagesFile(new XmlFile(file), expected, "")) {
+        try (XmlPackagesFile packs = new XmlPackagesFile(new XmlFile(file), Metadata.OTHERS)) {
             packs.startPackages();
         }
-        XmlPackagesFileTest.assertion(file, String.format("/%s", expected));
+        XmlPackagesFileTest.assertion(
+            file, String.format("/*[name()='%s']", Metadata.OTHERS.tag())
+        );
     }
 
     @Test
     public void writesCorrectNamespace(@TempDir final Path temp) throws Exception {
         final Path file = temp.resolve("name.xml");
-        final String expected = "this-is-namespace";
-        try (XmlPackagesFile packs = new XmlPackagesFile(new XmlFile(file), "whenever", expected)) {
+        try (XmlPackagesFile packs = new XmlPackagesFile(new XmlFile(file), Metadata.FILELISTS)) {
             packs.startPackages();
         }
-        XmlPackagesFileTest.assertion(file, String.format("/*[namespace-uri(.)='%s']", expected));
+        XmlPackagesFileTest.assertion(
+            file,
+            String.format("/*[namespace-uri(.)='%s']", Metadata.FILELISTS.namespaces().get(""))
+        );
     }
 
     private static void assertion(final Path file, final String expected) throws IOException {

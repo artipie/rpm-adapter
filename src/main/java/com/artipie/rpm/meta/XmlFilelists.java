@@ -65,9 +65,7 @@ public final class XmlFilelists implements Closeable {
      */
     public XmlFilelists(final XmlFile xml) {
         this.xml = xml;
-        this.packages = new XmlPackagesFile(
-            xml, "filelists", "http://linux.duke.edu/metadata/filelists"
-        );
+        this.packages = new XmlPackagesFile(xml, Metadata.FILELISTS);
     }
 
     /**
@@ -180,7 +178,6 @@ public final class XmlFilelists implements Closeable {
          */
         public XmlFilelists close() throws XMLStreamException {
             this.xml.writeEndElement();
-            this.filelists.packages.packageClose();
             return this.filelists;
         }
     }

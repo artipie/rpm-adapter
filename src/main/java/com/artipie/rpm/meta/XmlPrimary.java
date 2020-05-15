@@ -31,8 +31,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.xml.stream.XMLStreamException;
-import org.cactoos.map.MapEntry;
-import org.cactoos.map.MapOf;
 
 /**
  * XML {@code primary.xml} metadata imperative writer.
@@ -70,13 +68,7 @@ public final class XmlPrimary implements Closeable {
     @SuppressWarnings("unchecked")
     public XmlPrimary(final XmlFile xml) {
         this.xml = xml;
-        this.packages = new XmlPackagesFile(
-            xml, "metadata",
-            new MapOf<>(
-                new MapEntry<>("", "http://linux.duke.edu/metadata/common"),
-                new MapEntry<>("rpm", "http://linux.duke.edu/metadata/rpm")
-            )
-        );
+        this.packages = new XmlPackagesFile(xml, Metadata.PRIMARY);
     }
 
     /**
@@ -332,7 +324,6 @@ public final class XmlPrimary implements Closeable {
          */
         public XmlPrimary close() throws XMLStreamException {
             this.xml.writeEndElement();
-            this.primary.packages.packageClose();
             return this.primary;
         }
     }
