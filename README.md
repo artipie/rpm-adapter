@@ -90,6 +90,7 @@ java -jar target/rpm-adapter.jar ./repo-dir/
 Options are:
 - `naming-policy` - (optional, default `simple`) configures NamingPolicy for Rpm
 - `digest` - (optional, default `sha256`) configures Digest instance for Rpm
+- `file-lists` - (optional, default `true`) includes File Lists for Rpm
 
 ## How to contribute
 
