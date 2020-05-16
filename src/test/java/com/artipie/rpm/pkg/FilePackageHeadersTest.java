@@ -25,6 +25,7 @@ package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
 import java.nio.file.Path;
+import java.util.Arrays;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
@@ -35,23 +36,87 @@ import org.redline_rpm.header.Header;
  * Tests for {@link FilePackage.Headers}.
  *
  * @since 0.6.3
- * @todo #75:30min Transform the parseStringHeader test below
- *  to a parameterized test that test each of the asXXX method
- *  of MetaHeader with two test method: one for the tag being
- *  present and one for when it is absent (and default value is
- *  returned).
  */
 public final class FilePackageHeadersTest {
+
     @Test
-    public void parseStringHeader(@TempDir final Path unused) {
+    public void parseStringHeader(@TempDir final Path unused) throws Exception {
         final Header.HeaderTag tag = Header.HeaderTag.NAME;
-        final String expected = "string value";
         final Header header = new Header();
+        final String expected = "string value";
         header.createEntry(tag, expected);
         MatcherAssert.assertThat(
             new FilePackage.Headers(
                 header, unused, Digest.SHA256
-            ).header(tag).asString("default string"),
+            ).header(tag).asString("default value"),
+            new IsEqual<>(expected)
+        );
+    }
+
+    @Test
+    public void parseStringsHeader(@TempDir final Path unused) throws Exception {
+        final Header.HeaderTag tag = Header.HeaderTag.NAME;
+        final Header header = new Header();
+        final String[] expected = new String[] {"s1", "s2" };
+        header.createEntry(tag, expected);
+        MatcherAssert.assertThat(
+            new FilePackage.Headers(
+                header, unused, Digest.SHA256
+            ).header(tag).asStrings(),
+            new IsEqual<>(Arrays.asList(expected))
+        );
+    }
+
+    @Test
+    public void parseIntHeader(@TempDir final Path unused) throws Exception {
+        final Header.HeaderTag tag = Header.HeaderTag.EPOCH;
+        final Header header = new Header();
+        final int expected = 1;
+        header.createEntry(tag, expected);
+        MatcherAssert.assertThat(
+            new FilePackage.Headers(
+                header, unused, Digest.SHA256
+            ).header(tag).asInt(0),
+            new IsEqual<>(expected)
+        );
+    }
+
+    @Test
+    public void parseIntsHeader(@TempDir final Path unused) throws Exception {
+        final Header.HeaderTag tag = Header.HeaderTag.EPOCH;
+        final Header header = new Header();
+        final int[] expected = new int[] {0, 1 };
+        header.createEntry(tag, expected);
+        MatcherAssert.assertThat(
+            new FilePackage.Headers(
+                header, unused, Digest.SHA256
+            ).header(tag).asInts(),
+            new IsEqual<>(expected)
+        );
+    }
+
+    @Test
+    public void parseMissingStringHeader(@TempDir final Path unused) {
+        final Header.HeaderTag tag = Header.HeaderTag.NAME;
+        final String expected = "default string value";
+        final Header header = new Header();
+        MatcherAssert.assertThat(
+            new FilePackage.Headers(
+                header, unused, Digest.SHA256
+            ).header(tag).asString(expected),
+            new IsEqual<>(expected)
+        );
+    }
+
+    @Test
+    public void parseMissingIntHeader(@TempDir final Path unused) {
+        final Header.HeaderTag tag = Header.HeaderTag.EPOCH;
+        final int expected = 0;
+        final Header header = new Header();
+        MatcherAssert.assertThat(
+            new FilePackage.Headers(
+                header, unused, Digest.SHA256
+            ).header(tag).asInt(expected),
             new IsEqual<>(expected)
         );
     }
