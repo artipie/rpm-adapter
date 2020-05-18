@@ -51,13 +51,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import java.util.HashSet;
 import java.util.stream.Collectors;
 import javax.xml.stream.XMLStreamException;
 
@@ -277,14 +278,25 @@ public final class Rpm {
             .doOnSuccess(ModifiableRepository::clear)
             .doOnSuccess(rep -> Logger.info(this, "repository cleared"))
             .flatMapObservable(repo -> Observable.fromIterable(repo.save(this.naming)))
-            .doOnNext(file -> Files.move(file, tmpdir.resolve(file.getFileName())))
-            .flatMapCompletable(
+            .doOnNext(file
+                -> Files.move(
+                    file, tmpdir.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING
+                )
+            ).flatMapSingle(
                 path -> new RxStorageWrapper(local)
                     .value(new Key.From(path.getFileName().toString()))
                     .flatMapCompletable(
                         content -> new RxStorageWrapper(this.storage).save(
                             new Key.From("repodata", path.getFileName().toString()), content
                         )
+                    ).toSingleDefault(path)
+            ).map(path -> String.format("repodata/%s", path.getFileName().toString()))
+            .toList().map(HashSet::new).flatMapCompletable(
+                preserve -> new RxStorageWrapper(this.storage).list(new Key.From("repodata"))
+                    .flatMapObservable(Observable::fromIterable)
+                    .filter(item -> !preserve.contains(item.string()))
+                    .flatMapCompletable(
+                        item -> new RxStorageWrapper(this.storage).delete(item)
                     )
             ).doOnTerminate(
                 () -> {
@@ -328,7 +340,7 @@ public final class Rpm {
      * @return Repository
      * @throws IOException If IO Exception occurs.
      * @todo #178:30min Try to get rid of blocking operations here, at the same time keep in mind
-     *  that we need list of the existing rpm checksums from repomd.xml to start the update.
+     *  that we need list of the existing rpm checksums from primary.xml to start the update.
      */
     private ModifiableRepository mdfRepository(final Path dir, final Storage local, final Key key)
         throws IOException {

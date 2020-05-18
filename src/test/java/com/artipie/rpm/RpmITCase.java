@@ -30,11 +30,15 @@ import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.files.TestBundle;
+import com.jcabi.log.Logger;
 import com.jcabi.matchers.XhtmlMatchers;
 import io.vertx.reactivex.core.Vertx;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -57,7 +61,7 @@ import org.junit.jupiter.api.io.TempDir;
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle MagicNumberCheck (500 lines)
  */
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+@SuppressWarnings({"PMD.AvoidDuplicateLiterals", "PMD.GuardLogStatement"})
 @EnabledIfSystemProperty(named = "it.longtests.enabled", matches = "true")
 final class RpmITCase {
 
@@ -72,6 +76,18 @@ final class RpmITCase {
      * Gzipped bundle of RPMs.
      */
     private static Path bundle;
+
+    /**
+     * Abc test rmp file.
+     */
+    private static final Path ABC =
+        Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm");
+
+    /**
+     * Libdeflt test rmp file.
+     */
+    private static final Path LIBDEFLT =
+        Paths.get("src/test/resources-binary/libdeflt1_0-2020.03.27-25.1.armv7hl.rpm");
 
     /**
      * VertX closeable instance.
@@ -92,7 +108,7 @@ final class RpmITCase {
     void setUp() throws Exception {
         this.vertx = Vertx.vertx();
         final Path repo = Files.createDirectory(RpmITCase.tmp.resolve("repo"));
-        new Gzip(RpmITCase.bundle).unpack(repo);
+        new Gzip(RpmITCase.bundle).unpackTar(repo);
         this.storage = new FileStorage(repo, this.vertx.fileSystem());
     }
 
@@ -104,9 +120,23 @@ final class RpmITCase {
 
     @Test
     void generatesMetadata() {
+        final long start = System.currentTimeMillis();
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
+        Logger.info(this, "Repo updated in %[ms]s", System.currentTimeMillis() - start);
+    }
+
+    @Test
+    void generatesMetadataIncrementally() throws IOException {
+        final long start = System.currentTimeMillis();
+        this.modifyRepo();
+        new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
+            .updateBatchIncrementally(Key.ROOT)
+            .blockingAwait();
+        Logger.info(
+            this, "Repo updated incrementally in %[ms]s", System.currentTimeMillis() - start
+        );
     }
 
     @Test
@@ -137,10 +167,74 @@ final class RpmITCase {
     }
 
     @Test
+    void dontKeepOldMetadataWhenUpdatingIncrementally() {
+        new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
+            .updateBatchIncrementally(Key.ROOT)
+            .blockingAwait();
+        final BlockingStorage bsto = new BlockingStorage(this.storage);
+        MatcherAssert.assertThat(
+            "got 4 metadata files after first update",
+            bsto.list(new Key.From("repodata")).size(),
+            Matchers.equalTo(4)
+        );
+        for (int cnt = 0; cnt < 5; ++cnt) {
+            final Key first = bsto.list(Key.ROOT).stream()
+                .filter(name -> name.string().endsWith(".rpm"))
+                .findFirst().orElseThrow(() -> new IllegalStateException("not key found"));
+            bsto.delete(first);
+            new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
+                .updateBatchIncrementally(Key.ROOT)
+                .blockingAwait();
+        }
+        MatcherAssert.assertThat(
+            "got 4 metadata files after second update",
+            bsto.list(new Key.From("repodata")).size(),
+            Matchers.equalTo(4)
+        );
+    }
+
+    @Test
     void generatesRepomdMetadata() throws Exception {
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
+        this.assertion();
+    }
+
+    @Test
+    void generatesRepomdIncrementallyMetadata() throws Exception {
+        this.modifyRepo();
+        new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
+            .updateBatchIncrementally(Key.ROOT)
+            .blockingAwait();
+        this.assertion();
+    }
+
+    /**
+     * Modifies repo by removing/adding several rpms.
+     * @throws IOException On error
+     */
+    private void modifyRepo() throws IOException {
+        final BlockingStorage bsto = new BlockingStorage(this.storage);
+        bsto.list(Key.ROOT).stream()
+            .filter(name -> name.string().contains("oxygen"))
+            .forEach(item -> bsto.delete(new Key.From(item)));
+        bsto.save(
+            new Key.From(RpmITCase.ABC.getFileName().toString()),
+            Files.readAllBytes(RpmITCase.ABC)
+        );
+        bsto.save(
+            new Key.From(RpmITCase.LIBDEFLT.getFileName().toString()),
+            Files.readAllBytes(RpmITCase.LIBDEFLT)
+        );
+    }
+
+    /**
+     * Assertion for repomd.
+     * @throws InterruptedException On error
+     * @throws ExecutionException On error
+     */
+    private void assertion() throws InterruptedException, ExecutionException {
         MatcherAssert.assertThat(
             new String(
                 new Concatenation(
@@ -153,7 +247,7 @@ final class RpmITCase {
                 "/*[namespace-uri()='http://linux.duke.edu/metadata/repo' and local-name()='repomd']",
                 "/*[name()='repomd']/*[name()='revision']",
                 "/*[name()='repomd']/*[name()='data' and @type='primary']",
-                "/*[name()='repomd']/*[name()='data' and @type='others']",
+                "/*[name()='repomd']/*[name()='data' and @type='other']",
                 "/*[name()='repomd']/*[name()='data' and @type='filelists']"
             )
         );
