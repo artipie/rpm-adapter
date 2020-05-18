@@ -34,6 +34,7 @@ import com.jcabi.matchers.XhtmlMatchers;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -79,7 +80,12 @@ final class RpmITCase {
 
     @BeforeAll
     static void setUpClass() throws Exception {
-        RpmITCase.bundle = new TestBundle(TestBundle.Size.THOUSAND).unpack(RpmITCase.tmp);
+        RpmITCase.bundle = new TestBundle(
+            TestBundle.Size.valueOf(
+                System.getProperty("it.longtests.size", "hundred")
+                    .toUpperCase(Locale.US)
+            )
+        ).unpack(RpmITCase.tmp);
     }
 
     @BeforeEach
