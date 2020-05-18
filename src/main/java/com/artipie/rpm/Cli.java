@@ -26,7 +26,6 @@ package com.artipie.rpm;
 import com.artipie.asto.Key;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.rpm.CliArguments.CliParsedArguments;
-import io.vertx.reactivex.core.Vertx;
 import java.nio.file.Path;
 
 /**
@@ -73,14 +72,10 @@ public final class Cli {
         System.out.printf("RPM digest=%s\n", digest);
         final Path repository = cliargs.repository();
         System.out.printf("RPM repository=%s\n", repository);
-        final Vertx vertx = Vertx.vertx();
         try {
             new Cli(
                 new Rpm(
-                    new FileStorage(
-                        repository,
-                        vertx.fileSystem()
-                    ),
+                    new FileStorage(repository),
                     naming,
                     digest,
                     true
@@ -89,8 +84,6 @@ public final class Cli {
         } catch (final Exception err) {
             System.err.printf("RPM failed: %s\n", err.getLocalizedMessage());
             err.printStackTrace(System.err);
-        } finally {
-            vertx.close();
         }
     }
 
