@@ -26,16 +26,20 @@ package com.artipie.rpm;
 import com.artipie.asto.Concatenation;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.files.TestBundle;
 import com.jcabi.matchers.XhtmlMatchers;
-import io.vertx.reactivex.core.Vertx;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
+import org.apache.commons.io.FileUtils;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -51,55 +55,95 @@ import org.junit.jupiter.api.io.TempDir;
  *  and TYPE is a type of file (primary, others, filelists). Don't forget to
  *  uncompress it first.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
+ * @checkstyle MagicNumberCheck (500 lines)
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 @EnabledIfSystemProperty(named = "it.longtests.enabled", matches = "true")
 final class RpmITCase {
 
     /**
-     * VertX closeable instance.
+     * Temporary directory for all tests.
+     * @checkstyle VisibilityModifierCheck (3 lines)
      */
-    private Vertx vertx;
+    @TempDir
+    static Path tmp;
+
+    /**
+     * Gzipped bundle of RPMs.
+     */
+    private static Path bundle;
+
+    /**
+     * Repository storage with RPM packages.
+     */
+    private Storage storage;
+
+    @BeforeAll
+    static void setUpClass() throws Exception {
+        RpmITCase.bundle = new TestBundle(
+            TestBundle.Size.valueOf(
+                System.getProperty("it.longtests.size", "hundred")
+                    .toUpperCase(Locale.US)
+            )
+        ).unpack(RpmITCase.tmp);
+    }
 
     @BeforeEach
-    void setUp() {
-        this.vertx = Vertx.vertx();
+    void setUp() throws Exception {
+        final Path repo = Files.createDirectory(RpmITCase.tmp.resolve("repo"));
+        new Gzip(RpmITCase.bundle).unpack(repo);
+        this.storage = new FileStorage(repo);
     }
 
     @AfterEach
-    void tearDown() {
-        this.vertx.close();
+    void tearDown() throws Exception {
+        FileUtils.deleteDirectory(RpmITCase.tmp.resolve("repo").toFile());
     }
 
     @Test
-    void generatesMetadata(@TempDir final Path tmp) throws Exception {
-        final Path bundle = new TestBundle(TestBundle.Size.THOUSAND).unpack(tmp);
-        final Path repo = Files.createDirectory(tmp.resolve("repo"));
-        new Gzip(bundle).unpack(repo);
-        Files.delete(bundle);
-        final Storage storage = new FileStorage(repo, this.vertx.fileSystem());
-        new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
+    void generatesMetadata() {
+        new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
     }
 
     @Test
-    void generatesRepomdMetadata(@TempDir final Path tmp) throws Exception {
-        final Path bundle = new TestBundle(TestBundle.Size.HUNDRED).unpack(tmp);
-        final Path repo = Files.createDirectory(
-            tmp.resolve("generatesRepomdMetadata")
+    void dontKeepOldMetadata() throws Exception {
+        new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
+            .batchUpdate(Key.ROOT)
+            .blockingAwait();
+        final BlockingStorage bsto = new BlockingStorage(this.storage);
+        MatcherAssert.assertThat(
+            "got 4 metadata files after first update",
+            bsto.list(new Key.From("repodata")).size(),
+            Matchers.equalTo(4)
         );
-        new Gzip(bundle).unpack(repo);
-        Files.delete(bundle);
-        final Storage storage = new FileStorage(repo, this.vertx.fileSystem());
-        new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
+        for (int cnt = 0; cnt < 5; ++cnt) {
+            final Key first = bsto.list(Key.ROOT).stream()
+                .filter(name -> name.string().endsWith(".rpm"))
+                .findFirst().orElseThrow(() -> new IllegalStateException("not key found"));
+            bsto.delete(first);
+            new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
+                .batchUpdate(Key.ROOT)
+                .blockingAwait();
+        }
+        MatcherAssert.assertThat(
+            "got 4 metadata files after second update",
+            bsto.list(new Key.From("repodata")).size(),
+            Matchers.equalTo(4)
+        );
+    }
+
+    @Test
+    void generatesRepomdMetadata() throws Exception {
+        new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
         MatcherAssert.assertThat(
             new String(
                 new Concatenation(
-                    storage.value(new Key.From("repodata/repomd.xml")).get()
-                )
-                .single().blockingGet().array(),
+                    this.storage.value(new Key.From("repodata/repomd.xml")).get()
+                ).single().blockingGet().array(),
                 Charset.defaultCharset()
             ),
             XhtmlMatchers.hasXPaths(

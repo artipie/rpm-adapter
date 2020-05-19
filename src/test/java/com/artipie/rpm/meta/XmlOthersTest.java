@@ -36,9 +36,6 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Testcase for {@link XmlOthers} class.
  * @since 0.6
- * @todo #80:30min add another test for adding a changelog
- *  to do that you need to wait for  the changelog to be implemented first
- *  there's a puzzle for implementing it.
  */
 public class XmlOthersTest {
 

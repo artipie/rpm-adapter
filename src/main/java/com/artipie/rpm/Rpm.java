@@ -44,13 +44,13 @@ import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.schedulers.Schedulers;
-import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.xml.stream.XMLStreamException;
@@ -187,8 +187,7 @@ public final class Rpm {
         } catch (final IOException err) {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
-        final Vertx vertx = Vertx.vertx();
-        final Storage local = new FileStorage(tmpdir, vertx.fileSystem());
+        final Storage local = new FileStorage(tmpdir);
         return SingleInterop.fromFuture(this.storage.list(prefix))
             .flatMapPublisher(Flowable::fromIterable)
             .filter(key -> key.string().endsWith(".rpm"))
@@ -210,19 +209,24 @@ public final class Rpm {
             .doOnSuccess(rep -> Logger.info(this, "repository closed"))
             .flatMapObservable(repo -> Observable.fromIterable(repo.save(this.naming)))
             .doOnNext(file -> Files.move(file, tmpdir.resolve(file.getFileName())))
-            .flatMapCompletable(
+            .flatMapSingle(
                 path -> new RxStorageWrapper(local)
                     .value(new Key.From(path.getFileName().toString()))
                     .flatMapCompletable(
                         content -> new RxStorageWrapper(this.storage).save(
                             new Key.From("repodata", path.getFileName().toString()), content
                         )
+                    ).toSingleDefault(path)
+            ).map(path -> String.format("repodata/%s", path.getFileName().toString()))
+            .toList().map(HashSet::new).flatMapCompletable(
+                preserve -> new RxStorageWrapper(this.storage).list(new Key.From("repodata"))
+                    .flatMapObservable(Observable::fromIterable)
+                    .filter(item -> !preserve.contains(item.string()))
+                    .flatMapCompletable(
+                        item -> new RxStorageWrapper(this.storage).delete(item)
                     )
             ).doOnTerminate(
-                () -> {
-                    Rpm.cleanup(tmpdir);
-                    vertx.close();
-                }
+                () -> Rpm.cleanup(tmpdir)
             );
     }
 
@@ -244,8 +248,7 @@ public final class Rpm {
         } catch (final IOException err) {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
-        final Vertx vertx = Vertx.vertx();
-        final Storage local = new FileStorage(tmpdir, vertx.fileSystem());
+        final Storage local = new FileStorage(tmpdir);
         final List<String> hexes = new XmlPrimaryChecksums(Paths.get(prefix.string())).read();
         return SingleInterop.fromFuture(this.storage.list(prefix))
             .flatMapObservable(Observable::fromIterable)
@@ -314,10 +317,7 @@ public final class Rpm {
                         )
                     )
             ).doOnTerminate(
-                () -> {
-                    Rpm.cleanup(tmpdir);
-                    vertx.close();
-                }
+                () -> Rpm.cleanup(tmpdir)
             );
     }
 
