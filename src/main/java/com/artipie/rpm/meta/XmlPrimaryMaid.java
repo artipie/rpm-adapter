@@ -71,16 +71,21 @@ public final class XmlPrimaryMaid implements XmlMaid {
             OutputStream out = Files.newOutputStream(tmp)) {
             final XMLEventReader reader = XMLInputFactory.newInstance().createXMLEventReader(in);
             final XMLEventWriter writer = XMLOutputFactory.newInstance().createXMLEventWriter(out);
-            final XMLEventFactory events = XMLEventFactory.newFactory();
-            writer.add(reader.nextEvent());
-            writer.add(events.createSpace("\n"));
-            writer.add(reader.nextEvent());
-            writer.add(reader.nextEvent());
-            res = XmlPrimaryMaid.processPackages(checksums, reader, writer);
-            writer.add(events.createSpace("\n"));
-            writer.add(events.createEndElement(new QName("metadata"), Collections.emptyIterator()));
-            writer.close();
-            reader.close();
+            try {
+                final XMLEventFactory events = XMLEventFactory.newFactory();
+                writer.add(reader.nextEvent());
+                writer.add(events.createSpace("\n"));
+                writer.add(reader.nextEvent());
+                writer.add(reader.nextEvent());
+                res = XmlPrimaryMaid.processPackages(checksums, reader, writer);
+                writer.add(events.createSpace("\n"));
+                writer.add(
+                    events.createEndElement(new QName("metadata"), Collections.emptyIterator())
+                );
+            } finally {
+                writer.close();
+                reader.close();
+            }
         } catch (final XMLStreamException ex) {
             throw new IOException(ex);
         }

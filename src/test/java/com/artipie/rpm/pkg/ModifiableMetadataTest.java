@@ -103,10 +103,10 @@ class ModifiableMetadataTest {
         );
         mtd.close();
         final Path repomd = temp.resolve("repomd.xml");
-        final XmlRepomd xml = new XmlRepomd(repomd);
-        xml.begin(System.currentTimeMillis() / Tv.THOUSAND);
-        mtd.save(StandardNamingPolicy.PLAIN, Digest.SHA256, xml);
-        xml.close();
+        try (XmlRepomd xml = new XmlRepomd(repomd)) {
+            xml.begin(System.currentTimeMillis() / Tv.THOUSAND);
+            mtd.save(StandardNamingPolicy.PLAIN, Digest.SHA256, xml);
+        }
         MatcherAssert.assertThat(
             new String(Files.readAllBytes(repomd), Charset.defaultCharset()),
             XhtmlMatchers.hasXPaths(
