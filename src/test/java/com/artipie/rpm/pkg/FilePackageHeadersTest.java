@@ -97,26 +97,22 @@ public final class FilePackageHeadersTest {
 
     @Test
     public void parseMissingStringHeader(@TempDir final Path unused) {
-        final Header.HeaderTag tag = Header.HeaderTag.NAME;
         final String expected = "default string value";
-        final Header header = new Header();
         MatcherAssert.assertThat(
             new FilePackage.Headers(
-                header, unused, Digest.SHA256
-            ).header(tag).asString(expected),
+                new Header(), unused, Digest.SHA256
+            ).header(Header.HeaderTag.NAME).asString(expected),
             new IsEqual<>(expected)
         );
     }
 
     @Test
     public void parseMissingIntHeader(@TempDir final Path unused) {
-        final Header.HeaderTag tag = Header.HeaderTag.EPOCH;
         final int expected = 0;
-        final Header header = new Header();
         MatcherAssert.assertThat(
             new FilePackage.Headers(
-                header, unused, Digest.SHA256
-            ).header(tag).asInt(expected),
+                new Header(), unused, Digest.SHA256
+            ).header(Header.HeaderTag.EPOCH).asInt(expected),
             new IsEqual<>(expected)
         );
     }
