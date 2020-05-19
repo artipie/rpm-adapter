@@ -35,7 +35,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
-import java.util.concurrent.Executors;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -93,7 +92,7 @@ final class RpmITCase {
     void setUp() throws Exception {
         final Path repo = Files.createDirectory(RpmITCase.tmp.resolve("repo"));
         new Gzip(RpmITCase.bundle).unpack(repo);
-        this.storage = new FileStorage(repo, Executors.newCachedThreadPool());
+        this.storage = new FileStorage(repo);
     }
 
     @AfterEach
