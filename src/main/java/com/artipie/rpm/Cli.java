@@ -52,8 +52,6 @@ public final class Cli {
      * Main method of Cli tool.
      *
      * @param args Arguments of command line
-     * @todo #79:30min Right now Rpm always includes filelists - the flag is hard-coded to
-     *  true. Let's make it a command line option to pass to the Rpm class.
      * @checkstyle IllegalCatchCheck (70 lines)
      * @checkstyle LineLengthCheck (50 lines)
      */
@@ -70,6 +68,8 @@ public final class Cli {
         System.out.printf("RPM naming-policy=%s\n", naming);
         final Digest digest = cliargs.digest();
         System.out.printf("RPM digest=%s\n", digest);
+        final boolean filelists = cliargs.fileLists();
+        System.out.printf("RPM file-lists=%s\n", filelists);
         final Path repository = cliargs.repository();
         System.out.printf("RPM repository=%s\n", repository);
         try {
@@ -78,7 +78,7 @@ public final class Cli {
                     new FileStorage(repository),
                     naming,
                     digest,
-                    true
+                    filelists
                 )
             ).run();
         } catch (final Exception err) {
