@@ -107,7 +107,7 @@ public class XmlOthersTest {
         MatcherAssert.assertThat(
             new String(Files.readAllBytes(xml), StandardCharsets.UTF_8),
             // @checkstyle LineLengthCheck (1 line)
-            XhtmlMatchers.hasXPath("/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='changelog' and @epoch='0' and @author='Paulo Lobo' and text()='Test for changelog generation']")
+            XhtmlMatchers.hasXPath("/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='changelog' and @date='0' and @author='Paulo Lobo' and text()='Test for changelog generation']")
         );
     }
 
@@ -139,8 +139,8 @@ public class XmlOthersTest {
             new String(Files.readAllBytes(xml), StandardCharsets.UTF_8),
             // @checkstyle LineLengthCheck (5 lines)
             XhtmlMatchers.hasXPaths(
-                "/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='changelog' and @epoch='1589338800' and @author='John Doe <johndoe@artipie.org> - 0.1-2' and text()='- Second artipie package']",
-                "/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='changelog' and @epoch='1464663600' and @author='Jane Doe <janedoe@artipie.org> - 0.1-1' and text()='- First artipie package\n- Example second item in the changelog for version-release 0.1-1']"
+                "/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='changelog' and @date='1589338800' and @author='John Doe <johndoe@artipie.org> - 0.1-2' and text()='- Second artipie package']",
+                "/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='changelog' and @date='1464663600' and @author='Jane Doe <janedoe@artipie.org> - 0.1-1' and text()='- First artipie package\n- Example second item in the changelog for version-release 0.1-1']"
             )
         );
     }

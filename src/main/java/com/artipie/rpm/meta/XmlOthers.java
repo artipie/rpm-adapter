@@ -166,15 +166,15 @@ public final class XmlOthers implements Closeable {
         /**
          * Adds changelog tag to others.xml file.
          * @param author Changelog author
-         * @param epoch Epoch seconds
+         * @param date Epoch seconds
          * @param content Changelog content
          * @return Self
          * @throws XMLStreamException On error
          */
-        public Package changelog(final String author, final int epoch, final String content)
+        public Package changelog(final String author, final int date, final String content)
             throws XMLStreamException {
             this.xml.writeStartElement("changelog");
-            this.xml.writeAttribute("epoch", String.valueOf(epoch));
+            this.xml.writeAttribute("date", String.valueOf(date));
             this.xml.writeAttribute("author", String.valueOf(author));
             this.xml.writeCharacters(content);
             this.xml.writeEndElement();
