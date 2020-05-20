@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.zip.GZIPInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
@@ -54,12 +55,12 @@ public final class Gzip {
     }
 
     /**
-     * Unpacks gzip to the temp dir.
+     * Unpacks tar gzip to the temp dir.
      * @param dest Destination directory
      * @throws IOException If fails
      */
     @SuppressWarnings("PMD.AssignmentInOperand")
-    public void unpack(final Path dest) throws IOException {
+    public void unpackTar(final Path dest) throws IOException {
         final GzipCompressorInputStream input =
             new GzipCompressorInputStream(Files.newInputStream(this.file));
         try (TarArchiveInputStream tar = new TarArchiveInputStream(input)) {
@@ -75,6 +76,20 @@ public final class Gzip {
                 }
             }
         }
-        Logger.debug(this, "Unpacked %s to %s", this.file, dest);
+        Logger.debug(this, "Unpacked tar.gz %s to %s", this.file, dest);
+    }
+
+    /**
+     * Unpacks gzip to the temp dir.
+     * @param dest Destination directory
+     * @throws IOException If fails
+     */
+    @SuppressWarnings("PMD.AssignmentInOperand")
+    public void unpack(final Path dest) throws IOException {
+        try (OutputStream out = Files.newOutputStream(dest);
+            GZIPInputStream input = new GZIPInputStream(Files.newInputStream(this.file))) {
+            IOUtils.copy(input, out);
+        }
+        Logger.debug(this, "Unpacked gz %s to %s", this.file, dest);
     }
 }
