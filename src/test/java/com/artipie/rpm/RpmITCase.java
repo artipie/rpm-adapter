@@ -30,15 +30,15 @@ import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.files.TestBundle;
+import com.artipie.rpm.misc.UncheckedConsumer;
 import com.jcabi.log.Logger;
 import com.jcabi.matchers.XhtmlMatchers;
-import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Locale;
 import java.nio.file.Paths;
+import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.MatcherAssert;
@@ -91,11 +91,6 @@ final class RpmITCase {
         Paths.get("src/test/resources-binary/libdeflt1_0-2020.03.27-25.1.armv7hl.rpm");
 
     /**
-     * VertX closeable instance.
-     */
-    private Vertx vertx;
-
-    /**
      * Repository storage with RPM packages.
      */
     private Storage storage;
@@ -132,7 +127,7 @@ final class RpmITCase {
     }
 
     @Test
-    void generatesMetadataIncrementally() throws IOException {
+    void generatesMetadataIncrementally() throws IOException, InterruptedException {
         final long start = System.currentTimeMillis();
         this.modifyRepo();
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
@@ -171,7 +166,7 @@ final class RpmITCase {
     }
 
     @Test
-    void dontKeepOldMetadataWhenUpdatingIncrementally() {
+    void dontKeepOldMetadataWhenUpdatingIncrementally() throws InterruptedException {
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
             .updateBatchIncrementally(Key.ROOT)
             .blockingAwait();
@@ -218,11 +213,11 @@ final class RpmITCase {
      * Modifies repo by removing/adding several rpms.
      * @throws IOException On error
      */
-    private void modifyRepo() throws IOException {
+    private void modifyRepo() throws IOException, InterruptedException {
         final BlockingStorage bsto = new BlockingStorage(this.storage);
         bsto.list(Key.ROOT).stream()
             .filter(name -> name.string().contains("oxygen"))
-            .forEach(item -> bsto.delete(new Key.From(item)));
+            .forEach(new UncheckedConsumer<>(item -> bsto.delete(new Key.From(item))));
         bsto.save(
             new Key.From(RpmITCase.ABC.getFileName().toString()),
             Files.readAllBytes(RpmITCase.ABC)
