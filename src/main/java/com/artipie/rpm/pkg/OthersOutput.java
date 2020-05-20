@@ -86,7 +86,7 @@ public final class OthersOutput implements PackageOutput.FileOutput {
                 tags.name(), tags.arch(),
                 meta.checksum().hex()
             ).version(tags.epoch(), tags.version(), tags.release())
-                .changelog().close();
+                .changelog(tags.changelog()).close();
         } catch (final XMLStreamException err) {
             throw new IOException("Failed to add package", err);
         }
