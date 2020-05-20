@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.nio.file.Paths;
 import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.FileUtils;
@@ -101,21 +102,24 @@ final class RpmITCase {
 
     @BeforeAll
     static void setUpClass() throws Exception {
-        RpmITCase.bundle = new TestBundle(TestBundle.Size.THOUSAND).unpack(RpmITCase.tmp);
+        RpmITCase.bundle = new TestBundle(
+            TestBundle.Size.valueOf(
+                System.getProperty("it.longtests.size", "hundred")
+                    .toUpperCase(Locale.US)
+            )
+        ).unpack(RpmITCase.tmp);
     }
 
     @BeforeEach
     void setUp() throws Exception {
-        this.vertx = Vertx.vertx();
         final Path repo = Files.createDirectory(RpmITCase.tmp.resolve("repo"));
         new Gzip(RpmITCase.bundle).unpackTar(repo);
-        this.storage = new FileStorage(repo, this.vertx.fileSystem());
+        this.storage = new FileStorage(repo);
     }
 
     @AfterEach
     void tearDown() throws Exception {
         FileUtils.deleteDirectory(RpmITCase.tmp.resolve("repo").toFile());
-        this.vertx.close();
     }
 
     @Test
@@ -140,7 +144,7 @@ final class RpmITCase {
     }
 
     @Test
-    void dontKeepOldMetadata() {
+    void dontKeepOldMetadata() throws Exception {
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
             .batchUpdate(Key.ROOT)
             .blockingAwait();

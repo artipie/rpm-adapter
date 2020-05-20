@@ -25,6 +25,7 @@ package com.artipie.rpm;
 
 import com.artipie.rpm.pkg.Checksum;
 import java.io.IOException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
@@ -76,7 +77,7 @@ public final class FileChecksum implements Checksum {
         try (FileChannel chan = FileChannel.open(this.file, StandardOpenOption.READ)) {
             final ByteBuffer buf = ByteBuffer.allocateDirect(FileChecksum.BUF_SIZE);
             while (chan.read(buf) > 0) {
-                buf.flip();
+                ((Buffer) buf).flip();
                 digest.update(buf);
                 buf.clear();
             }

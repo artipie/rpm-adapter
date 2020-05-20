@@ -46,7 +46,6 @@ import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.schedulers.Schedulers;
-import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -194,8 +193,7 @@ public final class Rpm {
         } catch (final IOException err) {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
-        final Vertx vertx = Vertx.vertx();
-        final Storage local = new FileStorage(tmpdir, vertx.fileSystem());
+        final Storage local = new FileStorage(tmpdir);
         return SingleInterop.fromFuture(this.storage.list(prefix))
             .flatMapPublisher(Flowable::fromIterable)
             .filter(key -> key.string().endsWith(".rpm"))
@@ -234,10 +232,7 @@ public final class Rpm {
                         item -> new RxStorageWrapper(this.storage).delete(item)
                     )
             ).doOnTerminate(
-                () -> {
-                    Rpm.cleanup(tmpdir);
-                    vertx.close();
-                }
+                () -> Rpm.cleanup(tmpdir)
             );
     }
 
@@ -253,8 +248,7 @@ public final class Rpm {
         } catch (final IOException err) {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
-        final Vertx vertx = Vertx.vertx();
-        final Storage local = new FileStorage(tmpdir, vertx.fileSystem());
+        final Storage local = new FileStorage(tmpdir);
         return SingleInterop.fromFuture(this.storage.list(prefix))
             .flatMapPublisher(Flowable::fromIterable)
             .filter(key -> key.string().endsWith(".rpm"))
@@ -299,10 +293,7 @@ public final class Rpm {
                         item -> new RxStorageWrapper(this.storage).delete(item)
                     )
             ).doOnTerminate(
-                () -> {
-                    Rpm.cleanup(tmpdir);
-                    vertx.close();
-                }
+                () -> Rpm.cleanup(tmpdir)
             );
     }
 
