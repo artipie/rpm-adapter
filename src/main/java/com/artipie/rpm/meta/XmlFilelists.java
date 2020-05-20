@@ -65,7 +65,7 @@ public final class XmlFilelists implements Closeable {
      */
     public XmlFilelists(final XmlFile xml) {
         this.xml = xml;
-        this.packages = new XmlPackagesFile(xml, Metadata.FILELISTS);
+        this.packages = new XmlPackagesFile(xml, XmlPackage.FILELISTS);
     }
 
     /**

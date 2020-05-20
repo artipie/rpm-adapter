@@ -29,49 +29,39 @@ import org.cactoos.map.MapEntry;
 import org.cactoos.map.MapOf;
 
 /**
- * Metadata.
+ * Xml metadata packages.
  * @since 0.9
  * @todo #159:30min Find all usages of metadata files names and tags and replace them with this
  *  enum instances/usages.
  */
-public enum Metadata {
+public enum XmlPackage {
 
     /**
      * Metadata primary.xml.
      */
-    PRIMARY("metadata") {
-        @Override
-        Map<String, String> namespaces() {
-            return new MapOf<String, String>(
-                new MapEntry<>("", "http://linux.duke.edu/metadata/common"),
-                new MapEntry<>("rpm", "http://linux.duke.edu/metadata/rpm")
-            );
-        }
-    },
+    PRIMARY(
+        "metadata",
+        new MapOf<String, String>(
+            new MapEntry<>("", "http://linux.duke.edu/metadata/common"),
+            new MapEntry<>("rpm", "http://linux.duke.edu/metadata/rpm")
+        )
+    ),
 
     /**
      * Metadata others.xml.
      */
-    OTHERS("otherdata") {
-        @Override
-        Map<String, String> namespaces() {
-            return new MapOf<String, String>(
-                new MapEntry<>("", "http://linux.duke.edu/metadata/other")
-            );
-        }
-    },
+    OTHERS(
+        "otherdata",
+        new MapOf<String, String>(new MapEntry<>("", "http://linux.duke.edu/metadata/other"))
+    ),
 
     /**
      * Metadata filelists.xml.
      */
-    FILELISTS("filelists") {
-        @Override
-        Map<String, String> namespaces() {
-            return new MapOf<String, String>(
-                new MapEntry<>("", "http://linux.duke.edu/metadata/filelists")
-            );
-        }
-    };
+    FILELISTS(
+        "filelists",
+        new MapOf<String, String>(new MapEntry<>("", "http://linux.duke.edu/metadata/filelists"))
+    );
 
     /**
      * Tag name.
@@ -79,11 +69,18 @@ public enum Metadata {
     private final String tagname;
 
     /**
+     * Metadata namespaces.
+     */
+    private final Map<String, String> namespaces;
+
+    /**
      * Ctor.
      * @param tagname Tag name
+     * @param namespaces Namespaces
      */
-    Metadata(final String tagname) {
+    XmlPackage(final String tagname, final Map<String, String> namespaces) {
         this.tagname = tagname;
+        this.namespaces = namespaces;
     }
 
     /**
@@ -103,9 +100,10 @@ public enum Metadata {
     }
 
     /**
-     * Metadata namespaces.
-     * @return Map: name and namespace
+     * Returns xml namespaces.
+     * @return Map of the namespaces.
      */
-    abstract Map<String, String> namespaces();
-
+    public Map<String, String> xmlNamespaces() {
+        return this.namespaces;
+    }
 }

@@ -49,14 +49,14 @@ public final class XmlPackagesFile implements Closeable {
     /**
      * Metadata.
      */
-    private final Metadata mtd;
+    private final XmlPackage mtd;
 
     /**
      * Ctor.
      * @param xml Xml file
      * @param mtd Metadata
      */
-    public XmlPackagesFile(final XmlFile xml, final Metadata mtd) {
+    public XmlPackagesFile(final XmlFile xml, final XmlPackage mtd) {
         this.xml = xml;
         this.mtd = mtd;
     }
@@ -68,7 +68,7 @@ public final class XmlPackagesFile implements Closeable {
     public void startPackages() throws XMLStreamException {
         this.xml.writeStartDocument(StandardCharsets.UTF_8.displayName(), "1.0");
         this.xml.writeStartElement(this.mtd.tag());
-        for (final Map.Entry<String, String> namespace: this.mtd.namespaces().entrySet()) {
+        for (final Map.Entry<String, String> namespace: this.mtd.xmlNamespaces().entrySet()) {
             this.xml.writeNamespace(namespace.getKey(), namespace.getValue());
         }
         this.xml.writeAttribute(XmlPackagesFile.PACKAGES_ATTR, "-1");

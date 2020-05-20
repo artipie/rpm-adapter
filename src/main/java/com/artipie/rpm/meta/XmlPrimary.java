@@ -68,7 +68,7 @@ public final class XmlPrimary implements Closeable {
     @SuppressWarnings("unchecked")
     public XmlPrimary(final XmlFile xml) {
         this.xml = xml;
-        this.packages = new XmlPackagesFile(xml, Metadata.PRIMARY);
+        this.packages = new XmlPackagesFile(xml, XmlPackage.PRIMARY);
     }
 
     /**
