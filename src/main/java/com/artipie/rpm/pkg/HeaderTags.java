@@ -230,4 +230,12 @@ public final class HeaderTags {
     public int[] dirIndexes() {
         return this.meta.header(Header.HeaderTag.DIRINDEXES).asInts();
     }
+
+    /**
+     * Get the changelog header.
+     * @return Value of header tag CHANGELOG.
+     */
+    public List<String> changelog() {
+        return this.meta.header(Header.HeaderTag.CHANGELOG).asStrings();
+    }
 }
