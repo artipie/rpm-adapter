@@ -61,9 +61,11 @@ class ModifiableMetadataTest {
     void generatesMetadataFile(@TempDir final Path temp) throws IOException {
         final Path res = temp.resolve("primary.xml");
         res.toFile().createNewFile();
+        final Path part = temp.resolve("part.primary.xml");
+        Files.copy(Paths.get("src/test/resources-binary/repodata/primary.xml.example"), part);
         final ModifiableMetadata mtd = new ModifiableMetadata(
             new MetadataFile("primary", new PrimaryOutput(res).start()),
-            Paths.get("src/test/resources-binary/repodata/primary.xml.example")
+            part
         );
         final Path rpm =
             Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm");
@@ -95,11 +97,13 @@ class ModifiableMetadataTest {
 
     @Test
     void savesItselfToRepomd(@TempDir final Path temp) throws IOException, XMLStreamException {
-        final Path primary = temp.resolve("test.filelists.xml");
-        primary.toFile().createNewFile();
+        final Path filelists = temp.resolve("test.filelists.xml");
+        final Path part = temp.resolve("part.filelists.xml");
+        Files.copy(Paths.get("src/test/resources-binary/repodata/filelists.xml.example"), part);
+        filelists.toFile().createNewFile();
         final ModifiableMetadata mtd = new ModifiableMetadata(
-            new MetadataFile("filelists", new FilelistsOutput(primary).start()),
-            Paths.get("src/test/resources-binary/repodata/filelists.xml.example")
+            new MetadataFile("filelists", new FilelistsOutput(filelists).start()),
+            part
         );
         mtd.close();
         final Path repomd = temp.resolve("repomd.xml");
