@@ -31,10 +31,10 @@ import com.artipie.asto.fs.FileStorage;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.files.TestBundle;
 import com.jcabi.matchers.XhtmlMatchers;
-import io.vertx.reactivex.core.Vertx;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -74,32 +74,30 @@ final class RpmITCase {
     private static Path bundle;
 
     /**
-     * VertX closeable instance.
-     */
-    private Vertx vertx;
-
-    /**
      * Repository storage with RPM packages.
      */
     private Storage storage;
 
     @BeforeAll
     static void setUpClass() throws Exception {
-        RpmITCase.bundle = new TestBundle(TestBundle.Size.THOUSAND).unpack(RpmITCase.tmp);
+        RpmITCase.bundle = new TestBundle(
+            TestBundle.Size.valueOf(
+                System.getProperty("it.longtests.size", "hundred")
+                    .toUpperCase(Locale.US)
+            )
+        ).unpack(RpmITCase.tmp);
     }
 
     @BeforeEach
     void setUp() throws Exception {
-        this.vertx = Vertx.vertx();
         final Path repo = Files.createDirectory(RpmITCase.tmp.resolve("repo"));
         new Gzip(RpmITCase.bundle).unpack(repo);
-        this.storage = new FileStorage(repo, this.vertx.fileSystem());
+        this.storage = new FileStorage(repo);
     }
 
     @AfterEach
     void tearDown() throws Exception {
         FileUtils.deleteDirectory(RpmITCase.tmp.resolve("repo").toFile());
-        this.vertx.close();
     }
 
     @Test
@@ -110,7 +108,7 @@ final class RpmITCase {
     }
 
     @Test
-    void dontKeepOldMetadata() {
+    void dontKeepOldMetadata() throws Exception {
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
             .batchUpdate(Key.ROOT)
             .blockingAwait();

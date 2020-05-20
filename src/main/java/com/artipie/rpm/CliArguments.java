@@ -65,6 +65,16 @@ public final class CliArguments {
         .build();
 
     /**
+     * FileLists option.
+     */
+    private static final Option FILE_LISTS = Option.builder("f")
+        .argName("fl")
+        .longOpt("filelists")
+        .desc("(optional, default true) includes File Lists for Rpm: true or false")
+        .hasArg()
+        .build();
+
+    /**
      * Cli options.
      */
     private final Options options;
@@ -73,7 +83,12 @@ public final class CliArguments {
      * Ctor.
      */
     public CliArguments() {
-        this(new Options().addOption(CliArguments.DIGEST).addOption(CliArguments.NAMING_POLICY));
+        this (
+            new Options()
+                .addOption(CliArguments.DIGEST)
+                .addOption(CliArguments.NAMING_POLICY)
+                .addOption(CliArguments.FILE_LISTS)
+        );
     }
 
     /**
@@ -170,6 +185,18 @@ public final class CliArguments {
                 );
             }
             return Paths.get(args.get(0));
+        }
+
+        /**
+         * Include File Lists.
+         *
+         * @return Boolean.
+         * @throws IllegalArgumentException If the arg value is incorrect
+         */
+        public boolean fileLists() {
+            return Boolean.parseBoolean(
+                this.cli.getOptionValue(CliArguments.FILE_LISTS.getOpt(), "true")
+            );
         }
     }
 }
