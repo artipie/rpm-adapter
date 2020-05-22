@@ -57,9 +57,9 @@ public enum XmlPackage {
     },
 
     /**
-     * Metadata others.xml.
+     * Metadata other.xml.
      */
-    OTHERS(
+    OTHER(
         "otherdata",
         new MapOf<String, String>(new MapEntry<>("", "http://linux.duke.edu/metadata/other"))
     ) {
@@ -175,7 +175,7 @@ public enum XmlPackage {
             if (this.filelists) {
                 res = java.util.stream.Stream.of(values());
             } else {
-                res = java.util.stream.Stream.of(PRIMARY, OTHERS);
+                res = java.util.stream.Stream.of(PRIMARY, OTHER);
             }
             return res;
         }

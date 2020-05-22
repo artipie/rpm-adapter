@@ -111,6 +111,6 @@ public final class OthersOutput implements PackageOutput.FileOutput {
 
     @Override
     public String tag() {
-        return XmlPackage.OTHERS.tag();
+        return XmlPackage.OTHER.tag();
     }
 }
