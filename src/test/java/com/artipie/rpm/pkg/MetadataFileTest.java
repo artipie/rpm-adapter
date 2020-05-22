@@ -25,6 +25,7 @@ package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.NamingPolicy;
+import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlRepomd;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -49,7 +50,7 @@ public final class MetadataFileTest {
         try (
             XmlRepomd repomd = new XmlRepomd(tmp.resolve("repomd.xml"));
             MetadataFile meta = new MetadataFile(
-                "type", new PackageOutput.FileOutput.Fake(fake).start()
+                XmlPackage.PRIMARY, new PackageOutput.FileOutput.Fake(fake).start()
             )
         ) {
             repomd.begin(System.currentTimeMillis());

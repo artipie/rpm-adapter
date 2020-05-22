@@ -25,6 +25,7 @@ package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.meta.XmlMaid;
 import com.artipie.rpm.meta.XmlOthers;
+import com.artipie.rpm.meta.XmlPackage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -110,6 +111,6 @@ public final class OthersOutput implements PackageOutput.FileOutput {
 
     @Override
     public String tag() {
-        return "otherdata";
+        return XmlPackage.OTHERS.tag();
     }
 }

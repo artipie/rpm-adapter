@@ -25,6 +25,7 @@ package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.StandardNamingPolicy;
+import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlRepomd;
 import com.jcabi.aspects.Tv;
 import com.jcabi.log.Logger;
@@ -64,7 +65,7 @@ class ModifiableMetadataTest {
         final Path part = temp.resolve("part.primary.xml");
         Files.copy(Paths.get("src/test/resources-binary/repodata/primary.xml.example"), part);
         final ModifiableMetadata mtd = new ModifiableMetadata(
-            new MetadataFile("primary", new PrimaryOutput(res).start()),
+            new MetadataFile(XmlPackage.PRIMARY, new PrimaryOutput(res).start()),
             part
         );
         final Path rpm =
@@ -102,7 +103,7 @@ class ModifiableMetadataTest {
         Files.copy(Paths.get("src/test/resources-binary/repodata/filelists.xml.example"), part);
         filelists.toFile().createNewFile();
         final ModifiableMetadata mtd = new ModifiableMetadata(
-            new MetadataFile("filelists", new FilelistsOutput(filelists).start()),
+            new MetadataFile(XmlPackage.FILELISTS, new FilelistsOutput(filelists).start()),
             part
         );
         mtd.close();

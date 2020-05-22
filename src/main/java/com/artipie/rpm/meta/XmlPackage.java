@@ -23,6 +23,12 @@
  */
 package com.artipie.rpm.meta;
 
+import com.artipie.rpm.pkg.FilelistsOutput;
+import com.artipie.rpm.pkg.OthersOutput;
+import com.artipie.rpm.pkg.PackageOutput;
+import com.artipie.rpm.pkg.PrimaryOutput;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Locale;
 import java.util.Map;
 import org.cactoos.map.MapEntry;
@@ -31,8 +37,6 @@ import org.cactoos.map.MapOf;
 /**
  * Xml metadata packages.
  * @since 0.9
- * @todo #159:30min Find all usages of metadata files names and tags and replace them with this
- *  enum instances/usages.
  */
 public enum XmlPackage {
 
@@ -45,7 +49,12 @@ public enum XmlPackage {
             new MapEntry<>("", "http://linux.duke.edu/metadata/common"),
             new MapEntry<>("rpm", "http://linux.duke.edu/metadata/rpm")
         )
-    ),
+    ) {
+        @Override
+        public PackageOutput.FileOutput output() throws IOException {
+            return new PrimaryOutput(Files.createTempFile(this.tempPrefix(), XmlPackage.SFX));
+        }
+    },
 
     /**
      * Metadata others.xml.
@@ -53,7 +62,12 @@ public enum XmlPackage {
     OTHERS(
         "otherdata",
         new MapOf<String, String>(new MapEntry<>("", "http://linux.duke.edu/metadata/other"))
-    ),
+    ) {
+        @Override
+        public PackageOutput.FileOutput output() throws IOException {
+            return new OthersOutput(Files.createTempFile(this.tempPrefix(), XmlPackage.SFX));
+        }
+    },
 
     /**
      * Metadata filelists.xml.
@@ -61,7 +75,18 @@ public enum XmlPackage {
     FILELISTS(
         "filelists",
         new MapOf<String, String>(new MapEntry<>("", "http://linux.duke.edu/metadata/filelists"))
-    );
+    ) {
+        @Override
+        public PackageOutput.FileOutput output() throws IOException {
+            return new FilelistsOutput(Files.createTempFile(this.tempPrefix(), XmlPackage.SFX));
+        }
+    };
+
+    /**
+     * File suffix.
+     * @checkstyle ConstantUsageCheck (5 lines)
+     */
+    private static final String SFX = ".xml";
 
     /**
      * Tag name.
@@ -100,10 +125,60 @@ public enum XmlPackage {
     }
 
     /**
+     * Metadata file prefix name.
+     * @return String file prefix name.
+     */
+    public String tempPrefix() {
+        return String.format("%s-", this.filename());
+    }
+
+    /**
      * Returns xml namespaces.
      * @return Map of the namespaces.
      */
     public Map<String, String> xmlNamespaces() {
         return this.namespaces;
     }
+
+    /**
+     * File output for the xml package.
+     * @return FileOutput instance
+     * @throws IOException On error
+     */
+    public abstract PackageOutput.FileOutput output() throws IOException;
+
+    /**
+     * List of XmlPackage.
+     * @since 0.10
+     */
+    public static final class Stream {
+
+        /**
+         * Need filelists?
+         */
+        private final boolean filelists;
+
+        /**
+         * Ctor.
+         * @param filelists Need fileslist?
+         */
+        public Stream(final boolean filelists) {
+            this.filelists = filelists;
+        }
+
+        /**
+         * Stream of XmlPackage values.
+         * @return Stream of XmlPackage
+         */
+        public java.util.stream.Stream<XmlPackage> get() {
+            final java.util.stream.Stream<XmlPackage> res;
+            if (this.filelists) {
+                res = java.util.stream.Stream.of(values());
+            } else {
+                res = java.util.stream.Stream.of(PRIMARY, OTHERS);
+            }
+            return res;
+        }
+    }
+
 }
