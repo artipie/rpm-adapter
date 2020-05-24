@@ -38,9 +38,11 @@ import org.apache.commons.cli.ParseException;
  * Cli tool argument parsing.
  *
  * @since 0.9
- * @todo #89:30min Cli options are not parsed correctly. getOptionValue method always return
- *  default value for both options, so it's not possible to override them. But the tool is working
- *  correctly. To build it use `cli` maven profile, see the README.
+ * @todo #113:30min Fix errors when parsing arguments.
+ *  Cli options are not parsed correctly, argumens namingpolicy and digest
+ *  cannot be set up through cli. There are already tests for this behavior
+ *  on CliArgumentsTest. Fix this and then activate the tests and add a test
+ *  for an execution with all arguments.
  */
 public final class CliArguments {
 
