@@ -81,9 +81,11 @@ public final class XmlMetaJoin {
      * @param target Target
      * @param part File to append
      * @throws IOException On error
+     * @todo 200:30min This method have to be removed or moved to `test` scope for test usages:
+     *  it works much slower than the other implementation.
      */
     @SuppressWarnings({"PMD.PrematureDeclaration", "PMD.GuardLogStatement"})
-    public void merge(final Path target, final Path part) throws IOException {
+    public void streamMerge(final Path target, final Path part) throws IOException {
         final long start = System.currentTimeMillis();
         final Path res = target.getParent().resolve(
             String.format("%s.joined", target.getFileName().toString())
@@ -111,7 +113,7 @@ public final class XmlMetaJoin {
      * @throws IOException On error
      */
     @SuppressWarnings({"PMD.PrematureDeclaration", "PMD.GuardLogStatement"})
-    public void fastMerge(final Path target, final Path part) throws IOException {
+    public void merge(final Path target, final Path part) throws IOException {
         final Path res = target.getParent().resolve(
             String.format("%s.merged", target.getFileName().toString())
         );

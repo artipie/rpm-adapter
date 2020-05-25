@@ -96,11 +96,11 @@ class XmlMetaJoinITCase {
         final Path fast = XmlMetaJoinITCase.repo.resolve("big.primary.xml");
         new Gzip(meta(XmlMetaJoinITCase.repo, "primary")).unpack(fast);
         new XmlMetaJoin("metadata")
-            .fastMerge(fast, Paths.get(XmlMetaJoinITCase.RESOURCES, "primary.xml.example"));
+            .merge(fast, Paths.get(XmlMetaJoinITCase.RESOURCES, "primary.xml.example"));
         final Path stream = XmlMetaJoinITCase.repo.resolve("big.primary.xml");
         new Gzip(meta(XmlMetaJoinITCase.repo, "primary")).unpack(stream);
         new XmlMetaJoin("metadata")
-            .merge(stream, Paths.get(XmlMetaJoinITCase.RESOURCES, "primary.xml.example"));
+            .streamMerge(stream, Paths.get(XmlMetaJoinITCase.RESOURCES, "primary.xml.example"));
         MatcherAssert.assertThat(
             fast,
             CompareMatcher.isIdenticalTo(stream)
@@ -113,10 +113,10 @@ class XmlMetaJoinITCase {
         final Path resfast = XmlMetaJoinITCase.repo.resolve("fast.filelists.xml");
         Files.copy(Paths.get(XmlMetaJoinITCase.RESOURCES, "filelists.xml.example"), resfast);
         new Gzip(meta(XmlMetaJoinITCase.repo, "filelists")).unpack(big);
-        new XmlMetaJoin("filelists").fastMerge(resfast, big);
+        new XmlMetaJoin("filelists").merge(resfast, big);
         final Path resstream = XmlMetaJoinITCase.repo.resolve("stream.filelists.xml");
         Files.copy(Paths.get(XmlMetaJoinITCase.RESOURCES, "filelists.xml.example"), resstream);
-        new XmlMetaJoin("filelists").merge(resstream, big);
+        new XmlMetaJoin("filelists").streamMerge(resstream, big);
         MatcherAssert.assertThat(
             resfast,
             CompareMatcher.isIdenticalTo(resstream)

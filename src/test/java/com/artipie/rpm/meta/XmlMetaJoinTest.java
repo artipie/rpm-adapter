@@ -49,7 +49,7 @@ class XmlMetaJoinTest {
         final Path file = Files.copy(
             Paths.get(XmlMetaJoinTest.REPO, "primary.xml.example.first"), temp.resolve("target.xml")
         );
-        new XmlMetaJoin("metadata").merge(
+        new XmlMetaJoin("metadata").streamMerge(
             file, Paths.get(XmlMetaJoinTest.REPO, "primary.xml.example.second")
         );
         MatcherAssert.assertThat(
@@ -65,7 +65,7 @@ class XmlMetaJoinTest {
         final Path file = Files.copy(
             Paths.get(XmlMetaJoinTest.REPO, "primary.xml.example.first"), temp.resolve("target.xml")
         );
-        new XmlMetaJoin("metadata").fastMerge(
+        new XmlMetaJoin("metadata").merge(
             file, Paths.get(XmlMetaJoinTest.REPO, "primary.xml.example.second")
         );
         MatcherAssert.assertThat(
@@ -98,7 +98,7 @@ class XmlMetaJoinTest {
                 "<d>3</d></parent>"
             ).getBytes()
         );
-        new XmlMetaJoin("parent").merge(target, part);
+        new XmlMetaJoin("parent").streamMerge(target, part);
         final Path expected = temp.resolve("expected.xml");
         Files.write(
             expected,
@@ -138,7 +138,7 @@ class XmlMetaJoinTest {
                 "<d>3</d></parent>"
             ).getBytes()
         );
-        new XmlMetaJoin("parent").fastMerge(target, part);
+        new XmlMetaJoin("parent").merge(target, part);
         final Path expected = temp.resolve("expected.xml");
         Files.write(
             expected,
