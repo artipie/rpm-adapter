@@ -34,7 +34,8 @@ import org.junit.jupiter.api.io.TempDir;
  *
  * @since 0.9
  * @todo #113:30min Add more tests for CliArgumentTests.
- *  Add tests for CliArguments using all arguments and longopt name arguments.
+ *  Add tests for CliArguments using all arguments, '=' signal for setting
+ *  argument values and longopt name arguments.
  */
 class CliArgumentsTest {
 

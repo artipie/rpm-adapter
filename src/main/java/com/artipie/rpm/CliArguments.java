@@ -37,12 +37,10 @@ import org.apache.commons.cli.ParseException;
 /**
  * Cli tool argument parsing.
  *
+ * Arguments values must be passed immediately after argument declaration (e.g
+ * -dsha256) or after ´=´ signal (e.g -d=sha256).
+ *
  * @since 0.9
- * @todo #113:30min Improve CliArgument behavior.
- *  Currently CliArgument requires the argument value to be informed immediately
- *  after the argument (i.e. -psha1, -ffalse, -dsha256). It would be more
- *  readable if the argument values were preceded by a whitespace (-p sha1,
- *  -f false, -d sha256, etc)
  */
 public final class CliArguments {
 
