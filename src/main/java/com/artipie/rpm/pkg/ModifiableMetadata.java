@@ -61,7 +61,8 @@ public final class ModifiableMetadata implements Metadata {
 
     @Override
     public void brush(final List<String> pkgs) throws IOException {
-        new XmlMetaJoin(this.origin.output().tag()).merge(this.origin.output().file(), this.old);
+        new XmlMetaJoin(this.origin.output().tag())
+            .merge(this.origin.output().file(), this.old);
         new XmlAlter(this.origin.output().file()).pkgAttr(
             this.origin.output().tag(), String.valueOf(this.origin.output().maid().clean(pkgs))
         );
