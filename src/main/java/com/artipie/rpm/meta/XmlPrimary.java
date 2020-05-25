@@ -39,6 +39,19 @@ import javax.xml.stream.XMLStreamException;
  * </p>
  *
  * @since 0.6
+ *
+ * @todo #117:30min Fix metadata 'packages' attribute
+ *  XmlPrimary is generating 'packages' attribute in 'metadata' element with
+ *  the wrong value. Correct this (it should reflect the number of packages
+ *  described in primary.xml file) and then add a check to this value on
+ *  XmlPrimaryTest.
+ * @todo #117:30min Fix 'provides' element generation
+ *  XmlPrimary is not generating 'provides' elements correctly. Actually
+ *  it does not generate a 'provides' element at all: it should generate an
+ *  element named 'provides' with child entries containing 'name', 'flags',
+ *  'epoch' and 'ver' attributes. Refer to primary.xml.example file for
+ *  more details. The test in XmlPrimaryTest must be updated once 'provides'
+ *  element generation is fixed.
  */
 @SuppressWarnings({"PMD.TooManyMethods", "PMD.AvoidDuplicateLiterals"})
 public final class XmlPrimary implements Closeable {
