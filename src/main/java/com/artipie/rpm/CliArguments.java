@@ -38,11 +38,11 @@ import org.apache.commons.cli.ParseException;
  * Cli tool argument parsing.
  *
  * @since 0.9
- * @todo #113:30min Fix errors when parsing arguments.
- *  Cli options are not parsed correctly, argumens namingpolicy and digest
- *  cannot be set up through cli. There are already tests for this behavior
- *  on CliArgumentsTest. Fix this and then activate the tests and add a test
- *  for an execution with all arguments.
+ * @todo #113:30min Improve CliArgument behavior.
+ *  Currently CliArgument requires the argument value to be informed immediately
+ *  after the argument (i.e. -psha1, -ffalse, -dsha256). It would be more
+ *  readable if the argument values were preceded by a whitespace (-p sha1,
+ *  -f false, -d sha256, etc)
  */
 public final class CliArguments {
 

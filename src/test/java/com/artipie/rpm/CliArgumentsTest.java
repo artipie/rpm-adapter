@@ -26,7 +26,6 @@ package com.artipie.rpm;
 import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -34,6 +33,8 @@ import org.junit.jupiter.api.io.TempDir;
  * Tests for {@link CliArguments}.
  *
  * @since 0.9
+ * @todo #113:30min Add more tests for CliArgumentTests.
+ *  Add tests for CliArguments using all arguments and longopt name arguments.
  */
 class CliArgumentsTest {
 
@@ -51,11 +52,10 @@ class CliArgumentsTest {
     }
 
     @Test
-    @Disabled
     void canParseNamingPolicyArgument(@TempDir final Path temp) {
         MatcherAssert.assertThat(
             new CliArguments().parsed(
-                "-np sha1"
+                "-nsha1"
             ).naming(),
             new IsEqual<>(StandardNamingPolicy.SHA1)
         );
@@ -65,18 +65,17 @@ class CliArgumentsTest {
     void canParseFileListsArgument(@TempDir final Path temp) {
         MatcherAssert.assertThat(
             new CliArguments().parsed(
-                "-fl false"
+                "-ffalse"
             ).fileLists(),
             new IsEqual<>(false)
         );
     }
 
     @Test
-    @Disabled
     void canParseDigestArgument(@TempDir final Path temp) {
         MatcherAssert.assertThat(
             new CliArguments().parsed(
-                "-dgst sha1"
+                "-dsha1"
             ).digest(),
             new IsEqual<>(Digest.SHA1)
         );
