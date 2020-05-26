@@ -29,6 +29,7 @@ import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.Metadata;
 import com.artipie.rpm.pkg.Package;
 import com.artipie.rpm.pkg.PackageOutput;
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -87,7 +88,7 @@ public final class ModifiableRepository implements PackageOutput {
     public ModifiableRepository update(final FilePackage pkg) throws IOException {
         final String hex = new FileChecksum(pkg.path(), this.digest).hex();
         if (!this.existing.remove(hex)) {
-            this.origin.update(pkg);
+            this.origin.update(pkg.parsed());
         }
         return this;
     }
@@ -111,8 +112,10 @@ public final class ModifiableRepository implements PackageOutput {
     }
 
     @Override
-    public void close() throws IOException {
-        this.origin.close();
+    public void close() {
+        this.metadata.stream().parallel().forEach(
+            new UncheckedConsumer<>(Closeable::close)
+        );
     }
 
     /**

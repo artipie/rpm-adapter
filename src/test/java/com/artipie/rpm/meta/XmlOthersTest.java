@@ -27,6 +27,7 @@ import com.jcabi.matchers.XhtmlMatchers;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -35,9 +36,6 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Testcase for {@link XmlOthers} class.
  * @since 0.6
- * @todo #80:30min add another test for adding a changelog
- *  to do that you need to wait for  the changelog to be implemented first
- *  there's a puzzle for implementing it.
  */
 public class XmlOthersTest {
 
@@ -92,7 +90,6 @@ public class XmlOthersTest {
      * @throws Exception
      */
     @Test
-    @Disabled
     void canAddChangelog(@TempDir final Path tmp) throws Exception {
         final Path xml = tmp.resolve("changelog.xml");
         try (XmlOthers others = new XmlOthers(xml)) {
@@ -107,7 +104,41 @@ public class XmlOthersTest {
         MatcherAssert.assertThat(
             new String(Files.readAllBytes(xml), StandardCharsets.UTF_8),
             // @checkstyle LineLengthCheck (1 line)
-            XhtmlMatchers.hasXPath("/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='changelog' and @epoch='0' and @author='Paulo Lobo' and text()='Test for changelog generation']")
+            XhtmlMatchers.hasXPath("/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='changelog' and @date='0' and @author='Paulo Lobo' and text()='Test for changelog generation']")
+        );
+    }
+
+    /**
+     * Test adding a changelog list for the package.
+     * @param tmp Temp path
+     * @throws Exception
+     */
+    @Test
+    @Disabled
+    void canAddMultipleChangelogs(@TempDir final Path tmp) throws Exception {
+        final Path xml = tmp.resolve("multiple-changelog.xml");
+        try (XmlOthers others = new XmlOthers(xml)) {
+            others.startPackages();
+            others.addPackage(
+                "ggg", "hhh",
+                "iii"
+            ).version(0, "3.0.0", "9.20190810git9666276.el10")
+            .changelog(
+                // @checkstyle LineLengthCheck (5 lines)
+                new ListOf<>(
+                    "* Wed May 13 2020 John Doe <johndoe@artipie.org> - 0.1-2\n- Second artipie package",
+                    "* Tue May 31 2016 Jane Doe <janedoe@artipie.org> - 0.1-1\n- First artipie package\n- Example second item in the changelog for version-release 0.1-1"
+                )
+            )
+            .close();
+        }
+        MatcherAssert.assertThat(
+            new String(Files.readAllBytes(xml), StandardCharsets.UTF_8),
+            // @checkstyle LineLengthCheck (5 lines)
+            XhtmlMatchers.hasXPaths(
+                "/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='changelog' and @date='1589338800' and @author='John Doe <johndoe@artipie.org> - 0.1-2' and text()='- Second artipie package']",
+                "/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='changelog' and @date='1464663600' and @author='Jane Doe <janedoe@artipie.org> - 0.1-1' and text()='- First artipie package\n- Example second item in the changelog for version-release 0.1-1']"
+            )
         );
     }
 

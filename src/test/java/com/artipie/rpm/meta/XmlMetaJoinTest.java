@@ -49,6 +49,22 @@ class XmlMetaJoinTest {
         final Path file = Files.copy(
             Paths.get(XmlMetaJoinTest.REPO, "primary.xml.example.first"), temp.resolve("target.xml")
         );
+        new XmlMetaJoin("metadata").streamMerge(
+            file, Paths.get(XmlMetaJoinTest.REPO, "primary.xml.example.second")
+        );
+        MatcherAssert.assertThat(
+            file,
+            CompareMatcher.isIdenticalTo(
+                Paths.get(XmlMetaJoinTest.REPO, "primary.xml.example")
+            )
+        );
+    }
+
+    @Test
+    void joinsTwoMetaXmlFilesFast(@TempDir final Path temp) throws IOException {
+        final Path file = Files.copy(
+            Paths.get(XmlMetaJoinTest.REPO, "primary.xml.example.first"), temp.resolve("target.xml")
+        );
         new XmlMetaJoin("metadata").merge(
             file, Paths.get(XmlMetaJoinTest.REPO, "primary.xml.example.second")
         );
@@ -79,6 +95,46 @@ class XmlMetaJoinTest {
                 "\n",
                 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
                 "<parent><c>2</c>",
+                "<d>3</d></parent>"
+            ).getBytes()
+        );
+        new XmlMetaJoin("parent").streamMerge(target, part);
+        final Path expected = temp.resolve("expected.xml");
+        Files.write(
+            expected,
+            String.join(
+                "\n",
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+                "<parent>",
+                "<a>1</a><b>2</b><c>2</c><d>3</d>",
+                "</parent>"
+            ).getBytes()
+        );
+        MatcherAssert.assertThat(
+            target,
+            CompareMatcher.isIdenticalTo(expected)
+        );
+    }
+
+    @Test
+    void joinsFastWhenXmlIsNotProperlyFormatted(@TempDir final Path temp) throws IOException {
+        final Path target = temp.resolve("res.xml");
+        final Path part = temp.resolve("part.xml");
+        Files.write(
+            target,
+            String.join(
+                "\n",
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+                "<a>1</a>",
+                "<b>2</b></parent>"
+            ).getBytes()
+        );
+        Files.write(
+            part,
+            String.join(
+                "\n",
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?> <parent>",
+                "<c>2</c>",
                 "<d>3</d></parent>"
             ).getBytes()
         );

@@ -21,51 +21,64 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm.meta;
+package com.artipie.rpm;
 
-import com.jcabi.matchers.XhtmlMatchers;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Tests for {@link XmlPackagesFile}.
+ * Tests for {@link CliArguments}.
  *
- * @since 0.6.3
+ * @since 0.9
+ * @todo #113:30min Add more tests for CliArgumentTests.
+ *  Add tests for CliArguments using all arguments, '=' signal for setting
+ *  argument values and longopt name arguments.
  */
-public final class XmlPackagesFileTest {
+class CliArgumentsTest {
 
     @Test
-    public void writesCorrectTag(@TempDir final Path temp) throws Exception {
-        final Path file = temp.resolve("tag.xml");
-        try (XmlPackagesFile packs = new XmlPackagesFile(new XmlFile(file), XmlPackage.OTHERS)) {
-            packs.startPackages();
-        }
-        XmlPackagesFileTest.assertion(
-            file, String.format("/*[name()='%s']", XmlPackage.OTHERS.tag())
-        );
-    }
-
-    @Test
-    public void writesCorrectNamespace(@TempDir final Path temp) throws Exception {
-        final Path file = temp.resolve("name.xml");
-        try (XmlPackagesFile packs = new XmlPackagesFile(new XmlFile(file), XmlPackage.FILELISTS)) {
-            packs.startPackages();
-        }
-        XmlPackagesFileTest.assertion(
-            file,
-            String.format("/*[namespace-uri(.)='%s']", XmlPackage.FILELISTS.xmlNamespaces().get(""))
-        );
-    }
-
-    private static void assertion(final Path file, final String expected) throws IOException {
+    void canParseRepositoryArgument(@TempDir final Path temp) {
         MatcherAssert.assertThat(
-            new String(Files.readAllBytes(file), StandardCharsets.UTF_8),
-            XhtmlMatchers.hasXPath(expected)
+            new CliArguments().parsed(
+                String.format(
+                    "%s",
+                    temp.getFileName()
+                )
+            ).repository(),
+            new IsEqual<>(temp.getFileName())
+        );
+    }
+
+    @Test
+    void canParseNamingPolicyArgument(@TempDir final Path temp) {
+        MatcherAssert.assertThat(
+            new CliArguments().parsed(
+                "-nsha1"
+            ).naming(),
+            new IsEqual<>(StandardNamingPolicy.SHA1)
+        );
+    }
+
+    @Test
+    void canParseFileListsArgument(@TempDir final Path temp) {
+        MatcherAssert.assertThat(
+            new CliArguments().parsed(
+                "-ffalse"
+            ).fileLists(),
+            new IsEqual<>(false)
+        );
+    }
+
+    @Test
+    void canParseDigestArgument(@TempDir final Path temp) {
+        MatcherAssert.assertThat(
+            new CliArguments().parsed(
+                "-dsha1"
+            ).digest(),
+            new IsEqual<>(Digest.SHA1)
         );
     }
 }

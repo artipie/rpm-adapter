@@ -26,13 +26,11 @@ package com.artipie.rpm.meta;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.xml.stream.XMLStreamException;
 
 /**
- * Starting tag and ending tag writer for metadata writers. Counts and writes packages count.
+ * Starting tag and ending tag writer for metadata writers.
  *
  * @since 0.6
  */
@@ -44,48 +42,23 @@ public final class XmlPackagesFile implements Closeable {
     private static final String PACKAGES_ATTR = "packages";
 
     /**
-     * Packages counter.
-     */
-    private final AtomicInteger packages;
-
-    /**
      * Xml file.
      */
     private final XmlFile xml;
 
     /**
-     * The starting tag to write.
+     * Metadata.
      */
-    private final String tag;
-
-    /**
-     * Namespaces.
-     */
-    private final Map<String, String> namespaces;
+    private final XmlPackage mtd;
 
     /**
      * Ctor.
      * @param xml Xml file
-     * @param tag Starting tag
-     * @param namespace Default namespace
+     * @param mtd Metadata
      */
-    public XmlPackagesFile(final XmlFile xml, final String tag, final String namespace) {
-        this(xml, tag, Collections.singletonMap("", namespace));
-    }
-
-    /**
-     * Primary ctor.
-     * @param xml Xml file
-     * @param tag Starting tag
-     * @param namespaces Namespaces
-     */
-    public XmlPackagesFile(
-        final XmlFile xml, final String tag, final Map<String, String> namespaces
-    ) {
+    public XmlPackagesFile(final XmlFile xml, final XmlPackage mtd) {
         this.xml = xml;
-        this.tag = tag;
-        this.namespaces = namespaces;
-        this.packages = new AtomicInteger();
+        this.mtd = mtd;
     }
 
     /**
@@ -94,8 +67,8 @@ public final class XmlPackagesFile implements Closeable {
      */
     public void startPackages() throws XMLStreamException {
         this.xml.writeStartDocument(StandardCharsets.UTF_8.displayName(), "1.0");
-        this.xml.writeStartElement(this.tag);
-        for (final Map.Entry<String, String> namespace: this.namespaces.entrySet()) {
+        this.xml.writeStartElement(this.mtd.tag());
+        for (final Map.Entry<String, String> namespace: this.mtd.xmlNamespaces().entrySet()) {
             this.xml.writeNamespace(namespace.getKey(), namespace.getValue());
         }
         this.xml.writeAttribute(XmlPackagesFile.PACKAGES_ATTR, "-1");
@@ -110,12 +83,5 @@ public final class XmlPackagesFile implements Closeable {
         } catch (final XMLStreamException err) {
             throw new IOException("Failed to close", err);
         }
-    }
-
-    /**
-     * Listener for single package closing.
-     */
-    public void packageClose() {
-        this.packages.incrementAndGet();
     }
 }

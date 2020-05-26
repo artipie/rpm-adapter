@@ -26,6 +26,7 @@ package com.artipie.rpm.meta;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import javax.xml.stream.XMLStreamException;
 
 /**
@@ -62,9 +63,7 @@ public final class XmlOthers implements Closeable {
      */
     private XmlOthers(final XmlFile xml) {
         this.xml = xml;
-        this.packages = new XmlPackagesFile(
-            xml, "otherdata", "http://linux.duke.edu/metadata/other"
-        );
+        this.packages = new XmlPackagesFile(xml, XmlPackage.OTHERS);
     }
 
     /**
@@ -144,13 +143,17 @@ public final class XmlOthers implements Closeable {
 
         /**
          * Add changelog.
+         * @param changelogs List of changelog items
          * @return Self
          * @throws XMLStreamException On error
-         * @todo #69:30min Implement changelog method. It's not clear how exaclty it should
-         *  be extracted from package headers. Check example RPM packages in test bin resources
-         *  and `other.xml` file for this file in test resources.
+         * @todo #82:30min Continue changelog implementation.
+         *  Changelog info is composed of a sequence of entries (as seen in
+         *  https://rpm-packaging-guide.github.io/#packaging-software ,changelog
+         *  section). This information will be extracted from package headers
+         *  and sent here to be parsed and added to the others.xml file. After
+         *  implementing this enable test on XmlOthersTest.
          */
-        public Package changelog()
+        public Package changelog(final List<String> changelogs)
             throws XMLStreamException {
             this.xml.writeStartElement("changelog");
             this.xml.writeCharacters("NOT_IMPLEMENTED");
@@ -161,14 +164,19 @@ public final class XmlOthers implements Closeable {
         /**
          * Adds changelog tag to others.xml file.
          * @param author Changelog author
-         * @param epoch Epoch seconds
+         * @param date Epoch seconds
          * @param content Changelog content
          * @return Self
          * @throws XMLStreamException On error
          */
-        public Package changelog(final String author, final int epoch, final String content)
+        public Package changelog(final String author, final int date, final String content)
             throws XMLStreamException {
-            return this.changelog();
+            this.xml.writeStartElement("changelog");
+            this.xml.writeAttribute("date", String.valueOf(date));
+            this.xml.writeAttribute("author", String.valueOf(author));
+            this.xml.writeCharacters(content);
+            this.xml.writeEndElement();
+            return this;
         }
 
         /**
@@ -178,7 +186,6 @@ public final class XmlOthers implements Closeable {
          */
         public XmlOthers close() throws XMLStreamException {
             this.xml.writeEndElement();
-            this.others.packages.packageClose();
             return this.others;
         }
     }

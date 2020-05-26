@@ -29,15 +29,13 @@ import com.artipie.rpm.meta.XmlAlter;
 import com.artipie.rpm.meta.XmlMetaJoin;
 import com.artipie.rpm.meta.XmlRepomd;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
 /**
  * Modifiable package.
  * @since 0.8
- * @todo #141:30min Create tests for this class: we need standard unit test and IT Case long test,
- *  which will use large xml from test bundles (I guess we can simply join meta-xml from hundred
- *  and thousand rpm bundles).
  */
 public final class ModifiableMetadata implements Metadata {
 
@@ -63,7 +61,8 @@ public final class ModifiableMetadata implements Metadata {
 
     @Override
     public void brush(final List<String> pkgs) throws IOException {
-        new XmlMetaJoin(this.origin.output().tag()).merge(this.origin.output().file(), this.old);
+        new XmlMetaJoin(this.origin.output().tag())
+            .merge(this.origin.output().file(), this.old);
         new XmlAlter(this.origin.output().file()).pkgAttr(
             this.origin.output().tag(), String.valueOf(this.origin.output().maid().clean(pkgs))
         );
@@ -72,6 +71,7 @@ public final class ModifiableMetadata implements Metadata {
     @Override
     public Path save(final NamingPolicy naming, final Digest digest,
         final XmlRepomd repomd) throws IOException {
+        Files.delete(this.old);
         return this.origin.save(naming, digest, repomd);
     }
 

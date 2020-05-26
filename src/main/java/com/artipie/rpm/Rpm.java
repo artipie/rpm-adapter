@@ -27,8 +27,10 @@ import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.asto.rx.RxStorageWrapper;
+import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.meta.XmlPrimaryChecksums;
 import com.artipie.rpm.meta.XmlRepomd;
+import com.artipie.rpm.misc.UncheckedConsumer;
 import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.FilelistsOutput;
 import com.artipie.rpm.pkg.Metadata;
@@ -44,14 +46,18 @@ import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.schedulers.Schedulers;
-import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import javax.xml.stream.XMLStreamException;
 
@@ -73,7 +79,7 @@ import javax.xml.stream.XMLStreamException;
  * @since 0.1
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+@SuppressWarnings({"PMD.AvoidDuplicateLiterals", "PMD.TooManyMethods"})
 public final class Rpm {
 
     /**
@@ -187,8 +193,7 @@ public final class Rpm {
         } catch (final IOException err) {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
-        final Vertx vertx = Vertx.vertx();
-        final Storage local = new FileStorage(tmpdir, vertx.fileSystem());
+        final Storage local = new FileStorage(tmpdir);
         return SingleInterop.fromFuture(this.storage.list(prefix))
             .flatMapPublisher(Flowable::fromIterable)
             .filter(key -> key.string().endsWith(".rpm"))
@@ -210,19 +215,24 @@ public final class Rpm {
             .doOnSuccess(rep -> Logger.info(this, "repository closed"))
             .flatMapObservable(repo -> Observable.fromIterable(repo.save(this.naming)))
             .doOnNext(file -> Files.move(file, tmpdir.resolve(file.getFileName())))
-            .flatMapCompletable(
+            .flatMapSingle(
                 path -> new RxStorageWrapper(local)
                     .value(new Key.From(path.getFileName().toString()))
                     .flatMapCompletable(
                         content -> new RxStorageWrapper(this.storage).save(
                             new Key.From("repodata", path.getFileName().toString()), content
                         )
+                    ).toSingleDefault(path)
+            ).map(path -> String.format("repodata/%s", path.getFileName().toString()))
+            .toList().map(HashSet::new).flatMapCompletable(
+                preserve -> new RxStorageWrapper(this.storage).list(new Key.From("repodata"))
+                    .flatMapObservable(Observable::fromIterable)
+                    .filter(item -> !preserve.contains(item.string()))
+                    .flatMapCompletable(
+                        item -> new RxStorageWrapper(this.storage).delete(item)
                     )
             ).doOnTerminate(
-                () -> {
-                    Rpm.cleanup(tmpdir);
-                    vertx.close();
-                }
+                () -> Rpm.cleanup(tmpdir)
             );
     }
 
@@ -230,12 +240,6 @@ public final class Rpm {
      * Updates repository incrementally.
      * @param prefix Repo prefix
      * @return Completable action
-     * @todo #141:30min Finish incremental update: we need to obtain meta-files from repository we
-     *  are updating, these files are stored in `repodata` folder, are gziped (use Gzip to unzip),
-     *  their names are [file-checksum]-metafile.xml.gz.
-     *  Then add test to RpmITCase to check that this method works. After that we can think about
-     *  further optimization: for example we can read xml primary checksums and copy rpms at the
-     *  same time in different threads.
      */
     public Completable updateBatchIncrementally(final Key prefix) {
         final Path tmpdir;
@@ -244,80 +248,52 @@ public final class Rpm {
         } catch (final IOException err) {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
-        final Vertx vertx = Vertx.vertx();
-        final Storage local = new FileStorage(tmpdir, vertx.fileSystem());
-        final List<String> hexes = new XmlPrimaryChecksums(Paths.get(prefix.string())).read();
+        final Storage local = new FileStorage(tmpdir);
         return SingleInterop.fromFuture(this.storage.list(prefix))
-            .flatMapObservable(Observable::fromIterable)
+            .flatMapPublisher(Flowable::fromIterable)
             .filter(key -> key.string().endsWith(".rpm"))
             .flatMapSingle(
                 key -> {
                     final String file = Paths.get(key.string()).getFileName().toString();
-                    return new RxStorageWrapper(this.storage).value(key).flatMapCompletable(
-                        content -> new RxStorageWrapper(local).save(new Key.From(file), content)
-                    ).andThen(Single.just(new FilePackage(tmpdir.resolve(file))));
+                    return new RxStorageWrapper(this.storage)
+                        .value(key)
+                        .flatMapCompletable(
+                            content -> new RxStorageWrapper(local).save(new Key.From(file), content)
+                        ).andThen(Single.fromCallable(() -> new FilePackage(tmpdir.resolve(file))));
                 }
             )
             .observeOn(Schedulers.io())
             .reduceWith(
-                () -> {
-                    final XmlRepomd repomd = new XmlRepomd(
-                        Files.createTempFile("repomd-", ".xml")
-                    );
-                    repomd.begin(System.currentTimeMillis() / Tv.THOUSAND);
-                    return new ModifiableRepository(
-                        hexes,
-                        repomd,
-                        Arrays.asList(
-                            new ModifiableMetadata(
-                                new MetadataFile(
-                                    "primary",
-                                    new PrimaryOutput(Files.createTempFile("primary-", ".xml"))
-                                        .start()
-                                ),
-                                Paths.get(prefix.string(), "repodata", "primary.xml.gz")
-                            ),
-                            new ModifiableMetadata(
-                                new MetadataFile(
-                                    "others",
-                                    new OthersOutput(Files.createTempFile("others-", ".xml"))
-                                        .start()
-                                ),
-                                Paths.get(prefix.string(), "repodata", "others.xml.gz")
-                            ),
-                            new ModifiableMetadata(
-                                new MetadataFile(
-                                    "filelists",
-                                    new OthersOutput(Files.createTempFile("filelists-", ".xml"))
-                                        .start()
-                                ),
-                                Paths.get(prefix.string(), "repodata", "others.xml.gz")
-                            )
-                        ),
-                        this.digest
-                    );
-                },
-                ModifiableRepository::update
+                () -> this.mdfRepository(tmpdir, local, prefix), ModifiableRepository::update
             )
-            .doOnSuccess(ModifiableRepository::clear)
             .doOnSuccess(rep -> Logger.info(this, "repository updated"))
             .doOnSuccess(ModifiableRepository::close)
             .doOnSuccess(rep -> Logger.info(this, "repository closed"))
+            .doOnSuccess(ModifiableRepository::clear)
+            .doOnSuccess(rep -> Logger.info(this, "repository cleared"))
             .flatMapObservable(repo -> Observable.fromIterable(repo.save(this.naming)))
-            .doOnNext(file -> Files.move(file, tmpdir.resolve(file.getFileName())))
-            .flatMapCompletable(
+            .doOnNext(file
+                -> Files.move(
+                    file, tmpdir.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING
+                )
+            ).flatMapSingle(
                 path -> new RxStorageWrapper(local)
                     .value(new Key.From(path.getFileName().toString()))
                     .flatMapCompletable(
                         content -> new RxStorageWrapper(this.storage).save(
                             new Key.From("repodata", path.getFileName().toString()), content
                         )
+                    ).toSingleDefault(path)
+            ).map(path -> String.format("repodata/%s", path.getFileName().toString()))
+            .toList().map(HashSet::new).flatMapCompletable(
+                preserve -> new RxStorageWrapper(this.storage).list(new Key.From("repodata"))
+                    .flatMapObservable(Observable::fromIterable)
+                    .filter(item -> !preserve.contains(item.string()))
+                    .flatMapCompletable(
+                        item -> new RxStorageWrapper(this.storage).delete(item)
                     )
             ).doOnTerminate(
-                () -> {
-                    Rpm.cleanup(tmpdir);
-                    vertx.close();
-                }
+                () -> Rpm.cleanup(tmpdir)
             );
     }
 
@@ -339,36 +315,125 @@ public final class Rpm {
      */
     private Repository repository() throws IOException {
         try {
-            final XmlRepomd repomd = new XmlRepomd(
-                Files.createTempFile("repomd-", ".xml")
+            return new Repository(
+                Rpm.xmlRepomd(), new ArrayList<>(this.metadata().values()), this.digest
             );
-            repomd.begin(System.currentTimeMillis() / Tv.THOUSAND);
-            final List<Metadata> files = new ArrayList<>(
-                Arrays.asList(
-                    new MetadataFile(
-                        "primary",
-                        new PrimaryOutput(Files.createTempFile("primary-", ".xml"))
-                            .start()
-                    ),
-                    new MetadataFile(
-                        "others",
-                        new OthersOutput(Files.createTempFile("others-", ".xml"))
-                            .start()
-                    )
-                )
-            );
-            if (this.filelists) {
-                files.add(
-                    new MetadataFile(
-                        "filelists",
-                        new FilelistsOutput(Files.createTempFile("filelists-", ".xml"))
-                            .start()
-                    )
-                );
-            }
-            return new Repository(repomd, files, this.digest);
         } catch (final XMLStreamException ex) {
             throw new IOException(ex);
+        }
+    }
+
+    /**
+     * Get modifiable repository for file updates.
+     * @param dir Temp directory
+     * @param local Local storage
+     * @param key Key
+     * @return Repository
+     * @throws IOException If IO Exception occurs.
+     * @todo #178:30min Try to get rid of blocking operations here, at the same time keep in mind
+     *  that we need list of the existing rpm checksums from primary.xml to start the update.
+     */
+    private ModifiableRepository mdfRepository(final Path dir, final Storage local, final Key key)
+        throws IOException {
+        try {
+            final Map<String, Path> data = new HashMap<>();
+            this.storage.list(key).get().stream()
+                .filter(file -> file.string().endsWith(".xml.gz"))
+                .forEach(
+                    file -> new RxStorageWrapper(local).save(
+                        new Key.From(Paths.get(file.string()).getFileName().toString()),
+                        new RxStorageWrapper(this.storage).value(file).blockingGet()
+                    ).blockingGet()
+            );
+            this.metadata().keySet().forEach(
+                new UncheckedConsumer<>(
+                    name -> {
+                        final Path metaf = dir.resolve(String.format("%s.old.xml", name));
+                        new Gzip(Rpm.meta(dir, name)).unpack(metaf);
+                        data.put(name, metaf);
+                    }
+                )
+            );
+            return new ModifiableRepository(
+                new XmlPrimaryChecksums(data.get("primary")).read(),
+                Rpm.xmlRepomd(),
+                this.metadata().entrySet().stream()
+                    .map(
+                        entry -> new ModifiableMetadata(entry.getValue(), data.get(entry.getKey()))
+                    ).collect(Collectors.toList()),
+                this.digest
+            );
+        } catch (final XMLStreamException | ExecutionException | InterruptedException ex) {
+            throw new IOException(ex);
+        }
+    }
+
+    /**
+     * Returns opened repomd.
+     * @return XmlRepomd instance
+     * @throws IOException On error
+     * @throws XMLStreamException On error
+     */
+    private static XmlRepomd xmlRepomd() throws IOException, XMLStreamException {
+        final XmlRepomd repomd = new XmlRepomd(Files.createTempFile("repomd-", ".xml"));
+        repomd.begin(System.currentTimeMillis() / Tv.THOUSAND);
+        return repomd;
+    }
+
+    /**
+     * Metadata files list.
+     * @return Map with metadata files.
+     * @throws IOException On error
+     * @todo #178:30min Create enum with metadata file items and get rid of string metadata names in
+     *  the project and this method. Each enum item has to have at least metadata tag name and
+     *  PackageOutput.FileOutput instance.
+     */
+    private Map<String, Metadata> metadata() throws IOException {
+        final Map<String, Metadata> res = new HashMap<>();
+        res.put(
+            "primary",
+            new MetadataFile(
+                "primary",
+                new PrimaryOutput(Files.createTempFile("primary-", ".xml")).start()
+            )
+        );
+        res.put(
+            "other",
+            new MetadataFile(
+                "other",
+                new OthersOutput(Files.createTempFile("other-", ".xml")).start()
+            )
+        );
+        if (this.filelists) {
+            res.put(
+                "filelists",
+                new MetadataFile(
+                    "filelists",
+                    new FilelistsOutput(Files.createTempFile("filelists-", ".xml")).start()
+                )
+            );
+        }
+        return res;
+    }
+
+    /**
+     * Searches for the meta file by substring in folder.
+     * @param dir Where to look for the file
+     * @param substr What to find
+     * @return Path to find
+     * @throws IOException On error
+     */
+    private static Path meta(final Path dir, final String substr) throws IOException {
+        final Optional<Path> res = Files.walk(dir)
+            .filter(
+                path -> path.getFileName().toString().endsWith(String.format("%s.xml.gz", substr))
+            ).findFirst();
+        if (res.isPresent()) {
+            return res.get();
+        } else {
+            throw new IllegalStateException(
+                String.format("Metafile %s does not exists in %s", substr, dir.toString())
+            );
         }
     }
 }
