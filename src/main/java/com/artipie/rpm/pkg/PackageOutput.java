@@ -73,6 +73,13 @@ public interface PackageOutput extends Closeable {
         String tag();
 
         /**
+         * Start packages.
+         * @return Self
+         * @throws IOException On failure
+         */
+        FileOutput start() throws IOException;
+
+        /**
          * Fake {@link FileOutput}.
          *
          * @since 1.0
@@ -93,11 +100,7 @@ public interface PackageOutput extends Closeable {
                 this.file = file;
             }
 
-            /**
-             * Start packages.
-             * @return Self
-             * @throws IOException On failure
-             */
+            @Override
             public Fake start() throws IOException {
                 Files.write(
                     this.file,

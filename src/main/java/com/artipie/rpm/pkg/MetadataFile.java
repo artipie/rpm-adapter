@@ -27,6 +27,7 @@ import com.artipie.rpm.Digest;
 import com.artipie.rpm.FileChecksum;
 import com.artipie.rpm.NamingPolicy;
 import com.artipie.rpm.meta.XmlAlter;
+import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlRepomd;
 import com.jcabi.log.Logger;
 import java.io.IOException;
@@ -51,7 +52,7 @@ public final class MetadataFile implements Metadata {
     /**
      * Metadata type.
      */
-    private final String type;
+    private final XmlPackage type;
 
     /**
      * Output.
@@ -68,7 +69,7 @@ public final class MetadataFile implements Metadata {
      * @param type Metadata type
      * @param out Output
      */
-    public MetadataFile(final String type, final FileOutput out) {
+    public MetadataFile(final XmlPackage type, final FileOutput out) {
         this.type = type;
         this.out = out;
         this.cnt = new AtomicLong();
@@ -96,14 +97,16 @@ public final class MetadataFile implements Metadata {
     public Path save(final NamingPolicy naming, final Digest digest, final XmlRepomd repomd)
         throws IOException {
         final Path open = this.out.file();
-        Path gzip = Files.createTempFile(this.type, ".gz");
+        Path gzip = Files.createTempFile(this.type.filename(), ".gz");
         MetadataFile.gzip(open, gzip);
         gzip = Files.move(
             gzip,
-            gzip.getParent().resolve(String.format("%s.xml.gz", naming.name(this.type, gzip)))
+            gzip.getParent().resolve(
+                String.format("%s.xml.gz", naming.name(this.type.filename(), gzip))
+            )
         );
         Logger.info(this, "gzipped %s to %s", open, gzip);
-        try (XmlRepomd.Data data = repomd.beginData(this.type)) {
+        try (XmlRepomd.Data data = repomd.beginData(this.type.filename())) {
             data.gzipChecksum(new FileChecksum(gzip, digest));
             data.openChecksum(new FileChecksum(open, digest));
             data.location(String.format("repodata/%s", gzip.getFileName()));

@@ -42,11 +42,11 @@ public final class XmlPackagesFileTest {
     @Test
     public void writesCorrectTag(@TempDir final Path temp) throws Exception {
         final Path file = temp.resolve("tag.xml");
-        try (XmlPackagesFile packs = new XmlPackagesFile(new XmlFile(file), XmlPackage.OTHERS)) {
+        try (XmlPackagesFile packs = new XmlPackagesFile(new XmlFile(file), XmlPackage.OTHER)) {
             packs.startPackages();
         }
         XmlPackagesFileTest.assertion(
-            file, String.format("/*[name()='%s']", XmlPackage.OTHERS.tag())
+            file, String.format("/*[name()='%s']", XmlPackage.OTHER.tag())
         );
     }
 
