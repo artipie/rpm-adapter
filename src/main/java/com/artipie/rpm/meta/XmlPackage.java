@@ -52,7 +52,7 @@ public enum XmlPackage {
     ) {
         @Override
         public PackageOutput.FileOutput output() throws IOException {
-            return new PrimaryOutput(Files.createTempFile(this.tempPrefix(), XmlPackage.SFX));
+            return new PrimaryOutput(Files.createTempFile(this.tempPrefix(), XmlPackage.SUFFIX));
         }
     },
 
@@ -65,7 +65,7 @@ public enum XmlPackage {
     ) {
         @Override
         public PackageOutput.FileOutput output() throws IOException {
-            return new OthersOutput(Files.createTempFile(this.tempPrefix(), XmlPackage.SFX));
+            return new OthersOutput(Files.createTempFile(this.tempPrefix(), XmlPackage.SUFFIX));
         }
     },
 
@@ -78,7 +78,7 @@ public enum XmlPackage {
     ) {
         @Override
         public PackageOutput.FileOutput output() throws IOException {
-            return new FilelistsOutput(Files.createTempFile(this.tempPrefix(), XmlPackage.SFX));
+            return new FilelistsOutput(Files.createTempFile(this.tempPrefix(), XmlPackage.SUFFIX));
         }
     };
 
@@ -86,7 +86,7 @@ public enum XmlPackage {
      * File suffix.
      * @checkstyle ConstantUsageCheck (5 lines)
      */
-    private static final String SFX = ".xml";
+    private static final String SUFFIX = ".xml";
 
     /**
      * Tag name.
