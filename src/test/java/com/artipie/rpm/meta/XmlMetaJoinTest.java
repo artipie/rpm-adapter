@@ -61,7 +61,8 @@ class XmlMetaJoinTest {
     }
 
     @Test
-    void joinsWhenXmlIsNotProperlyFormatted(@TempDir final Path temp) throws IOException {
+    void joinsWhenXmlIsNotProperlySeparatedWithLineBreaks(@TempDir final Path temp)
+        throws IOException {
         final Path target = temp.resolve("res.xml");
         final Path part = temp.resolve("part.xml");
         Files.write(
