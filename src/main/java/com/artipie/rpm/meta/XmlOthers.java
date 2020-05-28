@@ -63,7 +63,7 @@ public final class XmlOthers implements Closeable {
      */
     private XmlOthers(final XmlFile xml) {
         this.xml = xml;
-        this.packages = new XmlPackagesFile(xml, XmlPackage.OTHERS);
+        this.packages = new XmlPackagesFile(xml, XmlPackage.OTHER);
     }
 
     /**

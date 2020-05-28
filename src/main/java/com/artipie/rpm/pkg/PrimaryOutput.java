@@ -24,6 +24,7 @@
 package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.meta.XmlMaid;
+import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimary;
 import com.artipie.rpm.meta.XmlPrimaryMaid;
 import java.io.IOException;
@@ -135,6 +136,6 @@ public final class PrimaryOutput implements PackageOutput.FileOutput {
 
     @Override
     public String tag() {
-        return "metadata";
+        return XmlPackage.PRIMARY.tag();
     }
 }
