@@ -54,6 +54,7 @@ public final class MetadataFileTest {
             final XmlRepomd repomd = new XmlRepomd(tmp.resolve("repomd.xml"));
             repomd.begin(System.currentTimeMillis());
             final String hex = new FileChecksum(fake, Digest.SHA1).hex();
+            final long size = Files.size(fake);
             final Path gzip = meta.save(
                 new NamingPolicy.HashPrefixed(Digest.SHA1), Digest.SHA1, repomd
             );
@@ -66,9 +67,9 @@ public final class MetadataFileTest {
                     String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='checksum' and @type='sha' and text()='%s']", new FileChecksum(gzip, Digest.SHA1).hex()),
                     String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='open-checksum' and @type='sha' and text()='%s']", hex),
                     String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='location' and @href='repodata/%s']", gzip.toFile().getName()),
-                    "/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='size' and text()='28']",
-                    "/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='open-size' and text()='8']"
-                    )
+                    String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='size' and text()='%d']", Files.size(gzip)),
+                    String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='open-size' and text()='%d']", size)
+                )
             );
             Files.deleteIfExists(gzip);
         }
