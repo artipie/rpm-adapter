@@ -24,13 +24,7 @@
 package com.artipie.rpm;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.security.MessageDigest;
-import java.util.function.Supplier;
-import org.bouncycastle.util.encoders.Hex;
 
 /**
  * RPM files naming policy.
@@ -56,34 +50,19 @@ public interface NamingPolicy {
         /**
          * Message digest supplier.
          */
-        private final Supplier<MessageDigest> dgst;
+        private final Digest dgst;
 
         /**
          * Ctor.
          * @param dgst One of the supported digest algorithms
          */
         public HashPrefixed(final Digest dgst) {
-            this(dgst::messageDigest);
-        }
-
-        /**
-         * Primary ctor.
-         * @param dgst Message digest supplier
-         */
-        private HashPrefixed(final Supplier<MessageDigest> dgst) {
             this.dgst = dgst;
         }
 
         @Override
         public String name(final String source, final Path content) throws IOException {
-            final MessageDigest digest = this.dgst.get();
-            final ByteBuffer buffer = ByteBuffer.allocate(1024 * 8);
-            try (FileChannel chan = FileChannel.open(content, StandardOpenOption.READ)) {
-                while (chan.read(buffer) > 0) {
-                    digest.update(buffer);
-                }
-            }
-            return String.format("%s-%s", Hex.toHexString(digest.digest()), source);
+            return String.format("%s-%s", new FileChecksum(content, this.dgst).hex(), source);
         }
     }
 }

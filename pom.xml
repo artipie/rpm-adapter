@@ -283,7 +283,7 @@ SOFTWARE.
                     <limit>
                       <counter>METHOD</counter>
                       <value>COVEREDRATIO</value>
-                      <minimum>0.61</minimum>
+                      <minimum>0.60</minimum>
                     </limit>
                     <limit>
                       <counter>CLASS</counter>
