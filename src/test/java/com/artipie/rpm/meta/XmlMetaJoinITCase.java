@@ -61,7 +61,7 @@ class XmlMetaJoinITCase {
     private static Path bundle;
 
     /**
-     * Gzipped bundle of RPMs.
+     * Test repo.
      */
     private static Path repo;
 
@@ -99,8 +99,8 @@ class XmlMetaJoinITCase {
             .merge(fast, Paths.get(XmlMetaJoinITCase.RESOURCES, "primary.xml.example"));
         final Path stream = XmlMetaJoinITCase.repo.resolve("big.primary.xml");
         new Gzip(meta(XmlMetaJoinITCase.repo, "primary")).unpack(stream);
-        new XmlMetaJoin("metadata")
-            .streamMerge(stream, Paths.get(XmlMetaJoinITCase.RESOURCES, "primary.xml.example"));
+        new XmlStreamJoin("metadata")
+            .merge(stream, Paths.get(XmlMetaJoinITCase.RESOURCES, "primary.xml.example"));
         MatcherAssert.assertThat(
             fast,
             CompareMatcher.isIdenticalTo(stream)
@@ -116,7 +116,7 @@ class XmlMetaJoinITCase {
         new XmlMetaJoin("filelists").merge(resfast, big);
         final Path resstream = XmlMetaJoinITCase.repo.resolve("stream.filelists.xml");
         Files.copy(Paths.get(XmlMetaJoinITCase.RESOURCES, "filelists.xml.example"), resstream);
-        new XmlMetaJoin("filelists").streamMerge(resstream, big);
+        new XmlStreamJoin("filelists").merge(resstream, big);
         MatcherAssert.assertThat(
             resfast,
             CompareMatcher.isIdenticalTo(resstream)
