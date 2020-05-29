@@ -23,7 +23,6 @@
  */
 package com.artipie.rpm.meta;
 
-import com.jcabi.log.Logger;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -73,7 +72,6 @@ public final class XmlMetaJoin {
         final Path res = target.getParent().resolve(
             String.format("%s.merged", target.getFileName().toString())
         );
-        final long start = System.currentTimeMillis();
         try (BufferedWriter out = Files.newBufferedWriter(res)) {
             this.writeFirstPart(target, out);
             this.writeSecondPart(part, out);
@@ -82,10 +80,6 @@ public final class XmlMetaJoin {
             throw err;
         }
         Files.move(res, target, StandardCopyOption.REPLACE_EXISTING);
-        Logger.debug(
-            this, "%s and %s merged in %[ms]s", target.toString(),
-            part.toString(), System.currentTimeMillis() - start
-        );
     }
 
     /**
