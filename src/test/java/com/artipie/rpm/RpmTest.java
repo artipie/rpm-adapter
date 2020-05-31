@@ -32,6 +32,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -43,11 +44,15 @@ import org.junit.jupiter.api.io.TempDir;
  * @todo #63:30min Don't change metadata when invalid package is sent.
  *  Currently Rpm is recalculating metadata when an invalid package is sent.
  *  It should not. Correct that and enable the test below.
+ * @todo #110:30min Meaningful error on broken package.
+ *  Rpm should throw an exception when trying to add an invalid package. Make it
+ *  behave like described in showMeaningfulErrorWhenInvalidPackageSent and then
+ *  enable the test.
  */
 final class RpmTest {
 
     /**
-     * Path of repomd.xml fil.
+     * Path of repomd.xml file.
      */
     private static final String REPOMD = "repodata/repomd.xml";
 
@@ -86,6 +91,32 @@ final class RpmTest {
                 Charset.defaultCharset()
             ),
             new IsEqual<>(repomd)
+        );
+    }
+
+    @Test
+    @Disabled
+    void showMeaningfulErrorWhenInvalidPackageSent() {
+        final Storage storage = new InMemoryStorage();
+        final Rpm repo =  new Rpm(
+            storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
+        );
+        storage.save(
+            new Key.From("stored.rpm"),
+            new Content.From("stored content".getBytes())
+        );
+        repo.batchUpdate(Key.ROOT).blockingAwait();
+        final byte[] broken = {0x00, 0x01, 0x02 };
+        storage.save(
+            new Key.From("brokentwo.rpm"),
+            new Content.From(
+                broken
+            )
+        );
+        Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> repo.batchUpdate(Key.ROOT).blockingAwait(),
+            "RPM package \"brokentwo.rpm\" is broken, can't be read"
         );
     }
 }
