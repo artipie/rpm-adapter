@@ -66,7 +66,7 @@ public final class XmlPrimaryTest {
                 .buildHost("http://giuthub.com/artipie/rpm-adapter/buildhost")
                 .sourceRpm("primary.src.rpm")
                 .requires(
-                    new ListOf<String>(
+                    new ListOf<>(
                         "ld-linux-aarch64.so.1()(64bit)"
                     )
                 )
