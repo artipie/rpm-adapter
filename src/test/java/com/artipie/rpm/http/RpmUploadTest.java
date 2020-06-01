@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm.http;
 
+import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.memory.InMemoryStorage;
@@ -47,18 +48,16 @@ public class RpmUploadTest {
     @Disabled
     void canUploadArtifact() throws Exception {
         final Storage storage = new InMemoryStorage();
+        final byte[] content =
+            "uploaded package bytes".getBytes(StandardCharsets.UTF_8);
         new RpmUpload(storage).response(
             "PUT /uploaded.rpm",
             new ListOf<Map.Entry<String, String>>(),
-            Flowable.fromArray(
-                ByteBuffer.wrap(
-                    "uploaded package content".getBytes(StandardCharsets.UTF_8)
-                )
-            )
+            Flowable.fromArray(ByteBuffer.wrap(content))
         );
         MatcherAssert.assertThat(
-            storage.exists(new Key.From("uploaded.rpm")).get(),
-            new IsEqual<>(true)
+            storage.value(new Key.From("uploaded.rpm")).get(),
+            new IsEqual<>(new Content.From(content))
         );
     }
 
@@ -83,10 +82,8 @@ public class RpmUploadTest {
             Flowable.fromArray(ByteBuffer.wrap(content))
         );
         MatcherAssert.assertThat(
-            storage.value(
-                new Key.From("replaced.rpm")
-            ).get().size(),
-            new IsEqual<>(content.length)
+            storage.value(new Key.From("replaced.rpm")).get(),
+            new IsEqual<>(new Content.From(content))
         );
     }
 
@@ -111,10 +108,8 @@ public class RpmUploadTest {
             )
         );
         MatcherAssert.assertThat(
-            storage.value(
-                new Key.From("not-replaced.rpm")
-            ).get().size(),
-            new IsEqual<>(content.length)
+            storage.value(new Key.From("not-replaced.rpm")).get(),
+            new IsEqual<>(new Content.From(content))
         );
     }
 }

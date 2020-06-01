@@ -37,7 +37,7 @@ import com.artipie.http.slice.SliceUpload;
  * @todo #162:30min Finish implementation of RpmUpload
  *  RpmSlice should behave like the defined in
  *  https://github.com/artipie/rpm-adapter/issues/162. Finish the
- *  implementation and enable testes in RpmUploadTest
+ *  implementation and enable tests in RpmUploadTest.
  */
 public class RpmUpload extends Slice.Wrap {
 
