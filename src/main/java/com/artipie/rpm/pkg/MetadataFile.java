@@ -46,7 +46,19 @@ import javax.xml.stream.XMLStreamException;
  * and it proxies metadata to underlying output. After closing it saves
  * all metadata to {@code repomd.xml}.
  * @since 0.6
+ * @todo #99:30min MetadataFile should behave on close()
+ *  As stated in #99, MetadataFile should behave on close() method instead of
+ *  save(). Implement this and:
+ *  - remove MetadataFileTest.updatesRepomdOnSave
+ *  - enable MetadataFileTest.updatesRepomdOnClose
+ *  - remove AvoidDuplicateLiterals warning supression from MetadataFileTest
+ *  - remove save() method from MetadataFile
+ *  - remove suppressions from MetadataFile
+ *  - update coverage ratio after tests
  */
+@SuppressWarnings(
+    {"PMD.ProhibitPublicStaticMethods", "PMD.UnusedFormalParameter"}
+)
 public final class MetadataFile implements Metadata {
 
     /**
@@ -73,6 +85,25 @@ public final class MetadataFile implements Metadata {
         this.type = type;
         this.out = out;
         this.cnt = new AtomicLong();
+    }
+
+    /**
+     * Ctor.
+     * @param type Metadata type
+     * @param out Output
+     * @param naming Naming policy
+     * @param digest Digest
+     * @param repomd XmlRepomd file
+     * @checkstyle UnusedFormalParameter (10 lines)
+     * @checkstyle ParameterNumberCheck (10 lines)
+     */
+    public MetadataFile(
+        final XmlPackage type,
+        final FileOutput out,
+        final NamingPolicy naming,
+        final Digest digest,
+        final XmlRepomd repomd) {
+        this(type, out);
     }
 
     @Override
@@ -135,8 +166,9 @@ public final class MetadataFile implements Metadata {
      * @param input Source file
      * @param output Target file
      * @throws IOException On error
+     * @checkstyle ProhibitPublicStaticMethods (10 lines)
      */
-    private static void gzip(final Path input, final Path output) throws IOException {
+    public static void gzip(final Path input, final Path output) throws IOException {
         try (InputStream fis = Files.newInputStream(input);
             OutputStream fos = Files.newOutputStream(output);
             GZIPOutputStream gzos = new GZIPOutputStream(fos)) {

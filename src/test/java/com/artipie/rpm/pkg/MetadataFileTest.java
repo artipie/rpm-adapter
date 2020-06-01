@@ -33,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -41,18 +42,20 @@ import org.junit.jupiter.api.io.TempDir;
  *
  * @since 0.6.3
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class MetadataFileTest {
 
     @Test
     public void updatesRepomdOnSave(@TempDir final Path tmp) throws Exception {
         final Path fake = tmp.resolve("fake.xml");
+        final XmlRepomd repomd = new XmlRepomd(tmp.resolve("repomd.xml"));
+        repomd.begin(System.currentTimeMillis());
         try (
             MetadataFile meta = new MetadataFile(
-                XmlPackage.PRIMARY, new PackageOutput.FileOutput.Fake(fake).start()
+                XmlPackage.PRIMARY,
+                new PackageOutput.FileOutput.Fake(fake).start()
             )
         ) {
-            final XmlRepomd repomd = new XmlRepomd(tmp.resolve("repomd.xml"));
-            repomd.begin(System.currentTimeMillis());
             final String openhex = new FileChecksum(fake, Digest.SHA1).hex();
             final long size = Files.size(fake);
             final Path gzip = meta.save(
@@ -74,5 +77,40 @@ public final class MetadataFileTest {
             );
             Files.deleteIfExists(gzip);
         }
+    }
+
+    @Test
+    @Disabled
+    public void updatesRepomdOnClose(@TempDir final Path tmp) throws Exception {
+        final Path fake = tmp.resolve("fake.xml");
+        final XmlRepomd repomd = new XmlRepomd(tmp.resolve("repomd.xml"));
+        final MetadataFile meta = new MetadataFile(
+            XmlPackage.PRIMARY,
+            new PackageOutput.FileOutput.Fake(fake).start(),
+            new NamingPolicy.HashPrefixed(Digest.SHA1),
+            Digest.SHA1,
+            repomd
+        );
+        final String openhex = new FileChecksum(fake, Digest.SHA1).hex();
+        repomd.begin(System.currentTimeMillis());
+        final long size = Files.size(fake);
+        final Path gzip = tmp.resolve("fake.xml.gz");
+        MetadataFile.gzip(fake, gzip);
+        final String hex = new FileChecksum(gzip, Digest.SHA1).hex();
+        repomd.close();
+        meta.close();
+        MatcherAssert.assertThat(
+            new String(Files.readAllBytes(tmp.resolve("repomd.xml")), StandardCharsets.UTF_8),
+            // @checkstyle LineLengthCheck (10 lines)
+            XhtmlMatchers.hasXPaths(
+                "/*[local-name()='repomd']/*[local-name()='revision']",
+                String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='checksum' and @type='sha' and text()='%s']", hex),
+                String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='open-checksum' and @type='sha' and text()='%s']", openhex),
+                String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='location' and @href='repodata/%s']", String.format("%s-%s.xml.gz", hex, XmlPackage.PRIMARY.filename())),
+                String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='size' and text()='%d']", Files.size(gzip)),
+                String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='open-size' and text()='%d']", size)
+            )
+        );
+        Files.deleteIfExists(gzip);
     }
 }
