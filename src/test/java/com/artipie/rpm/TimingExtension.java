@@ -24,7 +24,6 @@
 package com.artipie.rpm;
 
 import com.jcabi.log.Logger;
-import java.lang.reflect.Method;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -49,13 +48,12 @@ public final class TimingExtension implements BeforeTestExecutionCallback,
 
     @Override
     public void afterTestExecution(final ExtensionContext context) {
-        final Method method = context.getRequiredTestMethod();
         final long start = this.getStore(context)
             .remove(TimingExtension.START_TIME, long.class);
         Logger.info(
             context.getRequiredTestClass(),
             "Method %s took %[ms]s",
-            method.getName(),
+            context.getRequiredTestMethod().getName(),
             System.currentTimeMillis() - start
         );
     }
