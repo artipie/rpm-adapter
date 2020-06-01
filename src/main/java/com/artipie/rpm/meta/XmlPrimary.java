@@ -57,6 +57,11 @@ import javax.xml.stream.XMLStreamException;
 public final class XmlPrimary implements Closeable {
 
     /**
+     * Xml primary namespace.
+     */
+    private static final String NAMESPACE = XmlPackage.PRIMARY.xmlNamespaces().get("rpm");
+
+    /**
      * Xml file.
      */
     private final XmlFile xml;
@@ -425,7 +430,7 @@ public final class XmlPrimary implements Closeable {
          * @throws XMLStreamException On XML failure
          */
         public Format headerRange(final int start, final int end) throws XMLStreamException {
-            this.xml.writeEmptyElement("http://linux.duke.edu/metadata/rpm", "header-range");
+            this.xml.writeEmptyElement(XmlPrimary.NAMESPACE, "header-range");
             this.xml.writeAttribute("start", String.valueOf(start));
             this.xml.writeAttribute("end", String.valueOf(end));
             return this;
@@ -438,9 +443,9 @@ public final class XmlPrimary implements Closeable {
          * @throws XMLStreamException On XML error
          */
         public Format providers(final Iterable<String> providers) throws XMLStreamException {
-            this.xml.writeStartElement("http://linux.duke.edu/metadata/rpm", "provides");
+            this.xml.writeStartElement(XmlPrimary.NAMESPACE, "provides");
             for (final String name : providers) {
-                this.xml.writeStartElement("http://linux.duke.edu/metadata/rpm", "entry");
+                this.xml.writeStartElement(XmlPrimary.NAMESPACE, "entry");
                 this.xml.writeAttribute("name", name);
                 this.xml.writeEndElement();
             }
@@ -455,12 +460,12 @@ public final class XmlPrimary implements Closeable {
          * @throws XMLStreamException On XML error
          */
         public Format requires(final List<String> requires) throws XMLStreamException {
-            this.xml.writeStartElement("http://linux.duke.edu/metadata/rpm", "requires");
+            this.xml.writeStartElement(XmlPrimary.NAMESPACE, "requires");
             final List<String> filtered = requires.stream()
                 .filter(nme -> !nme.startsWith("rpmlib("))
                 .collect(Collectors.toList());
             for (final String name : filtered) {
-                this.xml.writeStartElement("http://linux.duke.edu/metadata/rpm", "entry");
+                this.xml.writeStartElement(XmlPrimary.NAMESPACE, "entry");
                 this.xml.writeAttribute("name", name);
                 this.xml.writeEndElement();
             }
@@ -486,7 +491,7 @@ public final class XmlPrimary implements Closeable {
          * @throws XMLStreamException On error
          */
         private Format writeElem(final String name, final String value) throws XMLStreamException {
-            this.xml.writeStartElement("http://linux.duke.edu/metadata/rpm", name);
+            this.xml.writeStartElement(XmlPrimary.NAMESPACE, name);
             this.xml.writeCharacters(value);
             this.xml.writeEndElement();
             return this;

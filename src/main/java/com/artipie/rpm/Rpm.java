@@ -28,16 +28,14 @@ import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.rpm.files.Gzip;
+import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryChecksums;
 import com.artipie.rpm.meta.XmlRepomd;
 import com.artipie.rpm.misc.UncheckedConsumer;
+import com.artipie.rpm.misc.UncheckedFunc;
 import com.artipie.rpm.pkg.FilePackage;
-import com.artipie.rpm.pkg.FilelistsOutput;
-import com.artipie.rpm.pkg.Metadata;
 import com.artipie.rpm.pkg.MetadataFile;
 import com.artipie.rpm.pkg.ModifiableMetadata;
-import com.artipie.rpm.pkg.OthersOutput;
-import com.artipie.rpm.pkg.PrimaryOutput;
 import com.jcabi.aspects.Tv;
 import com.jcabi.log.Logger;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
@@ -51,7 +49,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -316,7 +313,13 @@ public final class Rpm {
     private Repository repository() throws IOException {
         try {
             return new Repository(
-                Rpm.xmlRepomd(), new ArrayList<>(this.metadata().values()), this.digest
+                Rpm.xmlRepomd(),
+                new XmlPackage.Stream(this.filelists).get().map(
+                    new UncheckedFunc<XmlPackage, MetadataFile, IOException>(
+                        item -> new MetadataFile(item, item.output().start())
+                    )
+                ).collect(Collectors.toList()),
+                this.digest
             );
         } catch (final XMLStreamException ex) {
             throw new IOException(ex);
@@ -345,22 +348,28 @@ public final class Rpm {
                         new RxStorageWrapper(this.storage).value(file).blockingGet()
                     ).blockingGet()
             );
-            this.metadata().keySet().forEach(
-                new UncheckedConsumer<>(
-                    name -> {
-                        final Path metaf = dir.resolve(String.format("%s.old.xml", name));
-                        new Gzip(Rpm.meta(dir, name)).unpack(metaf);
-                        data.put(name, metaf);
-                    }
-                )
+            new XmlPackage.Stream(this.filelists).get().map(XmlPackage::filename)
+                .forEach(
+                    new UncheckedConsumer<>(
+                        name -> {
+                            final Path metaf = dir.resolve(String.format("%s.old.xml", name));
+                            new Gzip(Rpm.meta(dir, name)).unpack(metaf);
+                            data.put(name, metaf);
+                        }
+                    )
             );
             return new ModifiableRepository(
-                new XmlPrimaryChecksums(data.get("primary")).read(),
+                new XmlPrimaryChecksums(data.get(XmlPackage.PRIMARY.filename())).read(),
                 Rpm.xmlRepomd(),
-                this.metadata().entrySet().stream()
-                    .map(
-                        entry -> new ModifiableMetadata(entry.getValue(), data.get(entry.getKey()))
-                    ).collect(Collectors.toList()),
+                new XmlPackage.Stream(this.filelists).get().map(
+                    new UncheckedFunc<>(
+                        item ->
+                            new ModifiableMetadata(
+                                new MetadataFile(item, item.output().start()),
+                                data.get(item.filename())
+                            )
+                    )
+                ).collect(Collectors.toList()),
                 this.digest
             );
         } catch (final XMLStreamException | ExecutionException | InterruptedException ex) {
@@ -378,42 +387,6 @@ public final class Rpm {
         final XmlRepomd repomd = new XmlRepomd(Files.createTempFile("repomd-", ".xml"));
         repomd.begin(System.currentTimeMillis() / Tv.THOUSAND);
         return repomd;
-    }
-
-    /**
-     * Metadata files list.
-     * @return Map with metadata files.
-     * @throws IOException On error
-     * @todo #178:30min Create enum with metadata file items and get rid of string metadata names in
-     *  the project and this method. Each enum item has to have at least metadata tag name and
-     *  PackageOutput.FileOutput instance.
-     */
-    private Map<String, Metadata> metadata() throws IOException {
-        final Map<String, Metadata> res = new HashMap<>();
-        res.put(
-            "primary",
-            new MetadataFile(
-                "primary",
-                new PrimaryOutput(Files.createTempFile("primary-", ".xml")).start()
-            )
-        );
-        res.put(
-            "other",
-            new MetadataFile(
-                "other",
-                new OthersOutput(Files.createTempFile("other-", ".xml")).start()
-            )
-        );
-        if (this.filelists) {
-            res.put(
-                "filelists",
-                new MetadataFile(
-                    "filelists",
-                    new FilelistsOutput(Files.createTempFile("filelists-", ".xml")).start()
-                )
-            );
-        }
-        return res;
     }
 
     /**

@@ -33,11 +33,11 @@ import org.junit.jupiter.api.io.TempDir;
 import org.xmlunit.matchers.CompareMatcher;
 
 /**
- * Test for {@link XmlMetaJoin}.
+ * Test for {@link XmlStreamJoin}.
  * @since 0.9
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-class XmlMetaJoinTest {
+public class XmlStreamJoinTest {
 
     /**
      * Test repo path.
@@ -47,16 +47,15 @@ class XmlMetaJoinTest {
     @Test
     void joinsTwoMetaXmlFiles(@TempDir final Path temp) throws IOException {
         final Path file = Files.copy(
-            Paths.get(XmlMetaJoinTest.REPO, "primary.xml.example.first"), temp.resolve("target.xml")
+            Paths.get(XmlStreamJoinTest.REPO, "primary.xml.example.first"),
+            temp.resolve("target.xml")
         );
-        new XmlMetaJoin("metadata").merge(
-            file, Paths.get(XmlMetaJoinTest.REPO, "primary.xml.example.second")
+        new XmlStreamJoin("metadata").merge(
+            file, Paths.get(XmlStreamJoinTest.REPO, "primary.xml.example.second")
         );
         MatcherAssert.assertThat(
             file,
-            CompareMatcher.isIdenticalTo(
-                Paths.get(XmlMetaJoinTest.REPO, "primary.xml.example")
-            )
+            CompareMatcher.isIdenticalTo(Paths.get(XmlStreamJoinTest.REPO, "primary.xml.example"))
         );
     }
 
@@ -78,12 +77,12 @@ class XmlMetaJoinTest {
             part,
             String.join(
                 "\n",
-                "<?xml version=\"1.0\" encoding=\"UTF-8\"?> <parent>",
-                "<c>2</c>",
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+                "<parent><c>2</c>",
                 "<d>3</d></parent>"
             ).getBytes()
         );
-        new XmlMetaJoin("parent").merge(target, part);
+        new XmlStreamJoin("parent").merge(target, part);
         final Path expected = temp.resolve("expected.xml");
         Files.write(
             expected,
@@ -92,50 +91,6 @@ class XmlMetaJoinTest {
                 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
                 "<parent>",
                 "<a>1</a><b>2</b><c>2</c><d>3</d>",
-                "</parent>"
-            ).getBytes()
-        );
-        MatcherAssert.assertThat(
-            target,
-            CompareMatcher.isIdenticalTo(expected)
-        );
-    }
-
-    @Test
-    void joinsOneLineXmls(@TempDir final Path temp) throws IOException {
-        final Path target = temp.resolve("target.xml");
-        final Path part = temp.resolve("part.xml");
-        Files.write(
-            target,
-            String.join(
-                "",
-                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-                "<parent>",
-                "<a>A</a>",
-                "<b>B</b>",
-                "</parent>"
-            ).getBytes()
-        );
-        Files.write(
-            part,
-            String.join(
-                "",
-                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-                "<parent>",
-                "<c>C</c>",
-                "<d>D</d>",
-                "</parent>"
-            ).getBytes()
-        );
-        new XmlMetaJoin("parent").merge(target, part);
-        final Path expected = temp.resolve("expected.xml");
-        Files.write(
-            expected,
-            String.join(
-                "\n",
-                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-                "<parent>",
-                "<a>A</a><b>B</b><c>C</c><d>D</d>",
                 "</parent>"
             ).getBytes()
         );
