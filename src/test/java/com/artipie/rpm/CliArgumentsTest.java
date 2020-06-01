@@ -33,9 +33,6 @@ import org.junit.jupiter.api.io.TempDir;
  * Tests for {@link CliArguments}.
  *
  * @since 0.9
- * @todo #113:30min Add more tests for CliArgumentTests.
- *  Add tests for CliArguments using all arguments, '=' signal for setting
- *  argument values and longopt name arguments.
  */
 class CliArgumentsTest {
 
@@ -79,6 +76,36 @@ class CliArgumentsTest {
                 "-dsha1"
             ).digest(),
             new IsEqual<>(Digest.SHA1)
+        );
+    }
+
+    @Test
+    void canParseNamingPolicyArgumentWithSignal() {
+        MatcherAssert.assertThat(
+            new CliArguments().parsed(
+                "-n=plain"
+            ).naming(),
+            new IsEqual<>(StandardNamingPolicy.PLAIN)
+        );
+    }
+
+    @Test
+    void canParseFileListsArgumentWithSignal() {
+        MatcherAssert.assertThat(
+            new CliArguments().parsed(
+                "-f=true"
+            ).fileLists(),
+            new IsEqual<>(true)
+        );
+    }
+
+    @Test
+    void canParseDigestArgumentWithSignal() {
+        MatcherAssert.assertThat(
+            new CliArguments().parsed(
+                "-d=sha256"
+            ).digest(),
+            new IsEqual<>(Digest.SHA256)
         );
     }
 }
