@@ -80,7 +80,7 @@ class CliArgumentsTest {
     }
 
     @Test
-    void canParseNamingPolicyArgumentWithSignal() {
+    void canParseNamingPolicyArgumentWithEquals() {
         MatcherAssert.assertThat(
             new CliArguments().parsed(
                 "-n=plain"
@@ -90,7 +90,7 @@ class CliArgumentsTest {
     }
 
     @Test
-    void canParseFileListsArgumentWithSignal() {
+    void canParseFileListsArgumentWithEquals() {
         MatcherAssert.assertThat(
             new CliArguments().parsed(
                 "-f=true"
@@ -100,12 +100,42 @@ class CliArgumentsTest {
     }
 
     @Test
-    void canParseDigestArgumentWithSignal() {
+    void canParseDigestArgumentWithEquals() {
         MatcherAssert.assertThat(
             new CliArguments().parsed(
                 "-d=sha256"
             ).digest(),
             new IsEqual<>(Digest.SHA256)
+        );
+    }
+
+    @Test
+    void canParseNamingPolicyArgumentWithLongopt() {
+        MatcherAssert.assertThat(
+            new CliArguments().parsed(
+                "-naming-policy=sha256"
+            ).naming(),
+            new IsEqual<>(StandardNamingPolicy.SHA256)
+        );
+    }
+
+    @Test
+    void canParseFileListsArgumentWithLongopt() {
+        MatcherAssert.assertThat(
+            new CliArguments().parsed(
+                "-filelists=false"
+            ).fileLists(),
+            new IsEqual<>(false)
+        );
+    }
+
+    @Test
+    void canParseDigestArgumentWithLongopt() {
+        MatcherAssert.assertThat(
+            new CliArguments().parsed(
+                "-digest=sha1"
+            ).digest(),
+            new IsEqual<>(Digest.SHA1)
         );
     }
 }
