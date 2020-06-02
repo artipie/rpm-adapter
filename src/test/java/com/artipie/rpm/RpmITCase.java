@@ -31,7 +31,6 @@ import com.artipie.asto.fs.FileStorage;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.files.TestBundle;
 import com.artipie.rpm.misc.UncheckedConsumer;
-import com.jcabi.log.Logger;
 import com.jcabi.matchers.XhtmlMatchers;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -48,6 +47,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
@@ -62,8 +62,9 @@ import org.junit.jupiter.api.io.TempDir;
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle MagicNumberCheck (500 lines)
  */
-@SuppressWarnings({"PMD.AvoidDuplicateLiterals", "PMD.GuardLogStatement"})
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 @EnabledIfSystemProperty(named = "it.longtests.enabled", matches = "true")
+@ExtendWith(TimingExtension.class)
 final class RpmITCase {
 
     /**
@@ -119,23 +120,17 @@ final class RpmITCase {
 
     @Test
     void generatesMetadata() {
-        final long start = System.currentTimeMillis();
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
-        Logger.info(this, "Repo updated in %[ms]s", System.currentTimeMillis() - start);
     }
 
     @Test
     void generatesMetadataIncrementally() throws IOException, InterruptedException {
-        final long start = System.currentTimeMillis();
         this.modifyRepo();
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
             .updateBatchIncrementally(Key.ROOT)
             .blockingAwait();
-        Logger.info(
-            this, "Repo updated incrementally in %[ms]s", System.currentTimeMillis() - start
-        );
     }
 
     @Test
