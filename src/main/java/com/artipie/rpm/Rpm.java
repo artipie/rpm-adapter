@@ -191,7 +191,19 @@ public final class Rpm {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
         final Storage local = new FileStorage(tmpdir);
-        return this.copyRpmsAndGetFilePackage(prefix, tmpdir, local)
+        return SingleInterop.fromFuture(this.storage.list(prefix))
+            .flatMapPublisher(Flowable::fromIterable)
+            .filter(key -> key.string().endsWith(".rpm"))
+            .flatMapSingle(
+                key -> {
+                    final String file = Paths.get(key.string()).getFileName().toString();
+                    return new RxStorageWrapper(this.storage)
+                        .value(key)
+                        .flatMapCompletable(
+                            content -> new RxStorageWrapper(local).save(new Key.From(file), content)
+                        ).andThen(Single.fromCallable(() -> new FilePackage(tmpdir.resolve(file))));
+                }
+            )
             .parallel().runOn(Schedulers.io())
             .map(FilePackage::parsed)
             .sequential().observeOn(Schedulers.io())
@@ -202,10 +214,21 @@ public final class Rpm {
             .flatMapObservable(repo -> Observable.fromIterable(repo.save(this.naming)))
             .doOnNext(file -> Files.move(file, tmpdir.resolve(file.getFileName())))
             .flatMapSingle(
-                path -> this.moveMetadataToStorage(local, path)
+                path -> new RxStorageWrapper(local)
+                    .value(new Key.From(path.getFileName().toString()))
+                    .flatMapCompletable(
+                        content -> new RxStorageWrapper(this.storage).save(
+                            new Key.From("repodata", path.getFileName().toString()), content
+                        )
+                    ).toSingleDefault(path)
             ).map(path -> String.format("repodata/%s", path.getFileName().toString()))
             .toList().map(HashSet::new).flatMapCompletable(
-                this::deleteOldMetadata
+                preserve -> new RxStorageWrapper(this.storage).list(new Key.From("repodata"))
+                    .flatMapObservable(Observable::fromIterable)
+                    .filter(item -> !((Set<String>) preserve).contains(item.string()))
+                    .flatMapCompletable(
+                        item -> new RxStorageWrapper(this.storage).delete(item)
+                    )
             ).doOnTerminate(
                 () -> Rpm.cleanup(tmpdir)
             );
@@ -215,6 +238,8 @@ public final class Rpm {
      * Updates repository incrementally.
      * @param prefix Repo prefix
      * @return Completable action
+     * @todo #192:30min Extract repeating code from updateBatch() and this method into private
+     *  methods or classes. Also try refactor this method to make it easier to read/maintain.
      */
     public Completable updateBatchIncrementally(final Key prefix) {
         final Path tmpdir;
@@ -238,7 +263,24 @@ public final class Rpm {
                 }
             ).andThen(Single.fromCallable(() -> this.mdfRepository(tmpdir)))
             .flatMap(
-                repo -> this.copyRpmsAndGetFilePackage(prefix, tmpdir, local)
+                repo -> SingleInterop.fromFuture(this.storage.list(prefix))
+                    .flatMapPublisher(Flowable::fromIterable)
+                    .filter(key -> key.string().endsWith(".rpm"))
+                    .flatMapSingle(
+                        key -> {
+                            final String file = Paths.get(key.string()).getFileName().toString();
+                            return new RxStorageWrapper(this.storage)
+                                .value(key)
+                                .flatMapCompletable(
+                                    content -> new RxStorageWrapper(local)
+                                        .save(new Key.From(file), content)
+                                ).andThen(
+                                    Single.fromCallable(
+                                        () -> new FilePackage(tmpdir.resolve(file))
+                                    )
+                                );
+                        }
+                    )
                     .parallel().runOn(Schedulers.io())
                     .sequential().observeOn(Schedulers.io())
                     .reduce(repo, (ignored, pkg) -> repo.update(pkg))
@@ -254,67 +296,23 @@ public final class Rpm {
                     file, tmpdir.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING
                 )
             ).flatMapSingle(
-                path -> this.moveMetadataToStorage(local, path)
+                path -> new RxStorageWrapper(local)
+                    .value(new Key.From(path.getFileName().toString()))
+                    .flatMapCompletable(
+                        content -> new RxStorageWrapper(this.storage).save(
+                            new Key.From("repodata", path.getFileName().toString()), content
+                        )
+                    ).toSingleDefault(path)
             ).map(path -> String.format("repodata/%s", path.getFileName().toString()))
             .toList().map(HashSet::new).flatMapCompletable(
-                this::deleteOldMetadata
+                preserve -> new RxStorageWrapper(this.storage).list(new Key.From("repodata"))
+                    .flatMapObservable(Observable::fromIterable)
+                    .filter(item -> !((Set<String>) preserve).contains(item.string()))
+                    .flatMapCompletable(
+                        item -> new RxStorageWrapper(this.storage).delete(item)
+                    )
             ).doOnTerminate(
                 () -> Rpm.cleanup(tmpdir)
-            );
-    }
-
-    /**
-     * Deletes old (previous version) metadata files from storage.
-     * @param preserve What to keep
-     * @return Completable result
-     */
-    private Completable deleteOldMetadata(final Set<String> preserve) {
-        return new RxStorageWrapper(this.storage).list(new Key.From("repodata"))
-            .flatMapObservable(Observable::fromIterable)
-            .filter(item -> !preserve.contains(item.string()))
-            .flatMapCompletable(
-                item -> new RxStorageWrapper(this.storage).delete(item)
-            );
-    }
-
-    /**
-     * Moves metadata files from local to external storage.
-     * @param local Local temp storage
-     * @param path What to move
-     * @return Path as Single
-     */
-    private Single<Path> moveMetadataToStorage(final Storage local, final Path path) {
-        return new RxStorageWrapper(local)
-            .value(new Key.From(path.getFileName().toString()))
-            .flatMapCompletable(
-                content -> new RxStorageWrapper(this.storage).save(
-                    new Key.From("repodata", path.getFileName().toString()), content
-                )
-            ).toSingleDefault(path);
-    }
-
-    /**
-     * Copies rpm files to local storage and constants {@link FilePackage} instances.
-     * @param prefix Repo prefix
-     * @param tmpdir Temp directory
-     * @param local Local storage
-     * @return FilePackage as Flowable
-     */
-    private Flowable<FilePackage> copyRpmsAndGetFilePackage(
-        final Key prefix, final Path tmpdir, final Storage local
-    ) {
-        return SingleInterop.fromFuture(this.storage.list(prefix))
-            .flatMapPublisher(Flowable::fromIterable)
-            .filter(key -> key.string().endsWith(".rpm"))
-            .flatMapSingle(
-                key -> {
-                    final String file = Paths.get(key.string()).getFileName().toString();
-                    return new RxStorageWrapper(this.storage)
-                        .value(key)
-                        .flatMapCompletable(
-                            content -> new RxStorageWrapper(local).save(new Key.From(file), content)
-                        ).andThen(Single.fromCallable(() -> new FilePackage(tmpdir.resolve(file))));
-                }
             );
     }
 
