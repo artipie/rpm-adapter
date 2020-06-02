@@ -23,7 +23,6 @@
  */
 package com.artipie.rpm.meta;
 
-import com.jcabi.log.Logger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -65,7 +64,6 @@ public final class XmlStreamJoin {
      */
     @SuppressWarnings({"PMD.PrematureDeclaration", "PMD.GuardLogStatement"})
     public void merge(final Path target, final Path part) throws IOException {
-        final long start = System.currentTimeMillis();
         final Path res = target.getParent().resolve(
             String.format("%s.joined", target.getFileName().toString())
         );
@@ -79,10 +77,6 @@ public final class XmlStreamJoin {
             throw new IOException(ex);
         }
         Files.move(res, target, StandardCopyOption.REPLACE_EXISTING);
-        Logger.debug(
-            this, "%s and %s merged with xml-streams in %[ms]s", target.toString(),
-            part.toString(), System.currentTimeMillis() - start
-        );
     }
 
     /**
