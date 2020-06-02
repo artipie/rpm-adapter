@@ -40,9 +40,10 @@ import org.junit.jupiter.api.io.TempDir;
  * Unit tests for {@link Rpm}.
  *
  * @since 0.9
- * @todo #63:30min Don't change metadata when invalid package is sent.
+ * @todo #190:30min Don't change metadata when invalid package is sent.
  *  Currently Rpm is recalculating metadata when an invalid package is sent.
  *  It should not. Correct that and enable the test below.
+ *  To do that `InvalidPackageException` should be caught when parsing packages.
  */
 final class RpmTest {
 
