@@ -41,9 +41,10 @@ import org.junit.jupiter.api.io.TempDir;
  * Unit tests for {@link Rpm}.
  *
  * @since 0.9
- * @todo #63:30min Don't change metadata when invalid package is sent.
+ * @todo #190:30min Don't change metadata when invalid package is sent.
  *  Currently Rpm is recalculating metadata when an invalid package is sent.
  *  It should not. Correct that and enable the test below.
+ *  To do that `InvalidPackageException` should be caught when parsing packages.
  * @todo #110:30min Meaningful error on broken package.
  *  Rpm should throw an exception when trying to add an invalid package. Make it
  *  behave like described in showMeaningfulErrorWhenInvalidPackageSent and then
@@ -116,7 +117,7 @@ final class RpmTest {
         Assertions.assertThrows(
             IllegalArgumentException.class,
             () -> repo.batchUpdate(Key.ROOT).blockingAwait(),
-            "RPM package \"brokentwo.rpm\" is broken, can't be read"
+            "Reading of RPM package \"brokentwo.rpm\" failed, data corrupt or malformed."
         );
     }
 }

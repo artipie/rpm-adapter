@@ -24,6 +24,7 @@
 package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
+import com.artipie.rpm.FileChecksum;
 import com.artipie.rpm.NamingPolicy;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlRepomd;
@@ -32,7 +33,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -43,40 +43,34 @@ import org.junit.jupiter.api.io.TempDir;
  */
 public final class MetadataFileTest {
 
-    // @todo #106:30min MetadataFile is saving an invalid xml to repomd.xml.
-    //  This test verifies that MetadataFile updates `repomd.xml`
-    //  file correctly after save, but it doesn't. Fix it then enable the test,
-    //  restoring the coverage levels to:
-    //  instructions: 0.36
-    //  lines: 0.42
-    //  complexity: 0.38
-    //  methods: 0.35
-    //  missed classes: 16.
     @Test
-    @Disabled
     public void updatesRepomdOnSave(@TempDir final Path tmp) throws Exception {
         final Path fake = tmp.resolve("fake.xml");
         try (
-            XmlRepomd repomd = new XmlRepomd(tmp.resolve("repomd.xml"));
             MetadataFile meta = new MetadataFile(
                 XmlPackage.PRIMARY, new PackageOutput.FileOutput.Fake(fake).start()
             )
         ) {
+            final XmlRepomd repomd = new XmlRepomd(tmp.resolve("repomd.xml"));
             repomd.begin(System.currentTimeMillis());
+            final String openhex = new FileChecksum(fake, Digest.SHA1).hex();
+            final long size = Files.size(fake);
             final Path gzip = meta.save(
                 new NamingPolicy.HashPrefixed(Digest.SHA1), Digest.SHA1, repomd
             );
+            repomd.close();
+            final String hex = new FileChecksum(gzip, Digest.SHA1).hex();
             MatcherAssert.assertThat(
                 new String(Files.readAllBytes(repomd.file()), StandardCharsets.UTF_8),
                 // @checkstyle LineLengthCheck (10 lines)
                 XhtmlMatchers.hasXPaths(
                     "/*[local-name()='repomd']/*[local-name()='revision']",
-                    "/*[local-name()='repomd']/*[local-name()='data' and @type='type']/*[local-name()='checksum' and @type='sha' and text()='1d29a2e759c6d25f1a0762bb6e47ec7cee8f9a97']",
-                    "/*[local-name()='repomd']/*[local-name()='data' and @type='type']/*[local-name()='open-checksum' and @type='sha' and text()='3ac201172677076a818a18eb1e8feecf1a04722a']",
-                    "/*[local-name()='repomd']/*[local-name()='data' and @type='type']/*[local-name()='location' and @href='repodata/dfd213cf4bf5ac9d11f33a51b820c943b48c9a99-type.xml.gz']",
-                    "/*[local-name()='repomd']/*[local-name()='data' and @type='type']/*[local-name()='size' and text()='29']",
-                    "/*[local-name()='repomd']/*[local-name()='data' and @type='type']/*[local-name()='open-size' and text()='9']"
-                    )
+                    String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='checksum' and @type='sha' and text()='%s']", hex),
+                    String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='open-checksum' and @type='sha' and text()='%s']", openhex),
+                    String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='location' and @href='repodata/%s']", String.format("%s-%s.xml.gz", hex, XmlPackage.PRIMARY.filename())),
+                    String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='size' and text()='%d']", Files.size(gzip)),
+                    String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='open-size' and text()='%d']", size)
+                )
             );
             Files.deleteIfExists(gzip);
         }
