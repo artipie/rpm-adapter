@@ -23,17 +23,20 @@
  */
 package com.artipie.rpm;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Test case for {@link Cli}.
  *
  * @since 0.6
- * @todo #114:30min Add some more tests in order to validate the all the
- *  assumptions made in Cli and in CliArguments.
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class CliTest {
 
     @Test
@@ -44,6 +47,59 @@ class CliTest {
             MatcherAssert.assertThat(
                 String.format("Exception occurred: %s", exception.getMessage()),
                 "Expected repository path but got: []",
+                new IsEqual<>(exception.getMessage())
+            );
+        }
+    }
+
+    @Test
+    void testRunWithArgument(@TempDir final Path temp) {
+        try {
+            Cli.main(new String[]{"-nsha256", "-dsha1", "-ftrue", temp.toString()});
+        } catch (final IllegalArgumentException exception) {
+            MatcherAssert.assertThat(
+                String.format("Exception occurred: %s", exception.getMessage()),
+                "Incorrect parameters",
+                new IsEqual<>(exception.getMessage())
+            );
+        }
+    }
+
+    @Test
+    void testRunWithArgumentWithEquals(@TempDir final Path temp) {
+        try {
+            Cli.main(new String[]{"-n=sha256", "-d=sha1", "-f=true", temp.toString()});
+        } catch (final IllegalArgumentException exception) {
+            MatcherAssert.assertThat(
+                String.format("Exception occurred: %s", exception.getMessage()),
+                "Incorrect parameters",
+                new IsEqual<>(exception.getMessage())
+            );
+        }
+    }
+
+    @Test
+    void testRunWithArgumentWithEqualsAndLongopt(@TempDir final Path temp) {
+        try {
+            Cli.main(new String[]{"-nsha256", "-d=sha1", "-filelists=true", temp.toString()});
+        } catch (final IllegalArgumentException exception) {
+            MatcherAssert.assertThat(
+                String.format("Exception occurred: %s", exception.getMessage()),
+                "Incorrect parameters",
+                new IsEqual<>(exception.getMessage())
+            );
+        }
+    }
+
+    @Test
+    void testRunWithArgumentWithLongopt(@TempDir final Path temp) throws IOException {
+        try {
+            // @checkstyle LineLengthCheck (1 lines)
+            Cli.main(new String[]{"-naming-policy=sha256", "-digest=sha1", "-filelists=true", temp.toString()});
+        } catch (final IllegalArgumentException exception) {
+            MatcherAssert.assertThat(
+                String.format("Exception occurred: %s", exception.getMessage()),
+                "Incorrect parameters",
                 new IsEqual<>(exception.getMessage())
             );
         }
