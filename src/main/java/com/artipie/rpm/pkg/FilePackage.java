@@ -91,22 +91,31 @@ public final class FilePackage implements Package {
     /**
      * Parsed file package.
      * @return Parsed package
+     * @throws InvalidPackageException In case package is invalid.
      * @throws IOException On error
      */
-    public Package parsed() throws IOException {
+    public Package parsed() throws InvalidPackageException, IOException {
         return new ParsedFilePackage(this.header(), this.file);
     }
 
     /**
      * Get header.
      * @return The header
+     * @throws InvalidPackageException In case package is invalid.
      * @throws IOException On error
      */
-    private Header header() throws IOException {
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private Header header() throws InvalidPackageException, IOException {
         try (FileChannel chan = FileChannel.open(this.file, StandardOpenOption.READ)) {
-            final Format format = new Scanner(
-                new PrintStream(Logger.stream(Level.FINE, this))
-            ).run(new ReadableChannelWrapper(chan));
+            final Format format;
+            try {
+                format = new Scanner(
+                    new PrintStream(Logger.stream(Level.FINE, this))
+                ).run(new ReadableChannelWrapper(chan));
+                // @checkstyle IllegalCatchCheck (1 line)
+            } catch (final RuntimeException ex) {
+                throw new InvalidPackageException(ex);
+            }
             final Header header = format.getHeader();
             Logger.debug(this, "header: %s", header.toString());
             return header;
