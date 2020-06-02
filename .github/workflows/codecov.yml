@@ -23,7 +23,7 @@ jobs:
           restore-keys: |
             maven-
       - name: Run tests
-        run: mvn -B verify
+        run: mvn -B verify -Dit.longtests.enabled=true -Dit.longtests.size=hundred
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:

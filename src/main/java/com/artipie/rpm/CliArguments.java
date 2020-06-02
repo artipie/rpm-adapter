@@ -37,10 +37,10 @@ import org.apache.commons.cli.ParseException;
 /**
  * Cli tool argument parsing.
  *
+ * Arguments values must be passed immediately after argument declaration (e.g
+ * -dsha256) or after ´=´ signal (e.g -d=sha256).
+ *
  * @since 0.9
- * @todo #89:30min Cli options are not parsed correctly. getOptionValue method always return
- *  default value for both options, so it's not possible to override them. But the tool is working
- *  correctly. To build it use `cli` maven profile, see the README.
  */
 public final class CliArguments {
 

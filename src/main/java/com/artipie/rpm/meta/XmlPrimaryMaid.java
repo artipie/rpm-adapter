@@ -80,7 +80,9 @@ public final class XmlPrimaryMaid implements XmlMaid {
                 res = XmlPrimaryMaid.processPackages(checksums, reader, writer);
                 writer.add(events.createSpace("\n"));
                 writer.add(
-                    events.createEndElement(new QName("metadata"), Collections.emptyIterator())
+                    events.createEndElement(
+                        new QName(XmlPackage.PRIMARY.tag()), Collections.emptyIterator()
+                    )
                 );
             } finally {
                 writer.close();

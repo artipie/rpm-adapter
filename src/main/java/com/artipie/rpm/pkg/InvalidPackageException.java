@@ -21,48 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm;
-
-import java.io.IOException;
-import java.nio.file.Path;
+package com.artipie.rpm.pkg;
 
 /**
- * RPM files naming policy.
- * @since 0.3
+ * Exception indicates that package is invalid.
+ *
+ * @since 0.8.3
  */
-public interface NamingPolicy {
-
+@SuppressWarnings("serial")
+public class InvalidPackageException extends RuntimeException {
     /**
-     * Name for source with its content.
-     * @param source RPM file
-     * @param content RPM file content
-     * @return File name
-     * @throws IOException On error
+     * Ctor.
+     *
+     * @param cause Underlying cause for package being invalid.
      */
-    String name(String source, Path content) throws IOException;
-
-    /**
-     * Add hash prefix to names. Uses SHA256 by default
-     * @since 0.3
-     */
-    final class HashPrefixed implements NamingPolicy {
-
-        /**
-         * Message digest supplier.
-         */
-        private final Digest dgst;
-
-        /**
-         * Ctor.
-         * @param dgst One of the supported digest algorithms
-         */
-        public HashPrefixed(final Digest dgst) {
-            this.dgst = dgst;
-        }
-
-        @Override
-        public String name(final String source, final Path content) throws IOException {
-            return String.format("%s-%s", new FileChecksum(content, this.dgst).hex(), source);
-        }
+    public InvalidPackageException(final Throwable cause) {
+        super(cause);
     }
 }

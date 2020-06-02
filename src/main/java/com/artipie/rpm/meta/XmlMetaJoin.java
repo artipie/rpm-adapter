@@ -23,24 +23,14 @@
  */
 package com.artipie.rpm.meta;
 
-import com.jcabi.log.Logger;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.xml.stream.XMLEventFactory;
-import javax.xml.stream.XMLEventReader;
-import javax.xml.stream.XMLEventWriter;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLOutputFactory;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.events.XMLEvent;
 
 /**
  * Joins two meta xml-files.
@@ -57,11 +47,6 @@ public final class XmlMetaJoin {
      * How many lines to check for xml header and open tag.
      */
     private static final int MAX = 5;
-
-    /**
-     * Log line.
-     */
-    private static final String LOG = "%s and %s merged in %[ms]s";
 
     /**
      * Tag.
@@ -81,43 +66,12 @@ public final class XmlMetaJoin {
      * @param target Target
      * @param part File to append
      * @throws IOException On error
-     * @todo #200:30min This method have to be removed or moved to `test` scope for test usages:
-     *  it works much slower than the other implementation.
-     */
-    @SuppressWarnings({"PMD.PrematureDeclaration", "PMD.GuardLogStatement"})
-    public void streamMerge(final Path target, final Path part) throws IOException {
-        final long start = System.currentTimeMillis();
-        final Path res = target.getParent().resolve(
-            String.format("%s.joined", target.getFileName().toString())
-        );
-        try (OutputStream out = Files.newOutputStream(res)) {
-            final XMLEventWriter writer = XMLOutputFactory.newInstance().createXMLEventWriter(out);
-            this.writeFirstPart(target, writer);
-            this.writeSecondPart(part, writer);
-            writer.close();
-        } catch (final XMLStreamException ex) {
-            Files.delete(res);
-            throw new IOException(ex);
-        }
-        Files.move(res, target, StandardCopyOption.REPLACE_EXISTING);
-        Logger.debug(
-            this, XmlMetaJoin.LOG, target.toString(),
-            part.toString(), System.currentTimeMillis() - start
-        );
-    }
-
-    /**
-     * Appends data from part to target.
-     * @param target Target
-     * @param part File to append
-     * @throws IOException On error
      */
     @SuppressWarnings({"PMD.PrematureDeclaration", "PMD.GuardLogStatement"})
     public void merge(final Path target, final Path part) throws IOException {
         final Path res = target.getParent().resolve(
             String.format("%s.merged", target.getFileName().toString())
         );
-        final long start = System.currentTimeMillis();
         try (BufferedWriter out = Files.newBufferedWriter(res)) {
             this.writeFirstPart(target, out);
             this.writeSecondPart(part, out);
@@ -126,36 +80,6 @@ public final class XmlMetaJoin {
             throw err;
         }
         Files.move(res, target, StandardCopyOption.REPLACE_EXISTING);
-        Logger.debug(
-            this, XmlMetaJoin.LOG, target.toString(),
-            part.toString(), System.currentTimeMillis() - start
-        );
-    }
-
-    /**
-     * Writes the first part.
-     * @param target What to write
-     * @param writer Where to write
-     * @throws IOException On error
-     * @throws XMLStreamException On error
-     */
-    private void writeFirstPart(final Path target, final XMLEventWriter writer)
-        throws IOException, XMLStreamException {
-        try (InputStream in = Files.newInputStream(target)) {
-            final XMLEventReader reader = XMLInputFactory.newInstance().createXMLEventReader(in);
-            writer.add(reader.nextEvent());
-            writer.add(XMLEventFactory.newFactory().createSpace("\n"));
-            while (reader.hasNext()) {
-                final XMLEvent event = reader.nextEvent();
-                if (!(event.isEndElement()
-                    && event.asEndElement().getName().getLocalPart().equals(this.tag))
-                    && !event.isEndDocument()
-                ) {
-                    writer.add(event);
-                }
-            }
-            reader.close();
-        }
     }
 
     /**
@@ -213,30 +137,6 @@ public final class XmlMetaJoin {
                 writer.append(line);
                 writer.newLine();
             }
-        }
-    }
-
-    /**
-     * Writes second part.
-     * @param part What to write
-     * @param writer Where to write
-     * @throws IOException On error
-     * @throws XMLStreamException On error
-     */
-    private void writeSecondPart(final Path part, final XMLEventWriter writer)
-        throws IOException, XMLStreamException {
-        try (InputStream in = Files.newInputStream(part)) {
-            final XMLEventReader reader = XMLInputFactory.newInstance().createXMLEventReader(in);
-            while (reader.hasNext()) {
-                final XMLEvent event = reader.nextEvent();
-                if (!(event.isStartElement()
-                    && event.asStartElement().getName().getLocalPart().equals(this.tag))
-                    && !event.isStartDocument()
-                ) {
-                    writer.add(event);
-                }
-            }
-            reader.close();
         }
     }
 }
