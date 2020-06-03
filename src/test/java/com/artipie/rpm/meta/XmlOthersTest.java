@@ -29,7 +29,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -114,7 +113,6 @@ public class XmlOthersTest {
      * @throws Exception
      */
     @Test
-    @Disabled
     void canAddMultipleChangelogs(@TempDir final Path tmp) throws Exception {
         final Path xml = tmp.resolve("multiple-changelog.xml");
         try (XmlOthers others = new XmlOthers(xml)) {
@@ -136,8 +134,8 @@ public class XmlOthersTest {
             new String(Files.readAllBytes(xml), StandardCharsets.UTF_8),
             // @checkstyle LineLengthCheck (5 lines)
             XhtmlMatchers.hasXPaths(
-                "/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='changelog' and @date='1589338800' and @author='John Doe <johndoe@artipie.org> - 0.1-2' and text()='- Second artipie package']",
-                "/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='changelog' and @date='1464663600' and @author='Jane Doe <janedoe@artipie.org> - 0.1-1' and text()='- First artipie package\n- Example second item in the changelog for version-release 0.1-1']"
+                "/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='changelog' and @date='1589328000' and @author='John Doe <johndoe@artipie.org>' and text()='- 0.1-2\n- Second artipie package']",
+                "/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='changelog' and @date='1464652800' and @author='Jane Doe <janedoe@artipie.org>' and text()='- 0.1-1\n- First artipie package\n- Example second item in the changelog for version-release 0.1-1']"
             )
         );
     }
