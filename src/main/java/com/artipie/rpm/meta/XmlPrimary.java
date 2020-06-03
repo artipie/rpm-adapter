@@ -435,7 +435,7 @@ public final class XmlPrimary implements Closeable {
          * @param versions Versions
          * @return Self
          * @throws XMLStreamException On XML error
-         * @todo 220:30min We need to experimentally check that names and versions do not
+         * @todo #220:30min We need to experimentally check that names and versions do not
          *  mix up in `provides`: download oxygen-gtk2-1.3.4-3.el7.x86_64.rpm from test bundle100
          *  (see TestBundle.class), add it to resources folder and create xml primary from it.
          *  This rpm has not full `provides` information:
@@ -443,7 +443,7 @@ public final class XmlPrimary implements Closeable {
          *  <rpm:entry name="oxygen-gtk2" flags="EQ" epoch="0" ver="1.3.4" rel="3.el7"/>
          *  <rpm:entry name="oxygen-gtk2(x86-64)" flags="EQ" epoch="0" ver="1.3.4" rel="3.el7"/>
          *  Make sure we write it the same way. Also we need
-         * @todo 220:30min Providers entry also can have flags, `epoch` and `rel` attributes.
+         * @todo #220:30min Providers entry also can have flags, `epoch` and `rel` attributes.
          *  Find a way to obtain this information from rpm and add it here. Do not forget about
          *  test.
          */
