@@ -430,8 +430,8 @@ public final class XmlPrimary implements Closeable {
         }
 
         /**
-         * Add list of providers.
-         * @param name Provides names
+         * Adds `provides` element.
+         * @param names Libraries list provided by the package
          * @param versions Versions
          * @return Self
          * @throws XMLStreamException On XML error
@@ -442,17 +442,17 @@ public final class XmlPrimary implements Closeable {
          *  <rpm:entry name="liboxygen-gtk.so()(64bit)"/>
          *  <rpm:entry name="oxygen-gtk2" flags="EQ" epoch="0" ver="1.3.4" rel="3.el7"/>
          *  <rpm:entry name="oxygen-gtk2(x86-64)" flags="EQ" epoch="0" ver="1.3.4" rel="3.el7"/>
-         *  Make sure we write it the same way. Also we need
-         * @todo #220:30min Providers entry also can have flags, `epoch` and `rel` attributes.
+         *  Make sure we write it the same way.
+         * @todo #220:30min Provides entry also can have `flags`, `epoch` and `rel` attributes.
          *  Find a way to obtain this information from rpm and add it here. Do not forget about
          *  test.
          */
-        public Format providers(final List<String> name, final List<String> versions)
+        public Format provides(final List<String> names, final List<String> versions)
             throws XMLStreamException {
             this.xml.writeStartElement(XmlPrimary.NAMESPACE, "provides");
-            for (int ind = 0; ind < name.size(); ind = ind + 1) {
+            for (int ind = 0; ind < names.size(); ind = ind + 1) {
                 this.xml.writeStartElement(XmlPrimary.NAMESPACE, "entry");
-                this.xml.writeAttribute("name", name.get(ind));
+                this.xml.writeAttribute("name", names.get(ind));
                 if (ind < versions.size()) {
                     this.xml.writeAttribute("ver", versions.get(ind));
                 }

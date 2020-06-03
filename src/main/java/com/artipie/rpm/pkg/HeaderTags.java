@@ -192,18 +192,18 @@ public final class HeaderTags {
     }
 
     /**
-     * Get the provide name header.
+     * Get the provides libraries names.
      * @return Value of header tag PROVIDENAME.
      */
-    public List<String> providerName() {
+    public List<String> providesNames() {
         return this.meta.header(Header.HeaderTag.PROVIDENAME).asStrings();
     }
 
     /**
-     * Get the provide version header.
+     * Get the provides libraries versions.
      * @return Value of header tag PROVIDEVERSION.
      */
-    public List<String> providerVer() {
+    public List<String> providesVer() {
         return this.meta.header(Header.HeaderTag.PROVIDEVERSION).asStrings();
     }
 

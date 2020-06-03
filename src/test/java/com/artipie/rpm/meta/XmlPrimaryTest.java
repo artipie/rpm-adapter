@@ -66,7 +66,7 @@ public final class XmlPrimaryTest {
                 .buildHost("http://giuthub.com/artipie/rpm-adapter/buildhost")
                 .sourceRpm("primary.src.rpm")
                 .headerRange(3, 8)
-                .providers(
+                .provides(
                     new ListOf<String>("abs"), new ListOf<String>("1.0.0")
                 )
                 .requires(

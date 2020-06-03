@@ -105,7 +105,7 @@ public final class PrimaryOutput implements PackageOutput.FileOutput {
                 .buildHost(tags.buildHost())
                 .sourceRpm(tags.sourceRmp())
                 .headerRange(meta.range()[0], meta.range()[1])
-                .providers(tags.providerName(), tags.providerVer())
+                .provides(tags.providesNames(), tags.providesVer())
                 .requires(tags.requires())
                 .close()
                 .files(
