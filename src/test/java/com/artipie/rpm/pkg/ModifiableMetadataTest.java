@@ -80,9 +80,9 @@ class ModifiableMetadataTest {
             new String(Files.readAllBytes(res), StandardCharsets.UTF_8),
             XhtmlMatchers.hasXPath(
                 //@checkstyle LineLengthCheck (2 lines)
+                "/*[local-name()='metadata' and @packages='2']",
                 "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='abc']",
-                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='nginx']",
-                "/*[local-name()='metadata' and @packages='2']"
+                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='nginx']"
             )
         );
         MatcherAssert.assertThat(
