@@ -76,12 +76,13 @@ class ModifiableMetadataTest {
             new ListOf<String>("7eaefd1cb4f9740558da7f12f9cb5a6141a47f5d064a98d46c29959869af1a44")
         );
         MatcherAssert.assertThat(
-            "Has 'abc' and 'nginx' packages",
+            "Has 'abc' and 'nginx' packages, writes `packages` attribute correctly",
             new String(Files.readAllBytes(res), StandardCharsets.UTF_8),
             XhtmlMatchers.hasXPath(
                 //@checkstyle LineLengthCheck (2 lines)
                 "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='abc']",
-                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='nginx']"
+                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='nginx']",
+                "/*[local-name()='metadata' and @packages='2']"
             )
         );
         MatcherAssert.assertThat(
