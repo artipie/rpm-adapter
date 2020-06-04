@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -247,7 +248,11 @@ public final class Rpm {
             .doOnSuccess(ModifiableRepository::clear)
             .doOnSuccess(rep -> Logger.info(this, "repository cleared"))
             .flatMapObservable(rep -> Observable.fromIterable(rep.save(this.naming)))
-            .doOnNext(file -> Files.move(file, tmpdir.resolve(file.getFileName())))
+            .doOnNext(
+                file -> Files.move(
+                    file, tmpdir.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING
+                )
+            )
             .flatMapSingle(path -> this.moveRepodataToStorage(local, path))
             .map(path -> String.format("repodata/%s", path.getFileName().toString()))
             .toList().map(HashSet::new)
