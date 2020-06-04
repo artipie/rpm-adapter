@@ -23,18 +23,22 @@
  */
 package com.artipie.rpm;
 
-import com.artipie.asto.Concatenation;
 import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.asto.memory.InMemoryStorage;
+import com.artipie.asto.fs.FileStorage;
+import com.artipie.rpm.files.Gzip;
 import com.jcabi.xml.XMLDocument;
-import java.nio.charset.Charset;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Unit tests for {@link Rpm}.
@@ -44,58 +48,92 @@ import org.junit.jupiter.api.Test;
 final class RpmTest {
 
     /**
-     * Path of repomd.xml fil.
+     * Abc test rmp file.
      */
-    private static final String REPOMD = "repodata/repomd.xml";
+    private static final String ABC =
+        "src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm";
+
+    /**
+     * Libdeflt test rmp file.
+     */
+    private static final String LIBDEFLT =
+        "src/test/resources-binary/libdeflt1_0-2020.03.27-25.1.armv7hl.rpm";
 
     @Test
-    void doesntBrakeMetadataWhenInvalidPackageSent()
-        throws Exception {
-        final Storage storage = new InMemoryStorage();
-        final Rpm repo =  new Rpm(
-            storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
-        );
-        storage.save(
-            new Key.From("oldfile.rpm"),
-            new Content.From(
-                Files.readAllBytes(
-                    Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm")
-                )
-            )
-        );
+    void doesntBrakeMetadataWhenInvalidPackageSent(@TempDir final Path tmp) throws Exception {
+        final Storage storage = new FileStorage(tmp);
+        final Rpm repo =  new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, true);
+        RpmTest.addRpm(storage, "oldfile.rpm", RpmTest.ABC);
         repo.batchUpdate(Key.ROOT).blockingAwait();
-        final String repomd = new String(
-            new Concatenation(
-                storage.value(new Key.From(RpmTest.REPOMD)).get()
-            ).single().blockingGet().array(),
-            Charset.defaultCharset()
-        );
         final byte[] broken = {0x00, 0x01, 0x02 };
-        storage.save(
-            new Key.From("broken.rpm"),
-            new Content.From(
-                broken
-            )
-        );
+        storage.save(new Key.From("broken.rpm"), new Content.From(broken));
+        RpmTest.addRpm(storage, "new.rpm", RpmTest.LIBDEFLT);
         repo.batchUpdate(Key.ROOT).blockingAwait();
         MatcherAssert.assertThat(
-            countData(
-                new String(
-                    new Concatenation(
-                        storage.value(new Key.From(RpmTest.REPOMD)).get()
-                    ).single().blockingGet().array(),
-                    Charset.defaultCharset()
-                )
-            ),
-            new IsEqual<>(countData(repomd))
+            countData(tmp),
+            new IsEqual<>(2)
         );
     }
 
-    private static int countData(final String xml) {
+    @Test
+    void doesntBrakeMetadataWhenInvalidPackageSentOnIncrementalUpdate(@TempDir final Path tmp)
+        throws Exception {
+        final Storage storage = new FileStorage(tmp);
+        final Rpm repo =  new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, true);
+        RpmTest.addRpm(storage, "first.rpm", RpmTest.LIBDEFLT);
+        repo.batchUpdate(Key.ROOT).blockingAwait();
+        final byte[] broken = {0x00, 0x01, 0x02 };
+        storage.save(new Key.From("broken-file.rpm"), new Content.From(broken));
+        RpmTest.addRpm(storage, "second.rpm", RpmTest.ABC);
+        repo.updateBatchIncrementally(Key.ROOT).blockingAwait();
+        MatcherAssert.assertThat(
+            countData(tmp),
+            new IsEqual<>(2)
+        );
+    }
+
+    /**
+     * Adds rpm into storage.
+     * @param storage Where to add
+     * @param key Key
+     * @param rpm Rpm
+     * @throws IOException On error
+     */
+    private static void addRpm(final Storage storage, final String key, final String rpm)
+        throws IOException {
+        storage.save(
+            new Key.From(key),
+            new Content.From(Files.readAllBytes(Paths.get(rpm)))
+        );
+    }
+
+    private static int countData(final Path path) throws IOException {
+        final Path primary = path.resolve("primary.xml");
+        new Gzip(path.resolve(meta(path))).unpack(primary);
         return Integer.parseInt(
-            new XMLDocument(xml)
-                .xpath("count(/*[local-name()='repomd']/*[local-name()='data'])")
+            new XMLDocument(new String(Files.readAllBytes(primary), StandardCharsets.UTF_8))
+                .xpath("count(/*[local-name()='metadata']/*[local-name()='package'])")
                 .get(0)
         );
+    }
+
+    /**
+     * Searches for the meta file by substring in folder.
+     * @param dir Where to look for the file
+     * @return Path to find
+     * @throws IOException On error
+     */
+    private static Path meta(final Path dir) throws IOException {
+        final Optional<Path> res = Files.walk(dir)
+            .filter(
+                path -> path.getFileName().toString().endsWith("primary.xml.gz")
+            ).findFirst();
+        if (res.isPresent()) {
+            return res.get();
+        } else {
+            throw new IllegalStateException(
+                String.format("Metafile %s does not exists in %s", "primary", dir.toString())
+            );
+        }
     }
 }
