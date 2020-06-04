@@ -67,7 +67,7 @@ final class RpmTest {
         RpmTest.addRpm(storage, "oldfile.rpm", RpmTest.ABC);
         repo.batchUpdate(Key.ROOT).blockingAwait();
         final byte[] broken = {0x00, 0x01, 0x02 };
-        storage.save(new Key.From("broken.rpm"), new Content.From(broken));
+        storage.save(new Key.From("broken.rpm"), new Content.From(broken)).get();
         RpmTest.addRpm(storage, "new.rpm", RpmTest.LIBDEFLT);
         repo.batchUpdate(Key.ROOT).blockingAwait();
         MatcherAssert.assertThat(
@@ -84,7 +84,7 @@ final class RpmTest {
         RpmTest.addRpm(storage, "first.rpm", RpmTest.LIBDEFLT);
         repo.batchUpdate(Key.ROOT).blockingAwait();
         final byte[] broken = {0x00, 0x01, 0x02 };
-        storage.save(new Key.From("broken-file.rpm"), new Content.From(broken));
+        storage.save(new Key.From("broken-file.rpm"), new Content.From(broken)).get();
         RpmTest.addRpm(storage, "second.rpm", RpmTest.ABC);
         repo.updateBatchIncrementally(Key.ROOT).blockingAwait();
         MatcherAssert.assertThat(
@@ -98,14 +98,14 @@ final class RpmTest {
      * @param storage Where to add
      * @param key Key
      * @param rpm Rpm
-     * @throws IOException On error
+     * @throws Exception On error
      */
     private static void addRpm(final Storage storage, final String key, final String rpm)
-        throws IOException {
+        throws Exception {
         storage.save(
             new Key.From(key),
             new Content.From(Files.readAllBytes(Paths.get(rpm)))
-        );
+        ).get();
     }
 
     private static int countData(final Path path) throws IOException {
