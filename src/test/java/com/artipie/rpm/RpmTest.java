@@ -35,6 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
@@ -124,16 +125,18 @@ final class RpmTest {
      * @throws IOException On error
      */
     private static Path meta(final Path dir) throws IOException {
-        final Optional<Path> res = Files.walk(dir)
-            .filter(
-                path -> path.getFileName().toString().endsWith("primary.xml.gz")
-            ).findFirst();
-        if (res.isPresent()) {
-            return res.get();
-        } else {
-            throw new IllegalStateException(
-                String.format("Metafile %s does not exists in %s", "primary", dir.toString())
-            );
+        try (Stream<Path> walk = Files.walk(dir)) {
+            final Optional<Path> res = walk
+                .filter(
+                    path -> path.getFileName().toString().endsWith("primary.xml.gz")
+                ).findFirst();
+            if (res.isPresent()) {
+                return res.get();
+            } else {
+                throw new IllegalStateException(
+                    String.format("Metafile %s does not exists in %s", "primary", dir.toString())
+                );
+            }
         }
     }
 }
