@@ -28,22 +28,18 @@ import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.memory.InMemoryStorage;
+import com.jcabi.xml.XMLDocument;
 import java.nio.charset.Charset;
-import java.nio.file.Path;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Unit tests for {@link Rpm}.
  *
  * @since 0.9
- * @todo #190:30min Don't change metadata when invalid package is sent.
- *  Currently Rpm is recalculating metadata when an invalid package is sent.
- *  It should not. Correct that and enable the test below.
- *  To do that `InvalidPackageException` should be caught when parsing packages.
  */
 final class RpmTest {
 
@@ -53,8 +49,7 @@ final class RpmTest {
     private static final String REPOMD = "repodata/repomd.xml";
 
     @Test
-    @Disabled
-    void doesntBrakeMetadataWhenInvalidPackageSent(@TempDir final Path tmp)
+    void doesntBrakeMetadataWhenInvalidPackageSent()
         throws Exception {
         final Storage storage = new InMemoryStorage();
         final Rpm repo =  new Rpm(
@@ -62,7 +57,11 @@ final class RpmTest {
         );
         storage.save(
             new Key.From("oldfile.rpm"),
-            new Content.From("anything".getBytes())
+            new Content.From(
+                Files.readAllBytes(
+                    Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm")
+                )
+            )
         );
         repo.batchUpdate(Key.ROOT).blockingAwait();
         final String repomd = new String(
@@ -80,13 +79,23 @@ final class RpmTest {
         );
         repo.batchUpdate(Key.ROOT).blockingAwait();
         MatcherAssert.assertThat(
-            new String(
-                new Concatenation(
-                    storage.value(new Key.From(RpmTest.REPOMD)).get()
-                ).single().blockingGet().array(),
-                Charset.defaultCharset()
+            countData(
+                new String(
+                    new Concatenation(
+                        storage.value(new Key.From(RpmTest.REPOMD)).get()
+                    ).single().blockingGet().array(),
+                    Charset.defaultCharset()
+                )
             ),
-            new IsEqual<>(repomd)
+            new IsEqual<>(countData(repomd))
+        );
+    }
+
+    private static int countData(final String xml) {
+        return Integer.parseInt(
+            new XMLDocument(xml)
+                .xpath("count(/*[local-name()='repomd']/*[local-name()='data'])")
+                .get(0)
         );
     }
 }
