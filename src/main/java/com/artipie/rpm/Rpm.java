@@ -34,8 +34,10 @@ import com.artipie.rpm.meta.XmlRepomd;
 import com.artipie.rpm.misc.UncheckedConsumer;
 import com.artipie.rpm.misc.UncheckedFunc;
 import com.artipie.rpm.pkg.FilePackage;
+import com.artipie.rpm.pkg.InvalidPackageException;
 import com.artipie.rpm.pkg.MetadataFile;
 import com.artipie.rpm.pkg.ModifiableMetadata;
+import com.artipie.rpm.pkg.Package;
 import com.jcabi.aspects.Tv;
 import com.jcabi.log.Logger;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
@@ -193,7 +195,18 @@ public final class Rpm {
         final Storage local = new FileStorage(tmpdir);
         return this.filePackageFromRpm(prefix, tmpdir, local)
             .parallel().runOn(Schedulers.io())
-            .map(FilePackage::parsed)
+            .flatMap(
+                file -> {
+                    Flowable<Package> parsed;
+                    try {
+                        parsed = Flowable.just(file.parsed());
+                    } catch (final InvalidPackageException ex) {
+                        Logger.warn(this, "Failed parsing '%s': %[exception]s", file.path(), ex);
+                        parsed = Flowable.empty();
+                    }
+                    return parsed;
+                }
+            )
             .sequential().observeOn(Schedulers.io())
             .reduceWith(this::repository, Repository::update)
             .doOnSuccess(rep -> Logger.info(this, "repository updated"))
