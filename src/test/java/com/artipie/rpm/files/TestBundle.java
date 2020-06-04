@@ -67,7 +67,7 @@ public final class TestBundle {
      * @return Bundle archive file
      * @throws IOException On error
      */
-    public Path unpack(final Path path) throws IOException {
+    public Path load(final Path path) throws IOException {
         final String[] parts = this.url.getPath().split("/");
         final String name = parts[parts.length - 1];
         final Path bundle = path.resolve(name);
@@ -99,12 +99,12 @@ public final class TestBundle {
         /**
          * Hundred rpms bundle.
          */
-        HUNDRED("https://artipie.s3.amazonaws.com/rpm-test/bundle100.tar.gz"),
+        HUNDRED("bundle100"),
 
         /**
          * Thousand rpms bundle.
          */
-        THOUSAND("https://artipie.s3.amazonaws.com/rpm-test/bundle1000.tar.gz");
+        THOUSAND("bundle1000");
 
         /**
          * Value.
@@ -120,16 +120,27 @@ public final class TestBundle {
         }
 
         /**
+         * Bundle file name without extension.
+         * @return Name
+         */
+        public String filename() {
+            return this.val;
+        }
+
+        /**
          * Returns ULR instance.
          * @return Url
          */
         URL url() {
             try {
-                return new URL(this.val);
+                return new URL(
+                    String.format(
+                        "https://artipie.s3.amazonaws.com/rpm-test/%s.tar.gz", this.val
+                    )
+                );
             } catch (final MalformedURLException ex) {
                 throw new IllegalArgumentException("Invalid url", ex);
             }
         }
-
     }
 }
