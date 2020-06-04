@@ -120,6 +120,14 @@ public final class TestBundle {
         }
 
         /**
+         * Bundle file name without extension.
+         * @return Name
+         */
+        public String filename() {
+            return this.val;
+        }
+
+        /**
          * Returns ULR instance.
          * @return Url
          */
@@ -133,14 +141,6 @@ public final class TestBundle {
             } catch (final MalformedURLException ex) {
                 throw new IllegalArgumentException("Invalid url", ex);
             }
-        }
-
-        /**
-         * Bundle file name without extension.
-         * @return Name
-         */
-        public String filename() {
-            return val;
         }
     }
 }

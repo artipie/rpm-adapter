@@ -92,11 +92,6 @@ final class RpmITCase {
         Paths.get("src/test/resources-binary/libdeflt1_0-2020.03.27-25.1.armv7hl.rpm");
 
     /**
-     * Repository storage with RPM packages.
-     */
-    private Storage storage;
-
-    /**
      * Test bundle size.
      */
     private static final TestBundle.Size SIZE =
@@ -104,6 +99,11 @@ final class RpmITCase {
             System.getProperty("it.longtests.size", "hundred")
                 .toUpperCase(Locale.US)
         );
+
+    /**
+     * Repository storage with RPM packages.
+     */
+    private Storage storage;
 
     @BeforeAll
     static void setUpClass() throws Exception {
