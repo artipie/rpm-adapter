@@ -107,7 +107,7 @@ final class RpmITCase {
 
     @BeforeAll
     static void setUpClass() throws Exception {
-        RpmITCase.bundle = new TestBundle(RpmITCase.SIZE).unpack(RpmITCase.tmp);
+        RpmITCase.bundle = new TestBundle(RpmITCase.SIZE).load(RpmITCase.tmp);
     }
 
     @BeforeEach

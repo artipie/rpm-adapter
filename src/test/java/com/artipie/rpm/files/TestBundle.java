@@ -67,7 +67,7 @@ public final class TestBundle {
      * @return Bundle archive file
      * @throws IOException On error
      */
-    public Path unpack(final Path path) throws IOException {
+    public Path load(final Path path) throws IOException {
         final String[] parts = this.url.getPath().split("/");
         final String name = parts[parts.length - 1];
         final Path bundle = path.resolve(name);
