@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
  *
  * @since 0.8.3
  */
-class ChangelogEntry {
+final class ChangelogEntry {
 
     /**
      * RegEx pattern of changelog entry string.
