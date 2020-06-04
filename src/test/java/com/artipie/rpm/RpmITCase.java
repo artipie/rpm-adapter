@@ -96,21 +96,25 @@ final class RpmITCase {
      */
     private Storage storage;
 
+    /**
+     * Test bundle size.
+     */
+    private static final TestBundle.Size SIZE =
+        TestBundle.Size.valueOf(
+            System.getProperty("it.longtests.size", "hundred")
+                .toUpperCase(Locale.US)
+        );
+
     @BeforeAll
     static void setUpClass() throws Exception {
-        RpmITCase.bundle = new TestBundle(
-            TestBundle.Size.valueOf(
-                System.getProperty("it.longtests.size", "hundred")
-                    .toUpperCase(Locale.US)
-            )
-        ).unpack(RpmITCase.tmp);
+        RpmITCase.bundle = new TestBundle(RpmITCase.SIZE).unpack(RpmITCase.tmp);
     }
 
     @BeforeEach
     void setUp() throws Exception {
         final Path repo = Files.createDirectory(RpmITCase.tmp.resolve("repo"));
         new Gzip(RpmITCase.bundle).unpackTar(repo);
-        this.storage = new FileStorage(repo);
+        this.storage = new FileStorage(repo.resolve(RpmITCase.SIZE.filename()));
     }
 
     @AfterEach

@@ -99,12 +99,12 @@ public final class TestBundle {
         /**
          * Hundred rpms bundle.
          */
-        HUNDRED("https://artipie.s3.amazonaws.com/rpm-test/bundle100.tar.gz"),
+        HUNDRED("bundle100"),
 
         /**
          * Thousand rpms bundle.
          */
-        THOUSAND("https://artipie.s3.amazonaws.com/rpm-test/bundle1000.tar.gz");
+        THOUSAND("bundle1000");
 
         /**
          * Value.
@@ -125,11 +125,22 @@ public final class TestBundle {
          */
         URL url() {
             try {
-                return new URL(this.val);
+                return new URL(
+                    String.format(
+                        "https://artipie.s3.amazonaws.com/rpm-test/%s.tar.gz", this.val
+                    )
+                );
             } catch (final MalformedURLException ex) {
                 throw new IllegalArgumentException("Invalid url", ex);
             }
         }
 
+        /**
+         * Bundle file name without extension.
+         * @return Name
+         */
+        public String filename() {
+            return val;
+        }
     }
 }
