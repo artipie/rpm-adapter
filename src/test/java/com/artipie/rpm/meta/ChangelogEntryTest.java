@@ -50,6 +50,16 @@ class ChangelogEntryTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.UseUnderscoresInNumericLiterals")
+    void shouldParseDate() {
+        final int unixtime = 1589328000;
+        MatcherAssert.assertThat(
+            this.entry.date(),
+            new IsEqual<>(unixtime)
+        );
+    }
+
+    @Test
     void shouldParseContent() {
         MatcherAssert.assertThat(
             this.entry.content(),

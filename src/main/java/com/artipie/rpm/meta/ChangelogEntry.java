@@ -23,6 +23,13 @@
  */
 package com.artipie.rpm.meta;
 
+import com.google.common.primitives.Ints;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,7 +44,7 @@ final class ChangelogEntry {
      * RegEx pattern of changelog entry string.
      */
     private static final Pattern PATTERN = Pattern.compile(
-        "\\* \\w+ \\w+ \\d+ \\d+ (?<author>[^-]+) (?<content>-.*)",
+        "\\* (?<date>\\w+ \\w+ \\d+ \\d+) (?<author>[^-]+) (?<content>-.*)",
         Pattern.DOTALL
     );
 
@@ -62,6 +69,25 @@ final class ChangelogEntry {
      */
     String author() {
         return this.matcher().group("author");
+    }
+
+    /**
+     * Read date.
+     *
+     * @return Date in UNIX time.
+     */
+    int date() {
+        final Matcher matcher = this.matcher();
+        final String str = matcher.group("date");
+        final SimpleDateFormat format = new SimpleDateFormat("EEE MMM dd yyyy", Locale.US);
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        final Date date;
+        try {
+            date = format.parse(str);
+        } catch (final ParseException ex) {
+            throw new IllegalStateException(String.format("Failed to parse date: '%s'", str), ex);
+        }
+        return Ints.checkedCast(TimeUnit.MILLISECONDS.toSeconds(date.getTime()));
     }
 
     /**
