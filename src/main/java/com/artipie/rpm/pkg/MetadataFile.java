@@ -46,6 +46,11 @@ import javax.xml.stream.XMLStreamException;
  * and it proxies metadata to underlying output. After closing it saves
  * all metadata to {@code repomd.xml}.
  * @since 0.6
+ * @todo #230:30min If repository is updated simultaneously (update was started at same time from
+ *  different threads, see RpmTest#updatesSameRepoSimultaneously() test), MetadataFile fails with
+ *  FileAlreadyExistsException on save() as we are trying to store files with the same names in
+ *  temp. This behavior have to be fixed by using random names for resulting files.
+ *  After the fix correct the test to pass.
  */
 public final class MetadataFile implements Metadata {
 
