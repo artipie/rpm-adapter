@@ -100,18 +100,18 @@ final class RpmTest {
         RpmTest.putFilesInStorage(storage);
         final int cnt = 4;
         final CountDownLatch latch = new CountDownLatch(cnt);
-        final Scalar<Boolean> task = new Unchecked<>(
-            () -> {
-                latch.countDown();
-                latch.await();
-                repo.batchUpdate(Key.ROOT).blockingAwait();
-                return storage.exists(new Key.From(RpmTest.REPOMD)).join();
-            }
-        );
-        // @checkstyle DiamondOperatorCheck (1 line)
         final List<Scalar<Boolean>> tasks = new ArrayList<>(cnt);
         for (int itr = 0; itr < cnt; itr = itr + 1) {
-            tasks.add(task);
+            tasks.add(
+                new Unchecked<>(
+                    () -> {
+                        latch.countDown();
+                        latch.await();
+                        repo.batchUpdate(Key.ROOT).blockingAwait();
+                        return storage.exists(new Key.From(RpmTest.REPOMD)).join();
+                    }
+                )
+            );
         }
         MatcherAssert.assertThat(
             Assertions.assertThrows(
