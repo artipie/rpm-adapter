@@ -34,8 +34,11 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import org.cactoos.Scalar;
+import org.cactoos.list.ListOf;
 import org.cactoos.scalar.AndInThreads;
 import org.cactoos.scalar.Unchecked;
 import org.hamcrest.MatcherAssert;
@@ -97,10 +100,13 @@ final class RpmTest {
                 return storage.exists(new Key.From(RpmTest.REPOMD)).join();
             }
         );
+        final List<Scalar<Boolean>> tasks = new ListOf<>(task, task, task, task);
         MatcherAssert.assertThat(
             Assertions.assertThrows(
                 ExecutionException.class,
-                () -> new AndInThreads(task, task, task).value()
+                () -> new AndInThreads(
+                    Executors.newFixedThreadPool(tasks.size()), tasks
+                ).value()
             ).getMessage(),
             new StringContains("FileAlreadyExistsException")
         );
