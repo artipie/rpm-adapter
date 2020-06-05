@@ -28,10 +28,20 @@ import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.memory.InMemoryStorage;
+import com.artipie.rpm.meta.XmlPackage;
 import com.jcabi.xml.XMLDocument;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import org.cactoos.Scalar;
+import org.cactoos.scalar.AndInThreads;
+import org.cactoos.scalar.Unchecked;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
@@ -40,6 +50,7 @@ import org.junit.jupiter.api.Test;
  * Unit tests for {@link Rpm}.
  *
  * @since 0.9
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 final class RpmTest {
 
@@ -47,6 +58,76 @@ final class RpmTest {
      * Path of repomd.xml fil.
      */
     private static final String REPOMD = "repodata/repomd.xml";
+
+    /**
+     * Abc test rmp file.
+     */
+    private static final Path ABC =
+        Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm");
+
+    /**
+     * Libdeflt test rmp file.
+     */
+    private static final Path LIBDEFLT =
+        Paths.get("src/test/resources-binary/libdeflt1_0-2020.03.27-25.1.armv7hl.rpm");
+
+    @Test
+    void updatesSameRepoTwiceSuccessfully() throws IOException {
+        final Storage storage = new InMemoryStorage();
+        final Rpm repo =  new Rpm(
+            storage, StandardNamingPolicy.SHA256, Digest.SHA256, true
+        );
+        RpmTest.putFilesInStorage(storage);
+        repo.batchUpdate(Key.ROOT).blockingAwait();
+        repo.batchUpdate(Key.ROOT).blockingAwait();
+        MatcherAssert.assertThat(
+            storage.exists(new Key.From(RpmTest.REPOMD)).join(),
+            new IsEqual<>(true)
+        );
+    }
+
+    @Test
+    void updatesSameRepoSimultaneously() throws Exception {
+        final Storage storage = new InMemoryStorage();
+        final Rpm repo =  new Rpm(
+            storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
+        );
+        RpmTest.putFilesInStorage(storage);
+        final int cnt = 4;
+        final CountDownLatch latch = new CountDownLatch(cnt);
+        final List<Scalar<Boolean>> tasks = new ArrayList<>(cnt);
+        for (int itr = 0; itr < cnt; itr = itr + 1) {
+            tasks.add(
+                new Unchecked<>(
+                    () -> {
+                        latch.countDown();
+                        latch.await();
+                        repo.batchUpdate(Key.ROOT).blockingAwait();
+                        return storage.exists(new Key.From(RpmTest.REPOMD)).join();
+                    }
+                )
+            );
+        }
+        new AndInThreads(
+            Executors.newWorkStealingPool(cnt), tasks
+        ).value();
+        final Key.From repodata = new Key.From("repodata");
+        new XmlPackage.Stream(true).get().forEach(
+            item ->
+                MatcherAssert.assertThat(
+                    String.format("Metadata %s is present", item.filename()),
+                    storage.list(repodata).join().stream()
+                        .map(Key::string).filter(str -> str.contains(item.filename())).count(),
+                    new IsEqual<>(1L)
+                )
+        );
+        MatcherAssert.assertThat(
+            "Repomd is present",
+            storage.list(repodata).join().stream()
+                .map(Key::string).filter(str -> str.contains("repomd")).count(),
+            new IsEqual<>(1L)
+        );
+    }
 
     @Test
     void doesntBrakeMetadataWhenInvalidPackageSent()
@@ -58,9 +139,7 @@ final class RpmTest {
         storage.save(
             new Key.From("oldfile.rpm"),
             new Content.From(
-                Files.readAllBytes(
-                    Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm")
-                )
+                Files.readAllBytes(RpmTest.ABC)
             )
         );
         repo.batchUpdate(Key.ROOT).blockingAwait();
@@ -97,5 +176,21 @@ final class RpmTest {
                 .xpath("count(/*[local-name()='repomd']/*[local-name()='data'])")
                 .get(0)
         );
+    }
+
+    /**
+     * Puts files into storage.
+     * @param storage Where to put
+     * @throws IOException On error
+     */
+    private static void putFilesInStorage(final Storage storage) throws IOException {
+        storage.save(
+            new Key.From(RpmTest.ABC.getFileName().toString()),
+            new Content.From(Files.readAllBytes(RpmTest.ABC))
+        ).join();
+        storage.save(
+            new Key.From(RpmTest.LIBDEFLT.getFileName().toString()),
+            new Content.From(Files.readAllBytes(RpmTest.LIBDEFLT))
+        ).join();
     }
 }

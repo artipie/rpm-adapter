@@ -187,8 +187,10 @@ public final class Rpm {
      */
     public Completable batchUpdate(final Key prefix) {
         final Path tmpdir;
+        final Path metadir;
         try {
             tmpdir = Files.createTempDirectory("repo-");
+            metadir = Files.createTempDirectory("meta-");
         } catch (final IOException err) {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
@@ -208,7 +210,7 @@ public final class Rpm {
                 }
             )
             .sequential().observeOn(Schedulers.io())
-            .reduceWith(this::repository, Repository::update)
+            .reduceWith(() -> this.repository(metadir), Repository::update)
             .doOnSuccess(rep -> Logger.info(this, "repository updated"))
             .doOnSuccess(Repository::close)
             .doOnSuccess(rep -> Logger.info(this, "repository closed"))
@@ -219,7 +221,10 @@ public final class Rpm {
             .toList().map(HashSet::new)
             .flatMapCompletable(this::removeOldMetadata)
             .doOnTerminate(
-                () -> Rpm.cleanup(tmpdir)
+                () -> {
+                    Rpm.cleanup(tmpdir);
+                    Rpm.cleanup(metadir);
+                }
             );
     }
 
@@ -230,8 +235,10 @@ public final class Rpm {
      */
     public Completable updateBatchIncrementally(final Key prefix) {
         final Path tmpdir;
+        final Path metadir;
         try {
             tmpdir = Files.createTempDirectory("repo-");
+            metadir = Files.createTempDirectory("meta-");
         } catch (final IOException err) {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
@@ -248,7 +255,7 @@ public final class Rpm {
                             content -> new RxStorageWrapper(local).save(new Key.From(file), content)
                         );
                 }
-            ).andThen(Single.fromCallable(() -> this.mdfRepository(tmpdir)))
+            ).andThen(Single.fromCallable(() -> this.mdfRepository(tmpdir, metadir)))
             .flatMap(
                 repo -> this.filePackageFromRpm(prefix, tmpdir, local)
                     .parallel().runOn(Schedulers.io())
@@ -339,14 +346,16 @@ public final class Rpm {
         for (final Path item : Files.list(dir).collect(Collectors.toList())) {
             Files.delete(item);
         }
+        Files.delete(dir);
     }
 
     /**
      * Get repository for file updates.
+     * @param tmp Temp dir to store metadata
      * @return Repository
      * @throws IOException If IO Exception occurs.
      */
-    private Repository repository() throws IOException {
+    private Repository repository(final Path tmp) throws IOException {
         try {
             return new Repository(
                 Rpm.xmlRepomd(),
@@ -355,7 +364,8 @@ public final class Rpm {
                         item -> new MetadataFile(item, item.output().start())
                     )
                 ).collect(Collectors.toList()),
-                this.digest
+                this.digest,
+                tmp
             );
         } catch (final XMLStreamException ex) {
             throw new IOException(ex);
@@ -365,10 +375,12 @@ public final class Rpm {
     /**
      * Get modifiable repository for file updates.
      * @param dir Temp directory
+     * @param metadir Temp dir to store metadata
      * @return Repository
      * @throws IOException If IO Exception occurs.
      */
-    private ModifiableRepository mdfRepository(final Path dir) throws IOException {
+    private ModifiableRepository mdfRepository(final Path dir, final Path metadir)
+        throws IOException {
         try {
             final Map<String, Path> data = new HashMap<>();
             new XmlPackage.Stream(this.filelists).get().map(XmlPackage::filename)
@@ -393,7 +405,8 @@ public final class Rpm {
                             )
                     )
                 ).collect(Collectors.toList()),
-                this.digest
+                this.digest,
+                metadir
             );
         } catch (final XMLStreamException ex) {
             throw new IOException(ex);
