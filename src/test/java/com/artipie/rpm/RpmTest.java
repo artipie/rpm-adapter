@@ -34,7 +34,9 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import org.cactoos.Scalar;
@@ -96,19 +98,26 @@ final class RpmTest {
             storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
         );
         RpmTest.putFilesInStorage(storage);
+        final int cnt = 4;
+        final CountDownLatch latch = new CountDownLatch(cnt);
         final Scalar<Boolean> task = new Unchecked<>(
             () -> {
+                latch.countDown();
+                latch.await();
                 repo.batchUpdate(Key.ROOT).blockingAwait();
                 return storage.exists(new Key.From(RpmTest.REPOMD)).join();
             }
         );
         // @checkstyle DiamondOperatorCheck (1 line)
-        final List<Scalar<Boolean>> tasks = new ListOf<Scalar<Boolean>>(task, task, task, task);
+        final List<Scalar<Boolean>> tasks = new ArrayList<>(cnt);
+        for (int itr = 0; itr < cnt; itr = itr + 1) {
+            tasks.add(task);
+        }
         MatcherAssert.assertThat(
             Assertions.assertThrows(
                 ExecutionException.class,
                 () -> new AndInThreads(
-                    Executors.newWorkStealingPool(tasks.size()), tasks
+                    Executors.newWorkStealingPool(cnt), tasks
                 ).value()
             ).getMessage(),
             new AnyOf<>(
