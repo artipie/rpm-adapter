@@ -100,7 +100,8 @@ final class RpmTest {
                 return storage.exists(new Key.From(RpmTest.REPOMD)).join();
             }
         );
-        final List<Scalar<Boolean>> tasks = new ListOf<>(task, task, task, task);
+        // @checkstyle DiamondOperatorCheck (1 line)
+        final List<Scalar<Boolean>> tasks = new ListOf<Scalar<Boolean>>(task, task, task, task);
         MatcherAssert.assertThat(
             Assertions.assertThrows(
                 ExecutionException.class,
