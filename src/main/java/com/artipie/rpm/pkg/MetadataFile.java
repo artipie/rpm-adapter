@@ -50,7 +50,9 @@ import javax.xml.stream.XMLStreamException;
  *  different threads, see RpmTest#updatesSameRepoSimultaneously() test), MetadataFile fails with
  *  FileAlreadyExistsException on save() as we are trying to store files with the same names in
  *  temp. This behavior have to be fixed by using random names for resulting files.
- *  After the fix correct the test to pass.
+ *  Related problem here is that after the exception files are not deleted from temp. Which means
+ *  that update will fail until the repository is changed.
+ *  After the fix correct the test to pass and use same naming policy in the different tests.
  */
 public final class MetadataFile implements Metadata {
 

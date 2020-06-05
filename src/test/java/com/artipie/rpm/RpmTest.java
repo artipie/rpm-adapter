@@ -73,7 +73,7 @@ final class RpmTest {
     void updatesSameRepoTwiceSuccessfully() throws IOException {
         final Storage storage = new InMemoryStorage();
         final Rpm repo =  new Rpm(
-            storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
+            storage, StandardNamingPolicy.SHA256, Digest.SHA256, true
         );
         RpmTest.putFilesInStorage(storage);
         repo.batchUpdate(Key.ROOT).blockingAwait();
