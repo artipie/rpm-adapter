@@ -60,7 +60,7 @@ final class ChangelogEntry {
      *
      * @return Author string.
      */
-    final String author() {
+    String author() {
         return this.matcher().group("author");
     }
 
@@ -69,7 +69,7 @@ final class ChangelogEntry {
      *
      * @return Content string.
      */
-    final String content() {
+    String content() {
         return this.matcher().group("content");
     }
 

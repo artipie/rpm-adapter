@@ -25,7 +25,6 @@ package com.artipie.rpm.meta;
 
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -38,14 +37,9 @@ class ChangelogEntryTest {
     /**
      * Entry tested.
      */
-    private ChangelogEntry entry;
-
-    @BeforeEach
-    void setUp() {
-        this.entry = new ChangelogEntry(
-            "* Wed May 13 2020 John Doe <johndoe@artipie.org> - 0.1-2\n- Second artipie package"
-        );
-    }
+    private final ChangelogEntry entry = new ChangelogEntry(
+        "* Wed May 13 2020 John Doe <johndoe@artipie.org> - 0.1-2\n- Second artipie package"
+    );
 
     @Test
     void shouldParseAuthor() {
