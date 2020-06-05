@@ -106,7 +106,7 @@ final class RpmTest {
             Assertions.assertThrows(
                 ExecutionException.class,
                 () -> new AndInThreads(
-                    Executors.newFixedThreadPool(tasks.size()), tasks
+                    Executors.newWorkStealingPool(tasks.size()), tasks
                 ).value()
             ).getMessage(),
             new StringContains("FileAlreadyExistsException")
