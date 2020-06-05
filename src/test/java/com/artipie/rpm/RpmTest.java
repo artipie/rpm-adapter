@@ -41,7 +41,9 @@ import org.cactoos.Scalar;
 import org.cactoos.list.ListOf;
 import org.cactoos.scalar.AndInThreads;
 import org.cactoos.scalar.Unchecked;
+import org.hamcrest.Matcher;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.AnyOf;
 import org.hamcrest.core.IsEqual;
 import org.hamcrest.core.StringContains;
 import org.junit.jupiter.api.Assertions;
@@ -109,7 +111,12 @@ final class RpmTest {
                     Executors.newWorkStealingPool(tasks.size()), tasks
                 ).value()
             ).getMessage(),
-            new StringContains("FileAlreadyExistsException")
+            new AnyOf<>(
+                new ListOf<Matcher<? super String>>(
+                    new StringContains("FileAlreadyExistsException"),
+                    new StringContains("IllegalArgumentException")
+                )
+            )
         );
     }
 
