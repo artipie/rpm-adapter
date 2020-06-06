@@ -97,7 +97,7 @@ final class RpmTest {
 
     @Test
     @Disabled
-    void showMeaningfulErrorWhenInvalidPackageSent() {
+    void showMeaningfulErrorWhenInvalidPackageSent() throws Exception {
         final Storage storage = new InMemoryStorage();
         final Rpm repo =  new Rpm(
             storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
@@ -105,7 +105,7 @@ final class RpmTest {
         storage.save(
             new Key.From("stored.rpm"),
             new Content.From("stored content".getBytes())
-        );
+        ).toCompletableFuture().get();
         repo.batchUpdate(Key.ROOT).blockingAwait();
         final byte[] broken = {0x00, 0x01, 0x02 };
         storage.save(
