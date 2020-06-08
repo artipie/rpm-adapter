@@ -27,6 +27,7 @@ import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.blocking.BlockingStorage;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 /**
  * Locker for the storage.
@@ -34,15 +35,15 @@ import java.util.UUID;
  * @todo #230:30min Use this class in RPM update to prohibit parallel update of the same repository:
  *  add lock before starting the update and release it on terminate.
  */
-public class StorageLocker {
+public final class StorageLock {
 
     /**
-     * Lock directory name.
+     * Lock file name.
      */
     private static final String FNAME = "lock-%s";
 
     /**
-     * Lock directory name.
+     * Lock file name pattern.
      */
     private static final String PTRN = "%s/lock-[a-z0-9-]{36}";
 
@@ -57,19 +58,21 @@ public class StorageLocker {
     private final Key repo;
 
     /**
-     * Lock file name.
+     * Lock file key.
      */
-    private final String guid;
+    private final Key file;
 
     /**
      * Ctor.
      * @param storage Storage
      * @param repo Repo key
      */
-    public StorageLocker(final Storage storage, final Key repo) {
+    public StorageLock(final Storage storage, final Key repo) {
         this.storage = storage;
         this.repo = repo;
-        this.guid = UUID.randomUUID().toString();
+        this.file = new Key.From(
+            this.repo, String.format(StorageLock.FNAME, UUID.randomUUID().toString())
+        );
     }
 
     /**
@@ -80,15 +83,10 @@ public class StorageLocker {
         final BlockingStorage bsto = new BlockingStorage(this.storage);
         try {
             if (this.noLocks(bsto)) {
-                synchronized (this.storage) {
-                    if (this.noLocks(bsto)) {
-                        bsto.save(
-                            new Key.From(this.repo, String.format(StorageLocker.FNAME, this.guid)),
-                            new byte[]{}
-                        );
-                    } else {
-                        throw this.error();
-                    }
+                bsto.save(this.file, new byte[]{});
+                if (bsto.list(this.repo).stream().filter(this.lockKeyPredicate()).count() > 1) {
+                    this.release();
+                    throw this.error();
                 }
             } else {
                 throw this.error();
@@ -103,27 +101,30 @@ public class StorageLocker {
      * Releases lock by removing the lock file.
      */
     void release() {
-        synchronized (this.storage) {
-            try {
-                new BlockingStorage(this.storage)
-                    .delete(new Key.From(this.repo, String.format(StorageLocker.FNAME, this.guid)));
-            } catch (final InterruptedException ex) {
-                Thread.currentThread().interrupt();
-                throw new IllegalStateException(ex);
-            }
+        try {
+            new BlockingStorage(this.storage).delete(this.file);
+        } catch (final InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(ex);
         }
     }
 
     /**
-     * Checks is storage already has lock.
+     * Checks is storage already has a lock.
      * @param bsto Blocking storage
      * @return True is there is no lock
      * @throws InterruptedException Or error
      */
     private boolean noLocks(final BlockingStorage bsto) throws InterruptedException {
-        return bsto.list(this.repo).stream().noneMatch(
-            key -> key.string().matches(String.format(StorageLocker.PTRN, this.repo.string()))
-        );
+        return bsto.list(this.repo).stream().noneMatch(this.lockKeyPredicate());
+    }
+
+    /**
+     * Lock key predicate.
+     * @return Predicate for key
+     */
+    private Predicate<Key> lockKeyPredicate() {
+        return key -> key.string().matches(String.format(StorageLock.PTRN, this.repo.string()));
     }
 
     /**

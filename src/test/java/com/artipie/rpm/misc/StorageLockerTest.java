@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /**
- * Test {@link StorageLocker}.
+ * Test {@link StorageLock}.
  * @since 0.9
  */
 class StorageLockerTest {
@@ -45,7 +45,7 @@ class StorageLockerTest {
     @Test
     void addsLockFile() {
         final Storage sto = new InMemoryStorage();
-        final StorageLocker lock = new StorageLocker(sto, Key.ROOT);
+        final StorageLock lock = new StorageLock(sto, Key.ROOT);
         lock.lock();
         MatcherAssert.assertThat(
             sto.list(Key.ROOT).join().stream()
@@ -58,7 +58,7 @@ class StorageLockerTest {
     void deletesLockFile() {
         final Storage sto = new InMemoryStorage();
         final Key.From key = new Key.From("one");
-        final StorageLocker lock = new StorageLocker(sto, key);
+        final StorageLock lock = new StorageLock(sto, key);
         lock.lock();
         lock.release();
         MatcherAssert.assertThat(
@@ -71,7 +71,7 @@ class StorageLockerTest {
     void addsLockAndThrowsExceptionOnSecondLock() {
         final Storage sto = new InMemoryStorage();
         final Key.From key = new Key.From("two");
-        final StorageLocker locker = new StorageLocker(sto, key);
+        final StorageLock locker = new StorageLock(sto, key);
         locker.lock();
         Assertions.assertThrows(
             IllegalStateException.class,
