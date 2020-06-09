@@ -33,7 +33,9 @@ import java.util.concurrent.CompletableFuture;
  * Locker for the storage.
  * @since 0.9
  * @todo #230:30min Use this class in RPM update to prohibit parallel update of the same repository:
- *  add lock before starting the update and release it on terminate.
+ *  add lock before starting the update and release it on terminate. Create instance of this class
+ *  in Rpm#batchUpdate(), call lock() method and the start update. Call release() in doOnTerminate()
+ *  method.
  * @todo #230:30min Consider waiting for the lock to be released instead of throwing an exception.
  *  This feature implementation should be properly discussed and planed first.
  */
