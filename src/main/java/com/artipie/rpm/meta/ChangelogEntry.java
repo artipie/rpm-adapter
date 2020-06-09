@@ -77,8 +77,7 @@ final class ChangelogEntry {
      * @return Date in UNIX time.
      */
     int date() {
-        final Matcher matcher = this.matcher();
-        final String str = matcher.group("date");
+        final String str = this.matcher().group("date");
         final SimpleDateFormat format = new SimpleDateFormat("EEE MMM dd yyyy", Locale.US);
         format.setTimeZone(TimeZone.getTimeZone("UTC"));
         final Date date;
