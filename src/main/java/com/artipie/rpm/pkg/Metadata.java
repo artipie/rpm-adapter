@@ -48,10 +48,12 @@ public interface Metadata extends PackageOutput {
      * @param naming Naming policy
      * @param digest Digest
      * @param repomd Repomd to update
+     * @param tmp Temp di for metafile
      * @return Gzip metadata file
      * @throws IOException On error
+     * @checkstyle ParameterNumberCheck (3 lines)
      */
-    Path save(NamingPolicy naming, Digest digest, XmlRepomd repomd)
+    Path save(NamingPolicy naming, Digest digest, XmlRepomd repomd, Path tmp)
         throws IOException;
 
     /**

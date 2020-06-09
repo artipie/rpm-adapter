@@ -69,10 +69,11 @@ public final class ModifiableMetadata implements Metadata {
     }
 
     @Override
+    // @checkstyle ParameterNumberCheck (3 lines)
     public Path save(final NamingPolicy naming, final Digest digest,
-        final XmlRepomd repomd) throws IOException {
+        final XmlRepomd repomd, final Path tmp) throws IOException {
         Files.delete(this.old);
-        return this.origin.save(naming, digest, repomd);
+        return this.origin.save(naming, digest, repomd, tmp);
     }
 
     @Override
