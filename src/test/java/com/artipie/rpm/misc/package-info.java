@@ -21,28 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm;
-
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
 
 /**
- * Test case for {@link Cli}.
+ * Misc tools tests.
  *
- * @since 0.6
- * @todo #114:30min Add some more tests in order to validate the all the
- *  assumptions made in Cli and in CliArguments.
+ * @since 0.9
  */
-final class CliTest {
-    @Test
-    void testWrongArgumentCount() {
-        final IllegalArgumentException err = Assertions.assertThrows(
-            IllegalArgumentException.class,
-            () -> Cli.main(new String[]{})
-        );
-        Assertions.assertEquals(
-            err.getMessage(),
-            "Expected repository path but got: []"
-        );
-    }
-}
+package com.artipie.rpm.misc;
