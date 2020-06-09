@@ -23,8 +23,7 @@
  */
 package com.artipie.rpm;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -34,18 +33,16 @@ import org.junit.jupiter.api.Test;
  * @todo #114:30min Add some more tests in order to validate the all the
  *  assumptions made in Cli and in CliArguments.
  */
-class CliTest {
-
+final class CliTest {
     @Test
     void testWrongArgumentCount() {
-        try {
-            Cli.main(new String[]{});
-        } catch (final IllegalArgumentException exception) {
-            MatcherAssert.assertThat(
-                String.format("Exception occurred: %s", exception.getMessage()),
-                "Expected repository path but got: []",
-                new IsEqual<>(exception.getMessage())
-            );
-        }
+        final IllegalArgumentException err = Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> Cli.main(new String[]{})
+        );
+        Assertions.assertEquals(
+            err.getMessage(),
+            "Expected repository path but got: []"
+        );
     }
 }
