@@ -303,7 +303,7 @@ public final class Rpm {
      * @param path Metadata to move
      * @param prefix Repo prefix
      * @return Metadata
-     * @todo 240:30min After https://github.com/artipie/asto/issues/201 is fixed, use SubStorage in
+     * @todo #240:30min After https://github.com/artipie/asto/issues/201 is fixed, use SubStorage in
      *  this method and get gid of if-else statement inside flatMapCompletable.
      */
     private Single<Path> moveRepodataToStorage(final Storage local, final Path path,
