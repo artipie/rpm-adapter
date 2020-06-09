@@ -26,8 +26,10 @@ package com.artipie.rpm.misc;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.memory.InMemoryStorage;
+import java.util.concurrent.ExecutionException;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
+import org.hamcrest.core.StringContains;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +48,7 @@ class StorageLockerTest {
     void addsLockFile() {
         final Storage sto = new InMemoryStorage();
         final StorageLock lock = new StorageLock(sto, Key.ROOT);
-        lock.lock();
+        lock.lock().join();
         MatcherAssert.assertThat(
             sto.list(Key.ROOT).join().stream()
                 .allMatch(key -> key.string().startsWith(StorageLockerTest.LOCK)),
@@ -59,8 +61,8 @@ class StorageLockerTest {
         final Storage sto = new InMemoryStorage();
         final Key.From key = new Key.From("one");
         final StorageLock lock = new StorageLock(sto, key);
-        lock.lock();
-        lock.release();
+        lock.lock().join();
+        lock.release().join();
         MatcherAssert.assertThat(
             sto.list(key).join().size(),
             new IsEqual<>(0)
@@ -72,10 +74,15 @@ class StorageLockerTest {
         final Storage sto = new InMemoryStorage();
         final Key.From key = new Key.From("two");
         final StorageLock locker = new StorageLock(sto, key);
-        locker.lock();
-        Assertions.assertThrows(
-            IllegalStateException.class,
-            locker::lock
+        locker.lock().join();
+        MatcherAssert.assertThat(
+            Assertions.assertThrows(
+                ExecutionException.class,
+                () -> locker.lock().get()
+            ).getCause().getMessage(),
+            new StringContains(
+                String.format("Repository %s is already being updated!", key.string())
+            )
         );
         MatcherAssert.assertThat(
             "One lock file added",

@@ -23,17 +23,19 @@
  */
 package com.artipie.rpm.misc;
 
+import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.asto.blocking.BlockingStorage;
 import java.util.UUID;
-import java.util.function.Predicate;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Locker for the storage.
  * @since 0.9
  * @todo #230:30min Use this class in RPM update to prohibit parallel update of the same repository:
  *  add lock before starting the update and release it on terminate.
+ * @todo #230:30min Consider waiting for the lock to be released instead of throwing an exception.
+ *  This feature implementation should be properly discussed and planed first.
  */
 public final class StorageLock {
 
@@ -77,54 +79,56 @@ public final class StorageLock {
 
     /**
      * Locks storage by adding random file to it.
-     * @throws IllegalStateException On error and if storage is already locked
+     * @return CompletableFuture
+     * @throws IllegalStateException If storage is already locked
      */
-    void lock() {
-        final BlockingStorage bsto = new BlockingStorage(this.storage);
-        try {
-            if (this.noLocks(bsto)) {
-                bsto.save(this.file, new byte[]{});
-                if (bsto.list(this.repo).stream().filter(this.lockKeyPredicate()).count() > 1) {
-                    this.release();
+    public CompletableFuture<Void> lock() {
+        return this.countLocks().thenCompose(
+            count -> {
+                if (count == 0) {
+                    return this.storage.save(this.file, new Content.From(new byte[]{}))
+                        .<Void>thenCompose(
+                            ignored -> this.countLocks().<Void>thenCompose(
+                                cnt -> {
+                                    final CompletableFuture<Void> res;
+                                    if (cnt > 1) {
+                                        res = this.release().<Void>thenApply(
+                                            nothing -> {
+                                                throw this.error();
+                                            }
+                                        );
+                                    } else {
+                                        res = CompletableFuture.completedFuture(null);
+                                    }
+                                    return res;
+                                }
+                            )
+                        );
+                } else {
                     throw this.error();
                 }
-            } else {
-                throw this.error();
             }
-        } catch (final InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException(ex);
-        }
+        );
     }
 
     /**
      * Releases lock by removing the lock file.
+     * @return CompletableFuture
      */
-    void release() {
-        try {
-            new BlockingStorage(this.storage).delete(this.file);
-        } catch (final InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException(ex);
-        }
+    public CompletableFuture<Void> release() {
+        return this.storage.delete(this.file);
     }
 
     /**
-     * Checks is storage already has a lock.
-     * @param bsto Blocking storage
-     * @return True is there is no lock
-     * @throws InterruptedException Or error
+     * Counts locks files.
+     * @return Count on completion
      */
-    private boolean noLocks(final BlockingStorage bsto) throws InterruptedException {
-        return bsto.list(this.repo).stream().noneMatch(this.lockKeyPredicate());
-    }
-
-    /**
-     * Lock key predicate.
-     * @return Predicate for key
-     */
-    private Predicate<Key> lockKeyPredicate() {
-        return key -> key.string().matches(String.format(StorageLock.PTRN, this.repo.string()));
+    private CompletableFuture<Long> countLocks() {
+        return this.storage.list(this.repo).thenApply(
+            keys -> keys.stream().filter(
+                key -> key.string().matches(String.format(StorageLock.PTRN, this.repo.string()))
+            ).count()
+        );
     }
 
     /**
