@@ -50,6 +50,11 @@ public final class StorageLock {
     private static final String PTRN = "%s/lock-[a-z0-9-]{36}";
 
     /**
+     * Error message.
+     */
+    private static final String ERROR = "Repository %s is already being updated!";
+
+    /**
      * Storage.
      */
     private final Storage storage;
@@ -94,7 +99,11 @@ public final class StorageLock {
                                     if (cnt > 1) {
                                         res = this.release().<Void>thenApply(
                                             nothing -> {
-                                                throw this.error();
+                                                throw new IllegalStateException(
+                                                    String.format(
+                                                        StorageLock.ERROR, this.repo.string()
+                                                    )
+                                                );
                                             }
                                         );
                                     } else {
@@ -105,7 +114,9 @@ public final class StorageLock {
                             )
                         );
                 } else {
-                    throw this.error();
+                    throw new IllegalStateException(
+                        String.format(StorageLock.ERROR, this.repo.string())
+                    );
                 }
             }
         );
@@ -128,16 +139,6 @@ public final class StorageLock {
             keys -> keys.stream().filter(
                 key -> key.string().matches(String.format(StorageLock.PTRN, this.repo.string()))
             ).count()
-        );
-    }
-
-    /**
-     * Returns error.
-     * @return Exception
-     */
-    private IllegalStateException error() {
-        return new IllegalStateException(
-            String.format("Repository %s is already being updated!", this.repo.string())
         );
     }
 
