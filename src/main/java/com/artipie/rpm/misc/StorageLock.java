@@ -52,7 +52,7 @@ public final class StorageLock {
     /**
      * Error message.
      */
-    private static final String ERROR = "Repository %s is already being updated!";
+    private static final String ERROR = "Repository %s is already being updated, %d locks found.";
 
     /**
      * Storage.
@@ -101,7 +101,7 @@ public final class StorageLock {
                                             nothing -> {
                                                 throw new IllegalStateException(
                                                     String.format(
-                                                        StorageLock.ERROR, this.repo.string()
+                                                        StorageLock.ERROR, this.repo.string(), cnt
                                                     )
                                                 );
                                             }
@@ -115,7 +115,7 @@ public final class StorageLock {
                         );
                 } else {
                     throw new IllegalStateException(
-                        String.format(StorageLock.ERROR, this.repo.string())
+                        String.format(StorageLock.ERROR, this.repo.string(), count)
                     );
                 }
             }

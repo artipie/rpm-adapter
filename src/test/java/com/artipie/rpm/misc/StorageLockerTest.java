@@ -81,7 +81,9 @@ class StorageLockerTest {
                 () -> locker.lock().get()
             ).getCause().getMessage(),
             new StringContains(
-                String.format("Repository %s is already being updated!", key.string())
+                String.format(
+                    "Repository %s is already being updated, %d locks found.", key.string(), 1
+                )
             )
         );
         MatcherAssert.assertThat(
