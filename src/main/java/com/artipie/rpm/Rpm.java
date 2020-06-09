@@ -31,6 +31,7 @@ import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryChecksums;
 import com.artipie.rpm.meta.XmlRepomd;
+import com.artipie.rpm.misc.StorageLock;
 import com.artipie.rpm.misc.UncheckedConsumer;
 import com.artipie.rpm.misc.UncheckedFunc;
 import com.artipie.rpm.pkg.FilePackage;
@@ -193,7 +194,11 @@ public final class Rpm {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
         final Storage local = new FileStorage(tmpdir);
-        return this.filePackageFromRpm(prefix, tmpdir, local)
+        final StorageLock lock = new StorageLock(this.storage, prefix);
+        return SingleInterop.fromFuture(lock.lock())
+            .flatMapPublisher(
+                ignored -> this.filePackageFromRpm(prefix, tmpdir, local)
+            )
             .parallel().runOn(Schedulers.io())
             .flatMap(
                 file -> {
@@ -219,7 +224,10 @@ public final class Rpm {
             .toList().map(HashSet::new)
             .flatMapCompletable(this::removeOldMetadata)
             .doOnTerminate(
-                () -> Rpm.cleanup(tmpdir)
+                () -> {
+                    lock.release().get();
+                    Rpm.cleanup(tmpdir);
+                }
             );
     }
 
@@ -236,7 +244,9 @@ public final class Rpm {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
         final Storage local = new FileStorage(tmpdir);
-        return SingleInterop.fromFuture(this.storage.list(prefix))
+        final StorageLock lock = new StorageLock(this.storage, prefix);
+        return SingleInterop.fromFuture(lock.lock())
+            .flatMap(ignored -> Single.fromFuture(this.storage.list(prefix)))
             .flatMapPublisher(Flowable::fromIterable)
             .filter(key -> key.string().endsWith("xml.gz"))
             .flatMapCompletable(
@@ -271,7 +281,10 @@ public final class Rpm {
             .toList().map(HashSet::new)
             .flatMapCompletable(this::removeOldMetadata)
             .doOnTerminate(
-                () -> Rpm.cleanup(tmpdir)
+                () -> {
+                    lock.release().get();
+                    Rpm.cleanup(tmpdir);
+                }
             );
     }
 

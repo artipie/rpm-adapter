@@ -32,10 +32,6 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Locker for the storage.
  * @since 0.9
- * @todo #230:30min Use this class in RPM update to prohibit parallel update of the same repository:
- *  add lock before starting the update and release it on terminate. Create instance of this class
- *  in Rpm#batchUpdate(), call lock() method and the start update. Call release() in doOnTerminate()
- *  method.
  * @todo #230:30min Consider waiting for the lock to be released instead of throwing an exception.
  *  This feature implementation should be properly discussed and planed first.
  */
@@ -49,12 +45,12 @@ public final class StorageLock {
     /**
      * Lock file name pattern.
      */
-    private static final String PTRN = "%s/lock-[a-z0-9-]{36}";
+    private static final String PTRN = "lock-[a-z0-9-]{36}";
 
     /**
      * Error message.
      */
-    private static final String ERROR = "Repository %s is already being updated, %d locks found.";
+    private static final String ERROR = "Repository '%s' is already being updated, %d locks found.";
 
     /**
      * Storage.
@@ -89,17 +85,17 @@ public final class StorageLock {
      * @return CompletableFuture
      * @throws IllegalStateException If storage is already locked
      */
-    public CompletableFuture<Void> lock() {
+    public CompletableFuture<Boolean> lock() {
         return this.countLocks().thenCompose(
             count -> {
                 if (count == 0) {
                     return this.storage.save(this.file, new Content.From(new byte[]{}))
-                        .<Void>thenCompose(
-                            ignored -> this.countLocks().<Void>thenCompose(
+                        .<Boolean>thenCompose(
+                            ignored -> this.countLocks().<Boolean>thenCompose(
                                 cnt -> {
-                                    final CompletableFuture<Void> res;
+                                    final CompletableFuture<Boolean> res;
                                     if (cnt > 1) {
-                                        res = this.release().<Void>thenApply(
+                                        res = this.release().<Boolean>thenApply(
                                             nothing -> {
                                                 throw new IllegalStateException(
                                                     String.format(
@@ -109,7 +105,7 @@ public final class StorageLock {
                                             }
                                         );
                                     } else {
-                                        res = CompletableFuture.completedFuture(null);
+                                        res = CompletableFuture.completedFuture(true);
                                     }
                                     return res;
                                 }
@@ -137,9 +133,15 @@ public final class StorageLock {
      * @return Count on completion
      */
     private CompletableFuture<Long> countLocks() {
+        final String match;
+        if (this.repo.string().isEmpty()) {
+            match = StorageLock.PTRN;
+        } else {
+            match = String.join("/", this.repo.string(), StorageLock.PTRN);
+        }
         return this.storage.list(this.repo).thenApply(
             keys -> keys.stream().filter(
-                key -> key.string().matches(String.format(StorageLock.PTRN, this.repo.string()))
+                key -> key.string().matches(match)
             ).count()
         );
     }
