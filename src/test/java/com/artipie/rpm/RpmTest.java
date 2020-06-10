@@ -28,6 +28,7 @@ import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.memory.InMemoryStorage;
+import com.artipie.rpm.meta.XmlPackage;
 import com.jcabi.xml.XMLDocument;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -103,6 +104,37 @@ final class RpmTest {
     }
 
     @Test
+    void updatesDifferentReposSimultaneouslyTwice() throws Exception {
+        final Storage storage = new InMemoryStorage();
+        final Rpm repo =  new Rpm(
+            storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
+        );
+        final List<String> keys = new ListOf<>("one", "two", "three");
+        final CountDownLatch latch = new CountDownLatch(keys.size());
+        final List<Scalar<Boolean>> tasks = new Mapped<>(
+            key -> new Unchecked<>(
+                () -> {
+                    RpmTest.putFilesInStorage(storage, new Key.From(key));
+                    latch.countDown();
+                    latch.await();
+                    repo.batchUpdate(new Key.From(key)).blockingAwait();
+                    return true;
+                }
+            ),
+            keys
+        );
+        new AndInThreads(tasks).value();
+        new AndInThreads(tasks).value();
+        keys.forEach(
+            key -> {
+                final Key res = new Key.From(key, "repodata");
+                RpmTest.metadataArePresent(storage, res);
+                RpmTest.repomdIsPresent(storage, res);
+            }
+        );
+    }
+
+    @Test
     void doesntBrakeMetadataWhenInvalidPackageSent()
         throws Exception {
         final Storage storage = new InMemoryStorage();
@@ -114,7 +146,7 @@ final class RpmTest {
             new Content.From(
                 Files.readAllBytes(RpmTest.ABC)
             )
-        );
+        ).join();
         repo.batchUpdate(Key.ROOT).blockingAwait();
         final String repomd = new String(
             new Concatenation(
@@ -128,8 +160,9 @@ final class RpmTest {
             new Content.From(
                 broken
             )
-        );
+        ).join();
         repo.batchUpdate(Key.ROOT).blockingAwait();
+        RpmTest.metadataArePresent(storage, Key.ROOT);
         MatcherAssert.assertThat(
             countData(
                 new String(
@@ -148,6 +181,37 @@ final class RpmTest {
             new XMLDocument(xml)
                 .xpath("count(/*[local-name()='repomd']/*[local-name()='data'])")
                 .get(0)
+        );
+    }
+
+    /**
+     * Checks that metadata are present.
+     * @param storage Storage
+     * @param repo Repodata key
+     */
+    private static void metadataArePresent(final Storage storage, final Key repo) {
+        new XmlPackage.Stream(true).get().forEach(
+            item ->
+                MatcherAssert.assertThat(
+                    String.format("Metadata %s is present", item.filename()),
+                    storage.list(repo).join().stream()
+                        .map(Key::string).filter(str -> str.contains(item.filename())).count(),
+                    new IsEqual<>(1L)
+                )
+        );
+    }
+
+    /**
+     * Checks that repomd is present.
+     * @param storage Storage
+     * @param key Key
+     */
+    private static void repomdIsPresent(final Storage storage, final Key key) {
+        MatcherAssert.assertThat(
+            "Repomd is present",
+            storage.list(key).join().stream()
+                .map(Key::string).filter(str -> str.contains("repomd")).count(),
+            new IsEqual<>(1L)
         );
     }
 
