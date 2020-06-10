@@ -71,14 +71,15 @@ public final class ModifiableRepository implements PackageOutput {
      * @param repomd Repomd
      * @param metadata Metadata files
      * @param digest Hashing algorithm
+     * @param tmp Temp dir to store metadata
      * @checkstyle ParameterNumberCheck (3 lines)
      */
     public ModifiableRepository(final List<String> existing, final XmlRepomd repomd,
-        final List<Metadata> metadata, final Digest digest) {
+        final List<Metadata> metadata, final Digest digest, final Path tmp) {
         this.existing = existing;
         this.metadata = metadata;
         this.digest = digest;
-        this.origin = new Repository(repomd, metadata, digest);
+        this.origin = new Repository(repomd, metadata, digest, tmp);
     }
 
     /**

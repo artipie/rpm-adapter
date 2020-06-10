@@ -59,15 +59,24 @@ final class Repository implements PackageOutput {
     private final Digest digest;
 
     /**
+     * Temp dir to store metadata.
+     */
+    private final Path tmp;
+
+    /**
      * Ctor.
      * @param repomd Repomd XML
      * @param files Metadata files outputs
      * @param digest Digest algorithm
+     * @param tmp Temp dir to store metadata
+     * @checkstyle ParameterNumberCheck (3 lines)
      */
-    Repository(final XmlRepomd repomd, final List<Metadata> files, final Digest digest) {
+    Repository(final XmlRepomd repomd, final List<Metadata> files, final Digest digest,
+        final Path tmp) {
         this.repomd = repomd;
         this.metadata = files;
         this.digest = digest;
+        this.tmp = tmp;
     }
 
     /**
@@ -100,11 +109,10 @@ final class Repository implements PackageOutput {
      */
     public List<Path> save(final NamingPolicy naming) throws IOException {
         final List<Path> outs = this.metadata.stream()
-            .map(new UncheckedFunc<>(meta -> meta.save(naming, this.digest, this.repomd)))
+            .map(new UncheckedFunc<>(meta -> meta.save(naming, this.digest, this.repomd, this.tmp)))
             .collect(Collectors.toList());
         this.repomd.close();
-        final Path file = this.repomd.file();
-        outs.add(Files.move(file, file.getParent().resolve("repomd.xml")));
+        outs.add(Files.move(this.repomd.file(), this.tmp.resolve("repomd.xml")));
         Logger.info(this, "repomd.xml closed");
         return outs;
     }
