@@ -72,7 +72,7 @@ final class RpmTest {
         Paths.get("src/test/resources-binary/libdeflt1_0-2020.03.27-25.1.armv7hl.rpm");
 
     @Test
-    void throwsExceptionWhenRepositoryIsUpdatedSimultaneously() throws IOException {
+    void throwsExceptionWhenRepositoryIsUpdatedSimultaneously() throws Exception {
         final Storage storage = new InMemoryStorage();
         final Rpm repo =  new Rpm(
             storage, StandardNamingPolicy.SHA1, Digest.SHA256, true

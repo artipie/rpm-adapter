@@ -196,6 +196,7 @@ public final class Rpm {
         final Storage local = new FileStorage(tmpdir);
         final StorageLock lock = new StorageLock(this.storage, prefix);
         return SingleInterop.fromFuture(lock.lock())
+            .doOnError(err -> cleanUp(tmpdir, lock))
             .flatMapPublisher(
                 ignored -> this.filePackageFromRpm(prefix, tmpdir, local)
             )
@@ -223,12 +224,7 @@ public final class Rpm {
             .map(path -> String.format("repodata/%s", path.getFileName().toString()))
             .toList().map(HashSet::new)
             .flatMapCompletable(this::removeOldMetadata)
-            .doOnTerminate(
-                () -> {
-                    lock.release().get();
-                    Rpm.cleanup(tmpdir);
-                }
-            );
+            .doOnTerminate(() -> cleanUp(tmpdir, lock));
     }
 
     /**
@@ -246,6 +242,7 @@ public final class Rpm {
         final Storage local = new FileStorage(tmpdir);
         final StorageLock lock = new StorageLock(this.storage, prefix);
         return SingleInterop.fromFuture(lock.lock())
+            .doOnError(err -> cleanUp(tmpdir, lock))
             .flatMap(ignored -> Single.fromFuture(this.storage.list(prefix)))
             .flatMapPublisher(Flowable::fromIterable)
             .filter(key -> key.string().endsWith("xml.gz"))
@@ -280,12 +277,7 @@ public final class Rpm {
             .map(path -> String.format("repodata/%s", path.getFileName().toString()))
             .toList().map(HashSet::new)
             .flatMapCompletable(this::removeOldMetadata)
-            .doOnTerminate(
-                () -> {
-                    lock.release().get();
-                    Rpm.cleanup(tmpdir);
-                }
-            );
+            .doOnTerminate(() -> cleanUp(tmpdir, lock));
     }
 
     /**
@@ -300,6 +292,21 @@ public final class Rpm {
             .flatMapCompletable(
                 item -> new RxStorageWrapper(this.storage).delete(item)
             );
+    }
+
+    /**
+     * Clean up action.
+     * @param tmpdir Temp dir to clean up
+     * @param lock Lock to release
+     * @throws IOException On error
+     */
+    private void cleanUp(final Path tmpdir, final StorageLock lock) throws IOException {
+        lock.release().join();
+        for (final Path item : Files.list(tmpdir).collect(Collectors.toList())) {
+            Files.delete(item);
+        }
+        Files.delete(tmpdir);
+        Logger.info(this, "Clean up temp and lock");
     }
 
     /**
@@ -341,17 +348,6 @@ public final class Rpm {
                         ).andThen(Single.fromCallable(() -> new FilePackage(tmpdir.resolve(file))));
                 }
             );
-    }
-
-    /**
-     * Cleanup temporary dir.
-     * @param dir Directory
-     * @throws IOException On error
-     */
-    private static void cleanup(final Path dir) throws IOException {
-        for (final Path item : Files.list(dir).collect(Collectors.toList())) {
-            Files.delete(item);
-        }
     }
 
     /**
