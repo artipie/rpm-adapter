@@ -23,9 +23,9 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.asto.blocking.BlockingStorage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,13 +57,13 @@ public interface TestRpm {
         /**
          * Ctor.
          */
-        protected Abc() {
-            super(Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm"));
+        public Abc() {
+            super("abc-1.01-26.git20200127.fc32.ppc64le.rpm");
         }
     }
 
     /**
-     * Abc test rpm.
+     * Libdeflt test rpm.
      * @since 0.9
      */
     final class Libdeflt extends FromPath {
@@ -71,8 +71,8 @@ public interface TestRpm {
         /**
          * Ctor.
          */
-        protected Libdeflt() {
-            super(Paths.get("src/test/resources-binary/libdeflt1_0-2020.03.27-25.1.armv7hl.rpm"));
+        public Libdeflt() {
+            super("libdeflt1_0-2020.03.27-25.1.armv7hl.rpm");
         }
     }
 
@@ -83,29 +83,37 @@ public interface TestRpm {
     abstract class FromPath implements TestRpm {
 
         /**
+         * Test resources dir.
+         */
+        private static final Path RESOURCES = Paths.get("src/test/resources-binary/");
+
+        /**
          * Origin.
          */
         private final Path path;
 
         /**
          * Ctor.
+         * @param file Rpm file name
+         */
+        protected FromPath(final String file) {
+            this(RESOURCES.resolve(file));
+        }
+
+        /**
+         * Primary ctor.
          * @param path Rpm file path
          */
-        protected FromPath(final Path path) {
+        private FromPath(final Path path) {
             this.path = path;
         }
 
         @Override
         public final void put(final Storage storage) throws IOException {
-            try {
-                new BlockingStorage(storage).save(
-                    new Key.From(this.path.getFileName().toString()),
-                    Files.readAllBytes(this.path)
-                );
-            } catch (final InterruptedException err) {
-                Thread.currentThread().interrupt();
-                throw new IOException("Failed to save", err);
-            }
+            storage.save(
+                new Key.From(this.path.getFileName().toString()),
+                new Content.From(Files.readAllBytes(this.path))
+            ).join();
         }
     }
 }
