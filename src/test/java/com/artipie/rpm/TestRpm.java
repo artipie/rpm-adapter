@@ -30,14 +30,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.cactoos.list.ListOf;
 
 /**
  * Test rpm.
  * @since 0.9
- * @todo #235:30min Continue test rpms implementation: first, create `Multiple` implementation of
- *  this interface. Multiple implementation should accept several TestRpm in the ctor and put all
- *  the rpms into storage on `put`. Second, create `Invalid` implementation to add invalid package
- *  to storage. Third, find all usages of the test rpms and replace with these classes usages.
  */
 public interface TestRpm {
 
@@ -114,6 +111,55 @@ public interface TestRpm {
                 new Key.From(this.path.getFileName().toString()),
                 new Content.From(Files.readAllBytes(this.path))
             ).join();
+        }
+    }
+
+    /**
+     * An invalid rpm.
+     * @since 0.9
+     */
+    final class Invalid implements TestRpm {
+        @Override
+        public void put(final Storage storage) throws IOException {
+            storage.save(
+                new Key.From("invalid.rpm"),
+                new Content.From(new byte[] {0x00, 0x01, 0x02 })
+            ).join();
+        }
+    }
+
+    /**
+     * Multiple test rpms.
+     * @since 0.9
+     */
+    final class Multiple implements TestRpm {
+
+        /**
+         * Rpms.
+         */
+        private final Iterable<TestRpm> rpms;
+
+        /**
+         * Ctor.
+         * @param rpms Rpms.
+         */
+        public Multiple(final TestRpm... rpms) {
+            this(new ListOf<>(rpms));
+        }
+
+        /**
+         * Ctor.
+         * @param rpms Rpms.
+         */
+        public Multiple(final Iterable<TestRpm> rpms) {
+            this.rpms = rpms;
+        }
+
+        @Override
+        public void put(final Storage storage) throws IOException {
+            for (final TestRpm rpm: this.rpms) {
+                rpm.put(storage);
+            }
         }
     }
 }
