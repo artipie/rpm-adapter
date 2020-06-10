@@ -21,45 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm.pkg;
-
-import com.artipie.rpm.Digest;
-import com.artipie.rpm.NamingPolicy;
-import com.artipie.rpm.meta.XmlRepomd;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
 
 /**
- * Metadata output.
- * @since 0.8
+ * Misc tools tests.
+ *
+ * @since 0.9
  */
-public interface Metadata extends PackageOutput {
-
-    /**
-     * Brushes metadata by cleaning not existing packages and setting packages count.
-     * @param ids Ids of the packages to clear
-     * @throws IOException When error occurs
-     */
-    void brush(List<String> ids) throws IOException;
-
-    /**
-     * Save metadata to repomd, produce gzipped output.
-     * @param naming Naming policy
-     * @param digest Digest
-     * @param repomd Repomd to update
-     * @param tmp Temp di for metafile
-     * @return Gzip metadata file
-     * @throws IOException On error
-     * @checkstyle ParameterNumberCheck (3 lines)
-     */
-    Path save(NamingPolicy naming, Digest digest, XmlRepomd repomd, Path tmp)
-        throws IOException;
-
-    /**
-     * Underling metadata file output.
-     * @return File output
-     */
-    PackageOutput.FileOutput output();
-
-}
+package com.artipie.rpm.misc;
