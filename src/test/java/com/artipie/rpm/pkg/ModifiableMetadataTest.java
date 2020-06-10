@@ -111,7 +111,10 @@ class ModifiableMetadataTest {
         final Path repomd = temp.resolve("repomd.xml");
         try (XmlRepomd xml = new XmlRepomd(repomd)) {
             xml.begin(System.currentTimeMillis() / Tv.THOUSAND);
-            mtd.save(StandardNamingPolicy.PLAIN, Digest.SHA256, xml);
+            mtd.save(
+                StandardNamingPolicy.PLAIN, Digest.SHA256, xml,
+                Files.createDirectory(temp.resolve("meta"))
+            );
         }
         MatcherAssert.assertThat(
             new String(Files.readAllBytes(repomd), Charset.defaultCharset()),
