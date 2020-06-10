@@ -24,11 +24,13 @@
 package com.artipie.rpm.meta;
 
 import com.jcabi.matchers.XhtmlMatchers;
+import com.jcabi.xml.XMLDocument;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -137,6 +139,13 @@ public class XmlOthersTest {
                 "/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='changelog' and @date='1589328000' and @author='John Doe <johndoe@artipie.org>' and text()='- 0.1-2\n- Second artipie package']",
                 "/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='changelog' and @date='1464652800' and @author='Jane Doe <janedoe@artipie.org>' and text()='- 0.1-1\n- First artipie package\n- Example second item in the changelog for version-release 0.1-1']"
             )
+        );
+        MatcherAssert.assertThat(
+            // @checkstyle LineLengthCheck (2 lines)
+            new XMLDocument(xml)
+                .xpath("count(/*[local-name()='otherdata']/*[local-name()='package']/*[local-name()='changelog'])")
+                .get(0),
+            new IsEqual<>("2")
         );
     }
 
