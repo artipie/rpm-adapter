@@ -153,10 +153,10 @@ final class RpmTest {
         final Rpm repo =  new Rpm(
             storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
         );
-        storage.save(
-            new Key.From("stored.rpm"),
-            new Content.From("stored content".getBytes())
-        ).toCompletableFuture().get();
+        putFilesInStorage(
+            storage,
+            new Key.From("stored.rpm")
+        );
         repo.batchUpdate(Key.ROOT).blockingAwait();
         final byte[] broken = {0x00, 0x01, 0x02 };
         storage.save(
@@ -164,7 +164,7 @@ final class RpmTest {
             new Content.From(
                 broken
             )
-        );
+        ).join();
         Assertions.assertThrows(
             IllegalArgumentException.class,
             () -> repo.batchUpdate(Key.ROOT).blockingAwait(),
