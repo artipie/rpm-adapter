@@ -28,22 +28,29 @@ import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.memory.InMemoryStorage;
+import com.artipie.rpm.meta.XmlPackage;
+import com.jcabi.xml.XMLDocument;
+import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import org.cactoos.Scalar;
+import org.cactoos.list.ListOf;
+import org.cactoos.list.Mapped;
+import org.cactoos.scalar.AndInThreads;
+import org.cactoos.scalar.Unchecked;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Unit tests for {@link Rpm}.
  *
  * @since 0.9
- * @todo #190:30min Don't change metadata when invalid package is sent.
- *  Currently Rpm is recalculating metadata when an invalid package is sent.
- *  It should not. Correct that and enable the test below.
- *  To do that `InvalidPackageException` should be caught when parsing packages.
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 final class RpmTest {
 
@@ -52,9 +59,51 @@ final class RpmTest {
      */
     private static final String REPOMD = "repodata/repomd.xml";
 
+    /**
+     * Abc test rmp file.
+     */
+    private static final Path ABC =
+        Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm");
+
+    /**
+     * Libdeflt test rmp file.
+     */
+    private static final Path LIBDEFLT =
+        Paths.get("src/test/resources-binary/libdeflt1_0-2020.03.27-25.1.armv7hl.rpm");
+
     @Test
-    @Disabled
-    void doesntBrakeMetadataWhenInvalidPackageSent(@TempDir final Path tmp)
+    void updatesDifferentReposSimultaneouslyTwice() throws Exception {
+        final Storage storage = new InMemoryStorage();
+        final Rpm repo =  new Rpm(
+            storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
+        );
+        final List<String> keys = new ListOf<>("one", "two", "three");
+        final CountDownLatch latch = new CountDownLatch(keys.size());
+        final List<Scalar<Boolean>> tasks = new Mapped<>(
+            key -> new Unchecked<>(
+                () -> {
+                    RpmTest.putFilesInStorage(storage, new Key.From(key));
+                    latch.countDown();
+                    latch.await();
+                    repo.batchUpdate(new Key.From(key)).blockingAwait();
+                    return true;
+                }
+            ),
+            keys
+        );
+        new AndInThreads(tasks).value();
+        new AndInThreads(tasks).value();
+        keys.forEach(
+            key -> {
+                final Key res = new Key.From(key, "repodata");
+                RpmTest.metadataArePresent(storage, res);
+                RpmTest.repomdIsPresent(storage, res);
+            }
+        );
+    }
+
+    @Test
+    void doesntBrakeMetadataWhenInvalidPackageSent()
         throws Exception {
         final Storage storage = new InMemoryStorage();
         final Rpm repo =  new Rpm(
@@ -62,7 +111,9 @@ final class RpmTest {
         );
         storage.save(
             new Key.From("oldfile.rpm"),
-            new Content.From("anything".getBytes())
+            new Content.From(
+                Files.readAllBytes(RpmTest.ABC)
+            )
         );
         repo.batchUpdate(Key.ROOT).blockingAwait();
         final String repomd = new String(
@@ -79,14 +130,73 @@ final class RpmTest {
             )
         );
         repo.batchUpdate(Key.ROOT).blockingAwait();
+        RpmTest.metadataArePresent(storage, Key.ROOT);
         MatcherAssert.assertThat(
-            new String(
-                new Concatenation(
-                    storage.value(new Key.From(RpmTest.REPOMD)).get()
-                ).single().blockingGet().array(),
-                Charset.defaultCharset()
+            countData(
+                new String(
+                    new Concatenation(
+                        storage.value(new Key.From(RpmTest.REPOMD)).get()
+                    ).single().blockingGet().array(),
+                    Charset.defaultCharset()
+                )
             ),
-            new IsEqual<>(repomd)
+            new IsEqual<>(countData(repomd))
         );
+    }
+
+    private static int countData(final String xml) {
+        return Integer.parseInt(
+            new XMLDocument(xml)
+                .xpath("count(/*[local-name()='repomd']/*[local-name()='data'])")
+                .get(0)
+        );
+    }
+
+    /**
+     * Checks that metadata are present.
+     * @param storage Storage
+     * @param repo Repodata key
+     */
+    private static void metadataArePresent(final Storage storage, final Key repo) {
+        new XmlPackage.Stream(true).get().forEach(
+            item ->
+                MatcherAssert.assertThat(
+                    String.format("Metadata %s is present", item.filename()),
+                    storage.list(repo).join().stream()
+                        .map(Key::string).filter(str -> str.contains(item.filename())).count(),
+                    new IsEqual<>(1L)
+                )
+        );
+    }
+
+    /**
+     * Checks that repomd is present.
+     * @param storage Storage
+     * @param key Key
+     */
+    private static void repomdIsPresent(final Storage storage, final Key key) {
+        MatcherAssert.assertThat(
+            "Repomd is present",
+            storage.list(key).join().stream()
+                .map(Key::string).filter(str -> str.contains("repomd")).count(),
+            new IsEqual<>(1L)
+        );
+    }
+
+    /**
+     * Puts files into storage.
+     * @param storage Where to put
+     * @param key Repo key
+     * @throws IOException On error
+     */
+    private static void putFilesInStorage(final Storage storage, final Key key) throws IOException {
+        storage.save(
+            new Key.From(key, RpmTest.ABC.getFileName().toString()),
+            new Content.From(Files.readAllBytes(RpmTest.ABC))
+        ).join();
+        storage.save(
+            new Key.From(key, RpmTest.LIBDEFLT.getFileName().toString()),
+            new Content.From(Files.readAllBytes(RpmTest.LIBDEFLT))
+        ).join();
     }
 }
