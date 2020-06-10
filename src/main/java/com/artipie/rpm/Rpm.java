@@ -34,8 +34,10 @@ import com.artipie.rpm.meta.XmlRepomd;
 import com.artipie.rpm.misc.UncheckedConsumer;
 import com.artipie.rpm.misc.UncheckedFunc;
 import com.artipie.rpm.pkg.FilePackage;
+import com.artipie.rpm.pkg.InvalidPackageException;
 import com.artipie.rpm.pkg.MetadataFile;
 import com.artipie.rpm.pkg.ModifiableMetadata;
+import com.artipie.rpm.pkg.Package;
 import com.jcabi.aspects.Tv;
 import com.jcabi.log.Logger;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
@@ -54,7 +56,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.xml.stream.XMLStreamException;
 
@@ -185,51 +187,44 @@ public final class Rpm {
      */
     public Completable batchUpdate(final Key prefix) {
         final Path tmpdir;
+        final Path metadir;
         try {
             tmpdir = Files.createTempDirectory("repo-");
+            metadir = Files.createTempDirectory("meta-");
         } catch (final IOException err) {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
         final Storage local = new FileStorage(tmpdir);
-        return SingleInterop.fromFuture(this.storage.list(prefix))
-            .flatMapPublisher(Flowable::fromIterable)
-            .filter(key -> key.string().endsWith(".rpm"))
-            .flatMapSingle(
-                key -> {
-                    final String file = Paths.get(key.string()).getFileName().toString();
-                    return new RxStorageWrapper(this.storage)
-                        .value(key)
-                        .flatMapCompletable(
-                            content -> new RxStorageWrapper(local).save(new Key.From(file), content)
-                        ).andThen(Single.fromCallable(() -> new FilePackage(tmpdir.resolve(file))));
+        return this.filePackageFromRpm(prefix, tmpdir, local)
+            .parallel().runOn(Schedulers.io())
+            .flatMap(
+                file -> {
+                    Flowable<Package> parsed;
+                    try {
+                        parsed = Flowable.just(file.parsed());
+                    } catch (final InvalidPackageException ex) {
+                        Logger.warn(this, "Failed parsing '%s': %[exception]s", file.path(), ex);
+                        parsed = Flowable.empty();
+                    }
+                    return parsed;
                 }
-            ).parallel().runOn(Schedulers.io())
-            .map(FilePackage::parsed)
+            )
             .sequential().observeOn(Schedulers.io())
-            .reduceWith(this::repository, Repository::update)
+            .reduceWith(() -> this.repository(metadir), Repository::update)
             .doOnSuccess(rep -> Logger.info(this, "repository updated"))
             .doOnSuccess(Repository::close)
             .doOnSuccess(rep -> Logger.info(this, "repository closed"))
             .flatMapObservable(repo -> Observable.fromIterable(repo.save(this.naming)))
             .doOnNext(file -> Files.move(file, tmpdir.resolve(file.getFileName())))
-            .flatMapSingle(
-                path -> new RxStorageWrapper(local)
-                    .value(new Key.From(path.getFileName().toString()))
-                    .flatMapCompletable(
-                        content -> new RxStorageWrapper(this.storage).save(
-                            new Key.From("repodata", path.getFileName().toString()), content
-                        )
-                    ).toSingleDefault(path)
-            ).map(path -> String.format("repodata/%s", path.getFileName().toString()))
-            .toList().map(HashSet::new).flatMapCompletable(
-                preserve -> new RxStorageWrapper(this.storage).list(new Key.From("repodata"))
-                    .flatMapObservable(Observable::fromIterable)
-                    .filter(item -> !preserve.contains(item.string()))
-                    .flatMapCompletable(
-                        item -> new RxStorageWrapper(this.storage).delete(item)
-                    )
-            ).doOnTerminate(
-                () -> Rpm.cleanup(tmpdir)
+            .flatMapSingle(path -> this.moveRepodataToStorage(local, path, prefix))
+            .map(path -> path.getFileName().toString())
+            .toList().map(HashSet::new)
+            .flatMapCompletable(preserve -> this.removeOldMetadata(preserve, prefix))
+            .doOnTerminate(
+                () -> {
+                    Rpm.cleanup(tmpdir);
+                    Rpm.cleanup(metadir);
+                }
             );
     }
 
@@ -240,12 +235,104 @@ public final class Rpm {
      */
     public Completable updateBatchIncrementally(final Key prefix) {
         final Path tmpdir;
+        final Path metadir;
         try {
             tmpdir = Files.createTempDirectory("repo-");
+            metadir = Files.createTempDirectory("meta-");
         } catch (final IOException err) {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
         final Storage local = new FileStorage(tmpdir);
+        return SingleInterop.fromFuture(this.storage.list(prefix))
+            .flatMapPublisher(Flowable::fromIterable)
+            .filter(key -> key.string().endsWith("xml.gz"))
+            .flatMapCompletable(
+                key -> {
+                    final String file = Paths.get(key.string()).getFileName().toString();
+                    return new RxStorageWrapper(this.storage)
+                        .value(key)
+                        .flatMapCompletable(
+                            content -> new RxStorageWrapper(local).save(new Key.From(file), content)
+                        );
+                }
+            ).andThen(Single.fromCallable(() -> this.mdfRepository(tmpdir, metadir)))
+            .flatMap(
+                repo -> this.filePackageFromRpm(prefix, tmpdir, local)
+                    .parallel().runOn(Schedulers.io())
+                    .sequential().observeOn(Schedulers.io())
+                    .reduce(repo, (ignored, pkg) -> repo.update(pkg))
+            )
+            .doOnSuccess(rep -> Logger.info(this, "repository updated"))
+            .doOnSuccess(ModifiableRepository::close)
+            .doOnSuccess(rep -> Logger.info(this, "repository closed"))
+            .doOnSuccess(ModifiableRepository::clear)
+            .doOnSuccess(rep -> Logger.info(this, "repository cleared"))
+            .flatMapObservable(rep -> Observable.fromIterable(rep.save(this.naming)))
+            .doOnNext(
+                file -> Files.move(
+                    file, tmpdir.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING
+                )
+            )
+            .flatMapSingle(path -> this.moveRepodataToStorage(local, path, prefix))
+            .map(path -> path.getFileName().toString())
+            .toList().map(HashSet::new)
+            .flatMapCompletable(preserve -> this.removeOldMetadata(preserve, prefix))
+            .doOnTerminate(
+                () -> Rpm.cleanup(tmpdir)
+            );
+    }
+
+    /**
+     * Removes old metadata.
+     * @param preserve Metadata to keep
+     * @param prefix Repo prefix
+     * @return Completable
+     */
+    private Completable removeOldMetadata(final Set<String> preserve, final Key prefix) {
+        return new RxStorageWrapper(this.storage).list(new Key.From(prefix, "repodata"))
+            .flatMapObservable(Observable::fromIterable)
+            .filter(item -> !preserve.contains(Paths.get(item.string()).getFileName().toString()))
+            .flatMapCompletable(
+                item -> new RxStorageWrapper(this.storage).delete(item)
+            );
+    }
+
+    /**
+     * Moves repodata to storage.
+     * @param local Local storage
+     * @param path Metadata to move
+     * @param prefix Repo prefix
+     * @return Metadata
+     * @todo #240:30min After https://github.com/artipie/asto/issues/201 is fixed, use SubStorage in
+     *  this method and get gid of if-else statement inside flatMapCompletable.
+     */
+    private Single<Path> moveRepodataToStorage(final Storage local, final Path path,
+        final Key prefix) {
+        return new RxStorageWrapper(local)
+            .value(new Key.From(path.getFileName().toString()))
+            .flatMapCompletable(
+                content -> {
+                    final Key key;
+                    if (prefix.string().isEmpty()) {
+                        key = new Key.From("repodata", path.getFileName().toString());
+                    } else {
+                        key = new Key.From(prefix, "repodata", path.getFileName().toString());
+                    }
+                    return new RxStorageWrapper(this.storage).save(key, content);
+                }
+            ).toSingleDefault(path);
+    }
+
+    /**
+     * Copies rpms to local storage and constacts {@link FilePackage} instance.
+     * @param prefix Repo prefix
+     * @param tmpdir Tempdir
+     * @param local Local storage
+     * @return Flowable of FilePackage
+     */
+    private Flowable<FilePackage> filePackageFromRpm(
+        final Key prefix, final Path tmpdir, final Storage local
+    ) {
         return SingleInterop.fromFuture(this.storage.list(prefix))
             .flatMapPublisher(Flowable::fromIterable)
             .filter(key -> key.string().endsWith(".rpm"))
@@ -258,39 +345,6 @@ public final class Rpm {
                             content -> new RxStorageWrapper(local).save(new Key.From(file), content)
                         ).andThen(Single.fromCallable(() -> new FilePackage(tmpdir.resolve(file))));
                 }
-            )
-            .observeOn(Schedulers.io())
-            .reduceWith(
-                () -> this.mdfRepository(tmpdir, local, prefix), ModifiableRepository::update
-            )
-            .doOnSuccess(rep -> Logger.info(this, "repository updated"))
-            .doOnSuccess(ModifiableRepository::close)
-            .doOnSuccess(rep -> Logger.info(this, "repository closed"))
-            .doOnSuccess(ModifiableRepository::clear)
-            .doOnSuccess(rep -> Logger.info(this, "repository cleared"))
-            .flatMapObservable(repo -> Observable.fromIterable(repo.save(this.naming)))
-            .doOnNext(file
-                -> Files.move(
-                    file, tmpdir.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING
-                )
-            ).flatMapSingle(
-                path -> new RxStorageWrapper(local)
-                    .value(new Key.From(path.getFileName().toString()))
-                    .flatMapCompletable(
-                        content -> new RxStorageWrapper(this.storage).save(
-                            new Key.From("repodata", path.getFileName().toString()), content
-                        )
-                    ).toSingleDefault(path)
-            ).map(path -> String.format("repodata/%s", path.getFileName().toString()))
-            .toList().map(HashSet::new).flatMapCompletable(
-                preserve -> new RxStorageWrapper(this.storage).list(new Key.From("repodata"))
-                    .flatMapObservable(Observable::fromIterable)
-                    .filter(item -> !preserve.contains(item.string()))
-                    .flatMapCompletable(
-                        item -> new RxStorageWrapper(this.storage).delete(item)
-                    )
-            ).doOnTerminate(
-                () -> Rpm.cleanup(tmpdir)
             );
     }
 
@@ -303,14 +357,16 @@ public final class Rpm {
         for (final Path item : Files.list(dir).collect(Collectors.toList())) {
             Files.delete(item);
         }
+        Files.delete(dir);
     }
 
     /**
      * Get repository for file updates.
+     * @param tmp Temp dir to store metadata
      * @return Repository
      * @throws IOException If IO Exception occurs.
      */
-    private Repository repository() throws IOException {
+    private Repository repository(final Path tmp) throws IOException {
         try {
             return new Repository(
                 Rpm.xmlRepomd(),
@@ -319,7 +375,8 @@ public final class Rpm {
                         item -> new MetadataFile(item, item.output().start())
                     )
                 ).collect(Collectors.toList()),
-                this.digest
+                this.digest,
+                tmp
             );
         } catch (final XMLStreamException ex) {
             throw new IOException(ex);
@@ -329,25 +386,14 @@ public final class Rpm {
     /**
      * Get modifiable repository for file updates.
      * @param dir Temp directory
-     * @param local Local storage
-     * @param key Key
+     * @param metadir Temp dir to store metadata
      * @return Repository
      * @throws IOException If IO Exception occurs.
-     * @todo #178:30min Try to get rid of blocking operations here, at the same time keep in mind
-     *  that we need list of the existing rpm checksums from primary.xml to start the update.
      */
-    private ModifiableRepository mdfRepository(final Path dir, final Storage local, final Key key)
+    private ModifiableRepository mdfRepository(final Path dir, final Path metadir)
         throws IOException {
         try {
             final Map<String, Path> data = new HashMap<>();
-            this.storage.list(key).get().stream()
-                .filter(file -> file.string().endsWith(".xml.gz"))
-                .forEach(
-                    file -> new RxStorageWrapper(local).save(
-                        new Key.From(Paths.get(file.string()).getFileName().toString()),
-                        new RxStorageWrapper(this.storage).value(file).blockingGet()
-                    ).blockingGet()
-            );
             new XmlPackage.Stream(this.filelists).get().map(XmlPackage::filename)
                 .forEach(
                     new UncheckedConsumer<>(
@@ -370,9 +416,10 @@ public final class Rpm {
                             )
                     )
                 ).collect(Collectors.toList()),
-                this.digest
+                this.digest,
+                metadir
             );
-        } catch (final XMLStreamException | ExecutionException | InterruptedException ex) {
+        } catch (final XMLStreamException ex) {
             throw new IOException(ex);
         }
     }

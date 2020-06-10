@@ -85,7 +85,7 @@ class XmlMetaJoinITCase {
                 System.getProperty("it.longtests.size", "hundred")
                     .toUpperCase(Locale.US)
             )
-        ).unpack(XmlMetaJoinITCase.tmp);
+        ).load(XmlMetaJoinITCase.tmp);
     }
 
     @BeforeEach
