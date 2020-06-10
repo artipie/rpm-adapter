@@ -196,7 +196,7 @@ public final class Rpm {
         final Storage local = new FileStorage(tmpdir);
         final StorageLock lock = new StorageLock(this.storage, prefix);
         return SingleInterop.fromFuture(lock.lock())
-            .doOnError(err -> cleanUp(tmpdir, lock))
+            .doOnError(err -> this.cleanUp(tmpdir, lock))
             .flatMapPublisher(
                 ignored -> this.filePackageFromRpm(prefix, tmpdir, local)
             )
@@ -224,7 +224,7 @@ public final class Rpm {
             .map(path -> String.format("repodata/%s", path.getFileName().toString()))
             .toList().map(HashSet::new)
             .flatMapCompletable(this::removeOldMetadata)
-            .doOnTerminate(() -> cleanUp(tmpdir, lock));
+            .doOnTerminate(() -> this.cleanUp(tmpdir, lock));
     }
 
     /**
@@ -242,7 +242,7 @@ public final class Rpm {
         final Storage local = new FileStorage(tmpdir);
         final StorageLock lock = new StorageLock(this.storage, prefix);
         return SingleInterop.fromFuture(lock.lock())
-            .doOnError(err -> cleanUp(tmpdir, lock))
+            .doOnError(err -> this.cleanUp(tmpdir, lock))
             .flatMap(ignored -> Single.fromFuture(this.storage.list(prefix)))
             .flatMapPublisher(Flowable::fromIterable)
             .filter(key -> key.string().endsWith("xml.gz"))
@@ -277,7 +277,7 @@ public final class Rpm {
             .map(path -> String.format("repodata/%s", path.getFileName().toString()))
             .toList().map(HashSet::new)
             .flatMapCompletable(this::removeOldMetadata)
-            .doOnTerminate(() -> cleanUp(tmpdir, lock));
+            .doOnTerminate(() -> this.cleanUp(tmpdir, lock));
     }
 
     /**

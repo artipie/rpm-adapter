@@ -37,7 +37,6 @@ import org.junit.jupiter.api.Test;
  * Test {@link StorageLock}.
  * @since 0.9
  */
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class StorageLockerTest {
 
     /**
@@ -81,14 +80,10 @@ class StorageLockerTest {
                 ExecutionException.class,
                 () -> locker.lock().get()
             ).getCause().getMessage(),
-            new StringContains(
-                String.format(
-                    "Repository '%s' is already being updated, %d locks found.", key.string(), 1
-                )
-            )
+            new StringContains("Repository 'two' is already being updated, 1 lock(s) found.")
         );
         MatcherAssert.assertThat(
-            "One lock file added",
+            "Lock file added",
             sto.list(key).join().size(),
             new IsEqual<>(1)
         );
@@ -104,11 +99,7 @@ class StorageLockerTest {
                 ExecutionException.class,
                 () -> locker.lock().get()
             ).getCause().getMessage(),
-            new StringContains(
-                String.format(
-                    "Repository '%s' is already being updated, %d locks found.", "", 1
-                )
-            )
+            new StringContains("Repository '' is already being updated, 1 lock(s) found.")
         );
         MatcherAssert.assertThat(
             "One lock file added",

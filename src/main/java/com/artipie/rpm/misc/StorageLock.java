@@ -50,7 +50,8 @@ public final class StorageLock {
     /**
      * Error message.
      */
-    private static final String ERROR = "Repository '%s' is already being updated, %d locks found.";
+    private static final String ERROR =
+        "Repository '%s' is already being updated, %d lock(s) found.";
 
     /**
      * Storage.
@@ -124,8 +125,18 @@ public final class StorageLock {
      * Releases lock by removing the lock file.
      * @return CompletableFuture
      */
-    public CompletableFuture<Void> release() {
-        return this.storage.delete(this.file);
+    public CompletableFuture<Boolean> release() {
+        return this.storage.exists(this.file).thenCompose(
+            exists -> {
+                final CompletableFuture<Boolean> res;
+                if (exists) {
+                    res = this.storage.delete(this.file).thenApply(ignored -> true);
+                } else {
+                    res = CompletableFuture.completedFuture(true);
+                }
+                return res;
+            }
+        );
     }
 
     /**
