@@ -146,18 +146,12 @@ public final class XmlOthers implements Closeable {
          * @param changelogs List of changelog items
          * @return Self
          * @throws XMLStreamException On error
-         * @todo #82:30min Continue changelog implementation.
-         *  Changelog info is composed of a sequence of entries (as seen in
-         *  https://rpm-packaging-guide.github.io/#packaging-software ,changelog
-         *  section). This information will be extracted from package headers
-         *  and sent here to be parsed and added to the others.xml file. After
-         *  implementing this enable test on XmlOthersTest.
          */
-        public Package changelog(final List<String> changelogs)
-            throws XMLStreamException {
-            this.xml.writeStartElement("changelog");
-            this.xml.writeCharacters("NOT_IMPLEMENTED");
-            this.xml.writeEndElement();
+        public Package changelog(final List<String> changelogs) throws XMLStreamException {
+            for (final String changelog : changelogs) {
+                final ChangelogEntry entry = new ChangelogEntry(changelog);
+                this.changelog(entry.author(), entry.date(), entry.content());
+            }
             return this;
         }
 
