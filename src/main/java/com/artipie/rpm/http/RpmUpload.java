@@ -52,7 +52,7 @@ import org.reactivestreams.Publisher;
  *  value and if the file exists in storage. Do not forget about tests.
  *  For more information please refer to https://github.com/artipie/rpm-adapter/issues/162:
  */
-public final class RpmUpload implements Slice {
+final class RpmUpload implements Slice {
 
     /**
      * Asto storage.
@@ -69,7 +69,7 @@ public final class RpmUpload implements Slice {
      *
      * @param storage Storage
      */
-    public RpmUpload(final Storage storage) {
+    RpmUpload(final Storage storage) {
         this.asto = storage;
         this.rpm = new Rpm(storage);
     }
@@ -85,7 +85,7 @@ public final class RpmUpload implements Slice {
                     new Content.From(body)
                 ).thenApply(ignored -> true)
             )
-                .flatMapCompletable(ignored -> this.rpm.batchUpdate(request.repo()))
+                .flatMapCompletable(ignored -> this.rpm.batchUpdate(Key.ROOT))
                 .<Response>andThen(Single.just(new RsWithStatus(RsStatus.ACCEPTED)))
         );
     }
@@ -99,7 +99,7 @@ public final class RpmUpload implements Slice {
         /**
          * RegEx pattern for path.
          */
-        public static final Pattern PTRN = Pattern.compile("^(?<repo>.*)/(?<rpm>.*\\.rpm)");
+        public static final Pattern PTRN = Pattern.compile("^/(?<rpm>.*\\.rpm)");
 
         /**
          * Request line.
@@ -112,14 +112,6 @@ public final class RpmUpload implements Slice {
          */
         Request(final String line) {
             this.line = line;
-        }
-
-        /**
-         * Returns repo key.
-         * @return Repo key
-         */
-        public Key repo() {
-            return new Key.From(this.path().group("repo"));
         }
 
         /**

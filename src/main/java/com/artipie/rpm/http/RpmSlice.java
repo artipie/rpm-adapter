@@ -44,7 +44,7 @@ public final class RpmSlice extends Slice.Wrap {
         super(
             new SliceRoute(
                 new SliceRoute.Path(new RtRule.ByMethod(RqMethod.GET), new SliceDownload(storage)),
-                new SliceRoute.Path(new RtRule.ByMethod(RqMethod.PUT), new RpmSlice(storage))
+                new SliceRoute.Path(new RtRule.ByMethod(RqMethod.PUT), new RpmUpload(storage))
             )
         );
     }

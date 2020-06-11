@@ -36,26 +36,6 @@ import org.junit.jupiter.api.Test;
 public class RpmUploadRequestTest {
 
     @Test
-    void returnsEmptyRepoKey() {
-        MatcherAssert.assertThat(
-            new RpmUpload.Request(
-                new RequestLine("PUT", "/some_file.rpm", "HTTP/1.1").toString()
-            ).repo().string(),
-            new IsEqual<>("")
-        );
-    }
-
-    @Test
-    void returnsRepoKey() {
-        MatcherAssert.assertThat(
-            new RpmUpload.Request(
-                new RequestLine("PUT", "my-repo/some_file.rpm", "HTTP/1.1").toString()
-            ).repo().string(),
-            new IsEqual<>("my-repo")
-        );
-    }
-
-    @Test
     void returnsFileNameKey() {
         MatcherAssert.assertThat(
             new RpmUpload.Request(
