@@ -42,7 +42,7 @@ public final class XmlPrimaryTest {
     public void writesFile(@TempDir final Path temp) throws Exception {
         final Path file = temp.resolve("primary.xml");
         try (XmlPrimary prim = new XmlPrimary(file)) {
-            // @checkstyle MagicNumberCheck (20 lines)
+            // @checkstyle MagicNumberCheck (30 lines)
             prim.startPackages()
                 .startPackage()
                 .name("primary")
@@ -65,6 +65,10 @@ public final class XmlPrimaryTest {
                 .group("Unspecified")
                 .buildHost("http://giuthub.com/artipie/rpm-adapter/buildhost")
                 .sourceRpm("primary.src.rpm")
+                .headerRange(3, 8)
+                .provides(
+                    new ListOf<String>("abs"), new ListOf<String>("1.0.0")
+                )
                 .requires(
                     new ListOf<>(
                         "ld-linux-aarch64.so.1()(64bit)"
@@ -75,7 +79,7 @@ public final class XmlPrimaryTest {
         }
         MatcherAssert.assertThat(
             new String(Files.readAllBytes(file), StandardCharsets.UTF_8),
-            // @checkstyle LineLengthCheck (20 lines)
+            // @checkstyle LineLengthCheck (25 lines)
             XhtmlMatchers.hasXPaths(
                 "/*[local-name()='metadata']/*[local-name()='package' and @type='rpm']",
                 "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='primary']",
@@ -94,7 +98,9 @@ public final class XmlPrimaryTest {
                 "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='format']/*[name()='rpm:group' and text()='Unspecified']",
                 "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='format']/*[name()='rpm:buildhost' and text()='http://giuthub.com/artipie/rpm-adapter/buildhost']",
                 "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='format']/*[name()='rpm:sourcerpm' and text()='primary.src.rpm']",
-                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='format']/*[name()='rpm:requires']/*[name()='rpm:entry' and @name='ld-linux-aarch64.so.1()(64bit)']"
+                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='format']/*[name()='rpm:header-range' and @start='3' and @end='8']",
+                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='format']/*[name()='rpm:requires']/*[name()='rpm:entry' and @name='ld-linux-aarch64.so.1()(64bit)']",
+                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='format']/*[name()='rpm:provides']/*[name()='rpm:entry' and @name='abs' and @ver='1.0.0']"
             )
         );
     }
