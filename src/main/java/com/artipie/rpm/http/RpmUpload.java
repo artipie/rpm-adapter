@@ -33,21 +33,21 @@ import com.artipie.http.Slice;
  * @todo #162:30min Finish implementation of RpmUpload
  *  RpmUpload should behave like the defined in
  *  https://github.com/artipie/rpm-adapter/issues/162:
- *  Upload HTTP request
- *      Method: PUT
- *      URI: /package.rpm - the name of RPM package
- *      Query params:
- *      override (optional) - if true, override existing package with same name
- *      Body: RPM package data
- *  Upload process
- *      User sends RPM package as PUT HTTP request with RPM data in body.
- *      RPM adapter Slice implementation should process this request, store
- *      the package in repository without changing the name.
- *      If package with same name already exist and override query param flag
- *      is not true, then return 409 error.
- *      Artipie Slice returns 202 status on success and trigger metadata update
- *      asynchronously, it should not run multiple metadata updates
- *      simultaneously. Finish the implementation and enable tests in RpmUploadTest.
+ *  1. Upload HTTP request
+ *  Method: PUT
+ *  URI: /package.rpm - the name of RPM package
+ *  Query params:
+ *  override (optional) - if true, override existing package with same name
+ *  Body: RPM package data
+ *  2. Upload process
+ *  User sends RPM package as PUT HTTP request with RPM data in body.
+ *  RPM adapter Slice implementation should process this request, store
+ *  the package in repository without changing the name.
+ *  If package with same name already exist and override query param flag
+ *  is not true, then return 409 error.
+ *  Artipie Slice returns 202 status on success and trigger metadata update
+ *  asynchronously, it should not run multiple metadata updates
+ *  simultaneously. Finish the implementation and enable tests in RpmUploadTest.
  */
 public class RpmUpload extends Slice.Wrap {
 
