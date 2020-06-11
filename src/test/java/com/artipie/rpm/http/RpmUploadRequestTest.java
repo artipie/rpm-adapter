@@ -23,29 +23,46 @@
  */
 package com.artipie.rpm.http;
 
-import com.artipie.asto.Storage;
-import com.artipie.http.Slice;
-import com.artipie.http.rq.RqMethod;
-import com.artipie.http.rt.RtRule;
-import com.artipie.http.rt.SliceRoute;
-import com.artipie.http.slice.SliceDownload;
+import com.artipie.http.rq.RequestLine;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Test;
 
 /**
- * Artipie {@link Slice} for RPM repository HTTP API.
- * @since 0.7
+ * Test for {@link RpmUpload}.
+ * @since 0.9
  */
-public final class RpmSlice extends Slice.Wrap {
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+public class RpmUploadRequestTest {
 
-    /**
-     * New RPM repository HTTP API.
-     * @param storage Storage
-     */
-    public RpmSlice(final Storage storage) {
-        super(
-            new SliceRoute(
-                new SliceRoute.Path(new RtRule.ByMethod(RqMethod.GET), new SliceDownload(storage)),
-                new SliceRoute.Path(new RtRule.ByMethod(RqMethod.PUT), new RpmSlice(storage))
-            )
+    @Test
+    void returnsEmptyRepoKey() {
+        MatcherAssert.assertThat(
+            new RpmUpload.Request(
+                new RequestLine("PUT", "/some_file.rpm", "HTTP/1.1").toString()
+            ).repo().string(),
+            new IsEqual<>("")
         );
     }
+
+    @Test
+    void returnsRepoKey() {
+        MatcherAssert.assertThat(
+            new RpmUpload.Request(
+                new RequestLine("PUT", "my-repo/some_file.rpm", "HTTP/1.1").toString()
+            ).repo().string(),
+            new IsEqual<>("my-repo")
+        );
+    }
+
+    @Test
+    void returnsFileNameKey() {
+        MatcherAssert.assertThat(
+            new RpmUpload.Request(
+                new RequestLine("PUT", "/file.rpm", "HTTP/1.1").toString()
+            ).file().string(),
+            new IsEqual<>("file.rpm")
+        );
+    }
+
 }

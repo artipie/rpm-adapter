@@ -23,40 +23,125 @@
  */
 package com.artipie.rpm.http;
 
+import com.artipie.asto.Content;
+import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.http.Response;
 import com.artipie.http.Slice;
+import com.artipie.http.async.AsyncResponse;
+import com.artipie.http.rq.RequestLineFrom;
+import com.artipie.http.rs.RsStatus;
+import com.artipie.http.rs.RsWithStatus;
+import com.artipie.rpm.Rpm;
+import hu.akarnokd.rxjava2.interop.SingleInterop;
+import io.reactivex.Single;
+import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.reactivestreams.Publisher;
 
 /**
  * Slice for rpm packages upload.
  *
  * @since 0.8.3
- * @todo #162:30min Finish implementation of RpmUpload
- *  RpmUpload should behave like the defined in
- *  https://github.com/artipie/rpm-adapter/issues/162:
- *  1. Upload HTTP request
- *  Method: PUT
- *  URI: /package.rpm - the name of RPM package
- *  Query params:
- *  override (optional) - if true, override existing package with same name
- *  Body: RPM package data
- *  2. Upload process
- *  User sends RPM package as PUT HTTP request with RPM data in body.
- *  RPM adapter Slice implementation should process this request, store
- *  the package in repository without changing the name.
- *  If package with same name already exist and override query param flag
- *  is not true, then return 409 error.
- *  Artipie Slice returns 202 status on success and trigger metadata update
- *  asynchronously, it should not run multiple metadata updates
- *  simultaneously. Finish the implementation and enable tests in RpmUploadTest.
+ * @todo #253:30min Finish implementation of RpmUpload by implementing parsing of optional
+ *  false by default `override` request parameter: if package with same name already exist and
+ *  `override` query param flag is not true, then return 409 error. Parameter parsing should be
+ *  implemented in `Request` class and tested, in `response` method we need to check parameter
+ *  value and if the file exists in storage. Do not forget about tests.
+ *  For more information please refer to https://github.com/artipie/rpm-adapter/issues/162:
  */
-public class RpmUpload extends Slice.Wrap {
+public final class RpmUpload implements Slice {
 
     /**
-     * New RPM repository HTTP API.
+     * Asto storage.
+     */
+    private final Storage asto;
+
+    /**
+     * Rpm instance.
+     */
+    private final Rpm rpm;
+
+    /**
+     * RPM repository HTTP API.
      *
      * @param storage Storage
      */
     public RpmUpload(final Storage storage) {
-        super(new RpmSlice(storage));
+        this.asto = storage;
+        this.rpm = new Rpm(storage);
+    }
+
+    @Override
+    public Response response(final String line, final Iterable<Map.Entry<String, String>> headers,
+        final Publisher<ByteBuffer> body) {
+        final Request request = new Request(line);
+        return new AsyncResponse(
+            SingleInterop.fromFuture(
+                this.asto.save(
+                    request.file(),
+                    new Content.From(body)
+                ).thenApply(ignored -> true)
+            )
+                .flatMapCompletable(ignored -> this.rpm.batchUpdate(request.repo()))
+                .<Response>andThen(Single.just(new RsWithStatus(RsStatus.ACCEPTED)))
+        );
+    }
+
+    /**
+     * Request line.
+     * @since 0.9
+     */
+    static final class Request {
+
+        /**
+         * RegEx pattern for path.
+         */
+        public static final Pattern PTRN = Pattern.compile("^(?<repo>.*)/(?<rpm>.*\\.rpm)");
+
+        /**
+         * Request line.
+         */
+        private final String line;
+
+        /**
+         * Ctor.
+         * @param line Line from request
+         */
+        Request(final String line) {
+            this.line = line;
+        }
+
+        /**
+         * Returns repo key.
+         * @return Repo key
+         */
+        public Key repo() {
+            return new Key.From(this.path().group("repo"));
+        }
+
+        /**
+         * Returns file key.
+         * @return File key
+         */
+        public Key file() {
+            return new Key.From(this.path().group("rpm"));
+        }
+
+        /**
+         * Matches request path by RegEx pattern.
+         *
+         * @return Path matcher.
+         */
+        private Matcher path() {
+            final String path = new RequestLineFrom(this.line).uri().getPath();
+            final Matcher matcher = PTRN.matcher(path);
+            if (!matcher.matches()) {
+                throw new IllegalStateException(String.format("Unexpected path: %s", path));
+            }
+            return matcher;
+        }
     }
 }
