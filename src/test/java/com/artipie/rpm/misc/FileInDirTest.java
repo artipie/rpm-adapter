@@ -23,8 +23,8 @@
  */
 package com.artipie.rpm.misc;
 
-import com.google.common.io.Files;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
@@ -40,7 +40,7 @@ class FileInDirTest {
     @Test
     void findsFile(@TempDir final Path tmp) throws IOException {
         final Path file = tmp.resolve("some_file.txt");
-        Files.write("abs123".getBytes(), file.toFile());
+        Files.write(file, "abs123".getBytes());
         MatcherAssert.assertThat(
             new FileInDir(tmp).find("_file.t"),
             new IsEqual<>(file)
