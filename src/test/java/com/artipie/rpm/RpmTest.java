@@ -52,13 +52,13 @@ import org.junit.jupiter.api.Test;
  * Unit tests for {@link Rpm}.
  *
  * @since 0.9
- * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @todo #110:30min Meaningful error on broken package.
  *  Rpm should throw an exception when trying to add an invalid package.
  *  The type of exception must be IllegalArgumentException and its message
  *  "Reading of RPM package 'package' failed, data corrupt or malformed.",
  *  like described in showMeaningfulErrorWhenInvalidPackageSent. Implement it
  *  and then enable the test.
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 final class RpmTest {
 
