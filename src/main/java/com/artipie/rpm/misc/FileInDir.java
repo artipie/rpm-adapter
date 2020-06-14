@@ -31,10 +31,6 @@ import java.util.stream.Stream;
 /**
  * File in directory.
  * @since 0.9
- * @todo #226:30min Add one more (at least) test for this class to check that
- *  IllegalArgumentException is thrown if file is not found. After that replace `Rpm#meta`
- *  and `XmlMetaJoinITCase#meta` usages with this class usages. Check that the project has no more
- *  code to replace with this class usage.
  */
 public final class FileInDir {
 

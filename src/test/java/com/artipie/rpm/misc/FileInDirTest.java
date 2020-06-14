@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -35,7 +36,7 @@ import org.junit.jupiter.api.io.TempDir;
  * Test for {@link FileInDir}.
  * @since 0.9
  */
-class FileInDirTest {
+final class FileInDirTest {
 
     @Test
     void findsFile(@TempDir final Path tmp) throws IOException {
@@ -44,6 +45,26 @@ class FileInDirTest {
         MatcherAssert.assertThat(
             new FileInDir(tmp).find("_file.t"),
             new IsEqual<>(file)
+        );
+    }
+
+    @Test
+    void doesNotFindFile(@TempDir final Path tmp) throws IOException {
+        final Path file = tmp.resolve("a_file.txt");
+        Files.write(file, "abc123".getBytes());
+        Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> new FileInDir(tmp).find("_notfile.t")
+        );
+    }
+
+    @Test
+    void doesNotUseRegexToFind(@TempDir final Path tmp) throws IOException {
+        final Path file = tmp.resolve("fileXtxt");
+        Files.write(file, "ab123".getBytes());
+        Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> new FileInDir(tmp).find("file.txt")
         );
     }
 }
