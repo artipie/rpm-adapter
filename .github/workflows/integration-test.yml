@@ -22,4 +22,4 @@ jobs:
           key: jdk-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: jdk-maven-
       - name: Run integration tests
-        run: mvn -B verify Pitcase -Dit.longtests.enabled=true -Dit.longtests.size=hundred
+        run: mvn -B verify -Pitcase -Dit.longtests.enabled=true -Dit.longtests.size=hundred
