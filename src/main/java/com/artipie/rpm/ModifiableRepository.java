@@ -26,9 +26,11 @@ package com.artipie.rpm;
 import com.artipie.rpm.meta.XmlRepomd;
 import com.artipie.rpm.misc.UncheckedConsumer;
 import com.artipie.rpm.pkg.FilePackage;
+import com.artipie.rpm.pkg.InvalidPackageException;
 import com.artipie.rpm.pkg.Metadata;
 import com.artipie.rpm.pkg.Package;
 import com.artipie.rpm.pkg.PackageOutput;
+import com.jcabi.log.Logger;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -89,7 +91,11 @@ public final class ModifiableRepository implements PackageOutput {
     public ModifiableRepository update(final FilePackage pkg) throws IOException {
         final String hex = new FileChecksum(pkg.path(), this.digest).hex();
         if (!this.existing.remove(hex)) {
-            this.origin.update(pkg.parsed());
+            try {
+                this.origin.update(pkg.parsed());
+            } catch (final InvalidPackageException ex) {
+                Logger.warn(this, "Failed parsing '%s': %[exception]s", pkg.path(), ex);
+            }
         }
         return this;
     }
