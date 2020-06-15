@@ -44,6 +44,7 @@ import com.artipie.http.slice.SliceDownload;
  *  There should be at least one test without authentication and one
  *  test with authentication, see https://stackoverflow.com/a/26852734/1723695
  *  to configure the client side.
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class RpmSlice extends Slice.Wrap {
 
@@ -79,6 +80,14 @@ public final class RpmSlice extends Slice.Wrap {
                     new SliceAuth(
                         new SliceDownload(storage),
                         new Permission.ByName("download", perms),
+                        users
+                    )
+                ),
+                new SliceRoute.Path(
+                    new RtRule.ByMethod(RqMethod.PUT),
+                    new SliceAuth(
+                        new RpmUpload(storage),
+                        new Permission.ByName("upload", perms),
                         users
                     )
                 )
