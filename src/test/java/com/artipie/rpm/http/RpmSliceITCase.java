@@ -49,7 +49,7 @@ import org.testcontainers.containers.GenericContainer;
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-class RpmSliceITCase {
+final class RpmSliceITCase {
 
     /**
      * Vertx instance.
@@ -57,9 +57,9 @@ class RpmSliceITCase {
     private static final Vertx VERTX = Vertx.vertx();
 
     /**
-     * Vertx instance.
+     * Vertx slice server instance.
      */
-    private VertxSliceServer slice;
+    private VertxSliceServer server;
 
     /**
      * Container.
@@ -116,7 +116,7 @@ class RpmSliceITCase {
 
     @AfterEach
     void stopContainer() {
-        this.slice.close();
+        this.server.close();
         this.cntn.stop();
     }
 
@@ -134,11 +134,11 @@ class RpmSliceITCase {
     private void start(final Permissions perms, final Identities auth) throws Exception {
         final Storage storage = new InMemoryStorage();
         new TestRpm.Time().put(storage);
-        this.slice = new VertxSliceServer(
+        this.server = new VertxSliceServer(
             RpmSliceITCase.VERTX,
             new LoggingSlice(new RpmSlice(storage, perms, auth))
         );
-        this.port = this.slice.start();
+        this.port = this.server.start();
         Testcontainers.exposeHostPorts(this.port);
         this.cntn = new GenericContainer<>("centos:latest")
             .withCommand("tail", "-f", "/dev/null");
