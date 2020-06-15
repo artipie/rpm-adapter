@@ -228,7 +228,7 @@ SOFTWARE.
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
           <parallel>none</parallel>
-          <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
+          <testFailureIgnore>true</testFailureIgnore>
           <trimStackTrace>false</trimStackTrace>
         </configuration>
         <executions>
