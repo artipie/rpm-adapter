@@ -49,6 +49,20 @@ public interface TestRpm {
     void put(Storage storage) throws IOException;
 
     /**
+     * Time sentos rpm.
+     * @since 0.9
+     */
+    final class Time extends FromPath {
+
+        /**
+         * Ctor.
+         */
+        public Time() {
+            super("time-1.7-45.el7.x86_64.rpm");
+        }
+    }
+
+    /**
      * Abc test rpm.
      * @since 0.9
      */

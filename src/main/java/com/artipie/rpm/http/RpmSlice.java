@@ -39,11 +39,6 @@ import com.artipie.http.slice.SliceDownload;
 /**
  * Artipie {@link Slice} for RPM repository HTTP API.
  * @since 0.7
- * @todo #213:30min Add integration tests for RpmSlice to validate
- *  that it can answer requests coming from the rpm original client.
- *  There should be at least one test without authentication and one
- *  test with authentication, see https://stackoverflow.com/a/26852734/1723695
- *  to configure the client side.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class RpmSlice extends Slice.Wrap {
