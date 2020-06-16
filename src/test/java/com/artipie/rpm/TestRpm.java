@@ -35,6 +35,10 @@ import org.cactoos.list.ListOf;
 /**
  * Test rpm.
  * @since 0.9
+ * @todo #248:30min Add a method `name()` to this interface that
+ *  returns the name of the rpm file. When it is done, update all
+ *  all the test that needs this information to use this method.
+ *  In particular, this should be at least done in RpmSliceITCase.
  */
 public interface TestRpm {
 
