@@ -127,7 +127,7 @@ final class RpmTest {
         final byte[] broken = {0x00, 0x01, 0x02 };
         storage.save(new Key.From("broken-file.rpm"), new Content.From(broken)).get();
         RpmTest.addRpm(storage, RpmTest.ABC);
-        repo.updateBatchIncrementally(Key.ROOT).blockingAwait();
+        repo.batchUpdateIncrementally(Key.ROOT).blockingAwait();
         MatcherAssert.assertThat(
             countData(tmp),
             new IsEqual<>(2)

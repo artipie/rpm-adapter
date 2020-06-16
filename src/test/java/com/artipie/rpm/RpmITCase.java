@@ -133,7 +133,7 @@ final class RpmITCase {
     void generatesMetadataIncrementally() throws IOException, InterruptedException {
         this.modifyRepo();
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
-            .updateBatchIncrementally(Key.ROOT)
+            .batchUpdateIncrementally(Key.ROOT)
             .blockingAwait();
     }
 
@@ -167,7 +167,7 @@ final class RpmITCase {
     @Test
     void dontKeepOldMetadataWhenUpdatingIncrementally() throws InterruptedException {
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
-            .updateBatchIncrementally(Key.ROOT)
+            .batchUpdateIncrementally(Key.ROOT)
             .blockingAwait();
         final BlockingStorage bsto = new BlockingStorage(this.storage);
         MatcherAssert.assertThat(
@@ -181,7 +181,7 @@ final class RpmITCase {
                 .findFirst().orElseThrow(() -> new IllegalStateException("not key found"));
             bsto.delete(first);
             new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
-                .updateBatchIncrementally(Key.ROOT)
+                .batchUpdateIncrementally(Key.ROOT)
                 .blockingAwait();
         }
         MatcherAssert.assertThat(
@@ -203,7 +203,7 @@ final class RpmITCase {
     void generatesRepomdIncrementallyMetadata() throws Exception {
         this.modifyRepo();
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
-            .updateBatchIncrementally(Key.ROOT)
+            .batchUpdateIncrementally(Key.ROOT)
             .blockingAwait();
         this.assertion();
     }

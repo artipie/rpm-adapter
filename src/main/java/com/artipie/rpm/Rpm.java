@@ -234,7 +234,7 @@ public final class Rpm {
      * @param prefix Repo prefix
      * @return Completable action
      */
-    public Completable updateBatchIncrementally(final Key prefix) {
+    public Completable batchUpdateIncrementally(final Key prefix) {
         final Path tmpdir;
         final Path metadir;
         try {
