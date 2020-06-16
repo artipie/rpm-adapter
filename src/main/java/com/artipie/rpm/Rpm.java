@@ -58,6 +58,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.xml.stream.XMLStreamException;
 
 /**
@@ -233,7 +234,7 @@ public final class Rpm {
      * @param prefix Repo prefix
      * @return Completable action
      */
-    public Completable updateBatchIncrementally(final Key prefix) {
+    public Completable batchUpdateIncrementally(final Key prefix) {
         final Path tmpdir;
         final Path metadir;
         try {
@@ -444,16 +445,19 @@ public final class Rpm {
      * @throws IOException On error
      */
     private static Path meta(final Path dir, final String substr) throws IOException {
-        final Optional<Path> res = Files.walk(dir)
-            .filter(
-                path -> path.getFileName().toString().endsWith(String.format("%s.xml.gz", substr))
-            ).findFirst();
-        if (res.isPresent()) {
-            return res.get();
-        } else {
-            throw new IllegalStateException(
-                String.format("Metafile %s does not exists in %s", substr, dir.toString())
-            );
+        try (Stream<Path> subdirs = Files.walk(dir)) {
+            final Optional<Path> res = subdirs
+                .filter(
+                    path -> path.getFileName().toString()
+                        .endsWith(String.format("%s.xml.gz", substr))
+                ).findFirst();
+            if (res.isPresent()) {
+                return res.get();
+            } else {
+                throw new IllegalStateException(
+                    String.format("Metafile %s does not exists in %s", substr, dir.toString())
+                );
+            }
         }
     }
 }

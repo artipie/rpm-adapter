@@ -26,10 +26,16 @@ package com.artipie.rpm.http;
 import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.memory.InMemoryStorage;
+import com.artipie.http.hm.RsHasStatus;
+import com.artipie.http.rq.RequestLine;
+import com.artipie.http.rs.RsStatus;
 import io.reactivex.Flowable;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
@@ -41,23 +47,30 @@ import org.junit.jupiter.api.Test;
  * Test for {@link RpmUpload}.
  *
  * @since 0.8.3
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class RpmUploadTest {
 
     @Test
-    @Disabled
     void canUploadArtifact() throws Exception {
         final Storage storage = new InMemoryStorage();
-        final byte[] content =
-            "uploaded package bytes".getBytes(StandardCharsets.UTF_8);
-        new RpmUpload(storage).response(
-            "PUT /uploaded.rpm",
-            new ListOf<Map.Entry<String, String>>(),
-            Flowable.fromArray(ByteBuffer.wrap(content))
+        final byte[] content = Files.readAllBytes(
+            Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm")
         );
         MatcherAssert.assertThat(
-            storage.value(new Key.From("uploaded.rpm")).get(),
-            new IsEqual<>(new Content.From(content))
+            "ACCEPTED 202 returned",
+            new RpmUpload(storage).response(
+                new RequestLine("PUT", "/uploaded.rpm", "HTTP/1.1").toString(),
+                new ListOf<Map.Entry<String, String>>(),
+                Flowable.fromArray(ByteBuffer.wrap(content))
+            ),
+            new RsHasStatus(RsStatus.ACCEPTED)
+        );
+        MatcherAssert.assertThat(
+            "Content saved to storage",
+            new BlockingStorage(storage).value(new Key.From("uploaded.rpm")),
+            new IsEqual<>(content)
         );
     }
 
