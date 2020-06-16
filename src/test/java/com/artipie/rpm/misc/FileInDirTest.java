@@ -50,8 +50,7 @@ final class FileInDirTest {
 
     @Test
     void doesNotFindFile(@TempDir final Path tmp) throws IOException {
-        final Path file = tmp.resolve("a_file.txt");
-        Files.write(file, "abc123".getBytes());
+        Files.write(tmp.resolve("a_file.txt"), "abc123".getBytes());
         Assertions.assertThrows(
             IllegalArgumentException.class,
             () -> new FileInDir(tmp).find("_notfile.t")
@@ -60,8 +59,7 @@ final class FileInDirTest {
 
     @Test
     void doesNotUseRegexToFind(@TempDir final Path tmp) throws IOException {
-        final Path file = tmp.resolve("fileXtxt");
-        Files.write(file, "ab123".getBytes());
+        Files.write(tmp.resolve("fileXtxt"), "ab123".getBytes());
         Assertions.assertThrows(
             IllegalArgumentException.class,
             () -> new FileInDir(tmp).find("file.txt")
