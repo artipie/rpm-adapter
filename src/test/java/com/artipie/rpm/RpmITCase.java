@@ -25,6 +25,7 @@ package com.artipie.rpm;
 
 import com.artipie.asto.Concatenation;
 import com.artipie.asto.Key;
+import com.artipie.asto.Remaining;
 import com.artipie.asto.Storage;
 import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.fs.FileStorage;
@@ -94,11 +95,11 @@ final class RpmITCase {
     /**
      * Test bundle size.
      */
-    private static final TestBundle.Size SIZE =
-        TestBundle.Size.valueOf(
-            System.getProperty("it.longtests.size", "hundred")
-                .toUpperCase(Locale.US)
-        );
+    private static final TestBundle.Size SIZE = TestBundle.Size.HUNDRED;
+//        TestBundle.Size.valueOf(
+//            System.getProperty("it.longtests.size", "hundred")
+//                .toUpperCase(Locale.US)
+//        );
 
     /**
      * Repository storage with RPM packages.
@@ -107,7 +108,8 @@ final class RpmITCase {
 
     @BeforeAll
     static void setUpClass() throws Exception {
-        RpmITCase.bundle = new TestBundle(RpmITCase.SIZE).load(RpmITCase.tmp);
+        RpmITCase.bundle = Paths.get("/Users/alena/Downloads/bundle100.tar.gz");
+            //new TestBundle(RpmITCase.SIZE).load(RpmITCase.tmp);
     }
 
     @BeforeEach
@@ -235,9 +237,11 @@ final class RpmITCase {
     private void assertion() throws InterruptedException, ExecutionException {
         MatcherAssert.assertThat(
             new String(
-                new Concatenation(
-                    this.storage.value(new Key.From("repodata/repomd.xml")).get()
-                ).single().blockingGet().array(),
+                new Concatenation(this.storage.value(new Key.From("repodata/repomd.xml")).get())
+                    .single()
+                    .map(buf -> new Remaining(buf, true))
+                    .map(Remaining::bytes)
+                    .blockingGet(),
                 Charset.defaultCharset()
             ),
             XhtmlMatchers.hasXPaths(
