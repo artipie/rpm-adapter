@@ -95,11 +95,11 @@ final class RpmITCase {
     /**
      * Test bundle size.
      */
-    private static final TestBundle.Size SIZE = TestBundle.Size.HUNDRED;
-//        TestBundle.Size.valueOf(
-//            System.getProperty("it.longtests.size", "hundred")
-//                .toUpperCase(Locale.US)
-//        );
+    private static final TestBundle.Size SIZE =
+        TestBundle.Size.valueOf(
+            System.getProperty("it.longtests.size", "hundred")
+                .toUpperCase(Locale.US)
+        );
 
     /**
      * Repository storage with RPM packages.
@@ -108,8 +108,7 @@ final class RpmITCase {
 
     @BeforeAll
     static void setUpClass() throws Exception {
-        RpmITCase.bundle = Paths.get("/Users/alena/Downloads/bundle100.tar.gz");
-            //new TestBundle(RpmITCase.SIZE).load(RpmITCase.tmp);
+        RpmITCase.bundle = new TestBundle(RpmITCase.SIZE).load(RpmITCase.tmp);
     }
 
     @BeforeEach
