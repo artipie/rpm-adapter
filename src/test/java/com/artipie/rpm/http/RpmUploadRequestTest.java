@@ -51,6 +51,7 @@ public final class RpmUploadRequestTest {
     @CsvSource({
         "/file.rpm?override=true,true",
         "/file.rpm?some_param=true&override=true,true",
+        "/file.rpm?some_param=false&override=true,true",
         ",false",
         "/file.rpm,false",
         "/file.rpm?some_param=true,false",
