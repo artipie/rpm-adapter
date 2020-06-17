@@ -46,6 +46,8 @@ import org.cactoos.scalar.AndInThreads;
 import org.cactoos.scalar.Unchecked;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -53,6 +55,12 @@ import org.junit.jupiter.api.io.TempDir;
  * Unit tests for {@link Rpm}.
  *
  * @since 0.9
+ * @todo #110:30min Meaningful error on broken package.
+ *  Rpm should throw an exception when trying to add an invalid package.
+ *  The type of exception must be IllegalArgumentException and its message
+ *  "Reading of RPM package 'package' failed, data corrupt or malformed.",
+ *  like described in showMeaningfulErrorWhenInvalidPackageSent. Implement it
+ *  and then enable the test.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 final class RpmTest {
@@ -121,6 +129,26 @@ final class RpmTest {
         MatcherAssert.assertThat(
             countData(tmp),
             new IsEqual<>(2)
+        );
+    }
+
+    @Test
+    @Disabled
+    void showMeaningfulErrorWhenInvalidPackageSent() throws Exception {
+        final Storage storage = new InMemoryStorage();
+        final Rpm repo =  new Rpm(
+            storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
+        );
+        new TestRpm.Multiple(
+            new TestRpm.Abc(),
+            new TestRpm.Libdeflt()
+        ).put(storage);
+        repo.batchUpdate(Key.ROOT).blockingAwait();
+        new TestRpm.Invalid().put(storage);
+        Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> repo.batchUpdate(Key.ROOT).blockingAwait(),
+            "Reading of RPM package \"brokentwo.rpm\" failed, data corrupt or malformed."
         );
     }
 
