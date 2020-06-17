@@ -35,11 +35,14 @@ import com.artipie.http.rs.RsWithStatus;
 import com.artipie.rpm.Rpm;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Streams;
-import hu.akarnokd.rxjava2.interop.SingleInterop;
+import hu.akarnokd.rxjava2.interop.CompletableInterop;
+import io.reactivex.Completable;
 import io.reactivex.Single;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.reactivestreams.Publisher;
@@ -81,15 +84,33 @@ final class RpmUpload implements Slice {
     public Response response(final String line, final Iterable<Map.Entry<String, String>> headers,
         final Publisher<ByteBuffer> body) {
         final Request request = new Request(line);
+        final Key key = request.file();
+        final CompletionStage<Boolean> conflict;
+        if (request.override()) {
+            conflict = CompletableFuture.completedFuture(false);
+        } else {
+            conflict = this.asto.exists(key);
+        }
         return new AsyncResponse(
-            SingleInterop.fromFuture(
-                this.asto.save(
-                    request.file(),
-                    new Content.From(body)
-                ).thenApply(ignored -> true)
+            conflict.thenApply(
+                isConflict -> {
+                    final Response response;
+                    if (isConflict) {
+                        response = new RsWithStatus(RsStatus.CONFLICT);
+                    } else {
+                        response = new AsyncResponse(
+                            CompletableInterop.fromFuture(
+                                this.asto.save(key, new Content.From(body))
+                            ).andThen(
+                                Completable.defer(() -> this.rpm.batchUpdate(Key.ROOT))
+                            ).andThen(
+                                Single.just(new RsWithStatus(RsStatus.ACCEPTED))
+                            )
+                        );
+                    }
+                    return response;
+                }
             )
-                .flatMapCompletable(ignored -> this.rpm.batchUpdate(Key.ROOT))
-                .<Response>andThen(Single.just(new RsWithStatus(RsStatus.ACCEPTED)))
         );
     }
 
