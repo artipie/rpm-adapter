@@ -41,18 +41,18 @@ This is the dependency you need:
 </dependency>
 ```
  
-Then, you implement `com.artipie.asto.Storage` interface or use one the existing implementations,
+Then, use one of the existing `com.artipie.asto.Storage` implementations to create the `Storage`,
 [`FileStorage`](https://github.com/artipie/asto/blob/master/src/main/java/com/artipie/asto/fs/FileStorage.java), 
 [`S3`](https://github.com/artipie/asto/blob/master/src/main/java/com/artipie/asto/s3/S3Storage.java) 
-and other storages are supported. 
+and other storages are supported. Or you can implement `com.artipie.asto.Storage` by yourself.
 
 Then, you make an instance of `Rpm` class with your storage
-as an argument. Finally, you put your artifacts to the storage
-and instruct `Rpm` to update the meta info:
+as an argument. Finally, you put your artifacts to the storage specifying repository key 
+(`rpm-repo` in our example) and instruct `Rpm` to update the meta info:
 
 ```java
 import com.artipie.rpm.Rpm;
-Rpm rpm = new Rpm(storage);
+final Rpm rpm = new Rpm(storage);
 rpm.batchUpdate(new Key.From("rpm-repo"));
 ```
 
@@ -76,9 +76,9 @@ Rpm rpm = new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256);
 
 ### Include filelists.xml metadata
 
-RPM repository may include filelists.xml metadata, this metadata is not required by all rpm package
+RPM repository may include `filelists.xml` metadata, this metadata is not required by all rpm package
 managers. By default, we generate this metadata file but this behaviour can be configured with the
-help of `Rpm` secondary constrictor.
+help of `Rpm` secondary constructor.
 
 ## How it works?
 
