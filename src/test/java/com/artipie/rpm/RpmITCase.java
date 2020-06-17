@@ -36,7 +36,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.FileUtils;
@@ -78,18 +77,6 @@ final class RpmITCase {
      * Gzipped bundle of RPMs.
      */
     private static Path bundle;
-
-    /**
-     * Abc test rmp file.
-     */
-    private static final Path ABC =
-        Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm");
-
-    /**
-     * Libdeflt test rmp file.
-     */
-    private static final Path LIBDEFLT =
-        Paths.get("src/test/resources-binary/libdeflt1_0-2020.03.27-25.1.armv7hl.rpm");
 
     /**
      * Test bundle size.
@@ -217,14 +204,7 @@ final class RpmITCase {
         bsto.list(Key.ROOT).stream()
             .filter(name -> name.string().contains("oxygen"))
             .forEach(new UncheckedConsumer<>(item -> bsto.delete(new Key.From(item))));
-        bsto.save(
-            new Key.From(RpmITCase.ABC.getFileName().toString()),
-            Files.readAllBytes(RpmITCase.ABC)
-        );
-        bsto.save(
-            new Key.From(RpmITCase.LIBDEFLT.getFileName().toString()),
-            Files.readAllBytes(RpmITCase.LIBDEFLT)
-        );
+        new TestRpm.Multiple(new TestRpm.Abc(), new TestRpm.Libdeflt()).put(this.storage);
     }
 
     /**
