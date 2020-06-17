@@ -35,7 +35,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
@@ -58,18 +57,6 @@ import org.junit.jupiter.api.io.TempDir;
  */
 final class RpmTest {
 
-    /**
-     * Abc test rmp file.
-     */
-    private static final Path ABC =
-        Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm");
-
-    /**
-     * Libdeflt test rmp file.
-     */
-    private static final Path LIBDEFLT =
-        Paths.get("src/test/resources-binary/libdeflt1_0-2020.03.27-25.1.armv7hl.rpm");
-
     @Test
     void updatesDifferentReposSimultaneouslyTwice() throws Exception {
         final Storage storage = new InMemoryStorage();
@@ -81,7 +68,10 @@ final class RpmTest {
         final List<Scalar<Boolean>> tasks = new Mapped<>(
             key -> new Unchecked<>(
                 () -> {
-                    RpmTest.putFilesInStorage(storage, new Key.From(key));
+                    new TestRpm.Multiple(
+                        new TestRpm.Abc(),
+                        new TestRpm.Libdeflt()
+                    ).put(storage);
                     latch.countDown();
                     latch.await();
                     repo.batchUpdate(new Key.From(key)).blockingAwait();
@@ -105,11 +95,11 @@ final class RpmTest {
     void doesntBrakeMetadataWhenInvalidPackageSent(@TempDir final Path tmp) throws Exception {
         final Storage storage = new FileStorage(tmp);
         final Rpm repo =  new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, true);
-        RpmTest.addRpm(storage, RpmTest.ABC);
+        new TestRpm.Abc().put(storage);
         repo.batchUpdate(Key.ROOT).blockingAwait();
         final byte[] broken = {0x00, 0x01, 0x02 };
         storage.save(new Key.From("broken.rpm"), new Content.From(broken)).get();
-        RpmTest.addRpm(storage, RpmTest.LIBDEFLT);
+        new TestRpm.Libdeflt().put(storage);
         repo.batchUpdate(Key.ROOT).blockingAwait();
         MatcherAssert.assertThat(
             countData(tmp),
@@ -122,30 +112,16 @@ final class RpmTest {
         throws Exception {
         final Storage storage = new FileStorage(tmp);
         final Rpm repo =  new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, true);
-        RpmTest.addRpm(storage, RpmTest.LIBDEFLT);
+        new TestRpm.Libdeflt().put(storage);
         repo.batchUpdate(Key.ROOT).blockingAwait();
         final byte[] broken = {0x00, 0x01, 0x02 };
         storage.save(new Key.From("broken-file.rpm"), new Content.From(broken)).get();
-        RpmTest.addRpm(storage, RpmTest.ABC);
-        repo.updateBatchIncrementally(Key.ROOT).blockingAwait();
+        new TestRpm.Abc().put(storage);
+        repo.batchUpdateIncrementally(Key.ROOT).blockingAwait();
         MatcherAssert.assertThat(
             countData(tmp),
             new IsEqual<>(2)
         );
-    }
-
-    /**
-     * Adds rpm into storage.
-     * @param storage Where to add
-     * @param rpm Rpm
-     * @throws IOException On error
-     */
-    private static void addRpm(final Storage storage, final Path rpm)
-        throws IOException {
-        storage.save(
-            new Key.From(rpm.getFileName().toString()),
-            new Content.From(Files.readAllBytes(rpm))
-        ).join();
     }
 
     private static int countData(final Path path) throws IOException {
@@ -209,22 +185,5 @@ final class RpmTest {
                 .map(Key::string).filter(str -> str.contains("repomd")).count(),
             new IsEqual<>(1L)
         );
-    }
-
-    /**
-     * Puts files into storage.
-     * @param storage Where to put
-     * @param key Repo key
-     * @throws IOException On error
-     */
-    private static void putFilesInStorage(final Storage storage, final Key key) throws IOException {
-        storage.save(
-            new Key.From(key, RpmTest.ABC.getFileName().toString()),
-            new Content.From(Files.readAllBytes(RpmTest.ABC))
-        ).join();
-        storage.save(
-            new Key.From(key, RpmTest.LIBDEFLT.getFileName().toString()),
-            new Content.From(Files.readAllBytes(RpmTest.LIBDEFLT))
-        ).join();
     }
 }
