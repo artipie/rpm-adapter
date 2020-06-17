@@ -26,12 +26,12 @@ package com.artipie.rpm.meta;
 import com.artipie.rpm.TimingExtension;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.files.TestBundle;
+import com.artipie.rpm.misc.FileInDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Locale;
-import java.util.Optional;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
@@ -93,7 +93,9 @@ class XmlMetaJoinITCase {
         XmlMetaJoinITCase.repo = Files.createDirectory(XmlMetaJoinITCase.tmp.resolve("repo"));
         new Gzip(XmlMetaJoinITCase.bundle).unpackTar(XmlMetaJoinITCase.repo);
         XmlMetaJoinITCase.result = XmlMetaJoinITCase.repo.resolve("res.filelists.xml");
-        new Gzip(meta(XmlMetaJoinITCase.repo, "filelists")).unpack(XmlMetaJoinITCase.result);
+        new Gzip(
+            new FileInDir(XmlMetaJoinITCase.repo).find("filelists.xml.gz")
+        ).unpack(XmlMetaJoinITCase.result);
         new XmlStreamJoin("filelists").merge(
             XmlMetaJoinITCase.result,
             Paths.get(XmlMetaJoinITCase.RESOURCES, "filelists.xml.example")
@@ -108,7 +110,7 @@ class XmlMetaJoinITCase {
     @Test
     void joinsBigMetadataWithSmall() throws IOException {
         final Path fast = XmlMetaJoinITCase.repo.resolve("big.filelists.xml");
-        new Gzip(meta(XmlMetaJoinITCase.repo, "filelists")).unpack(fast);
+        new Gzip(new FileInDir(XmlMetaJoinITCase.repo).find("filelists.xml.gz")).unpack(fast);
         new XmlMetaJoin("filelists")
             .merge(fast, Paths.get(XmlMetaJoinITCase.RESOURCES, "filelists.xml.example"));
         MatcherAssert.assertThat(
@@ -122,33 +124,11 @@ class XmlMetaJoinITCase {
         final Path big = XmlMetaJoinITCase.repo.resolve("big.filelists.xml");
         final Path fast = XmlMetaJoinITCase.repo.resolve("fast.filelists.xml");
         Files.copy(Paths.get(XmlMetaJoinITCase.RESOURCES, "filelists.xml.example"), fast);
-        new Gzip(meta(XmlMetaJoinITCase.repo, "filelists")).unpack(big);
+        new Gzip(new FileInDir(XmlMetaJoinITCase.repo).find("filelists.xml.gz")).unpack(big);
         new XmlMetaJoin("filelists").merge(fast, big);
         MatcherAssert.assertThat(
             fast,
             CompareMatcher.isIdenticalTo(XmlMetaJoinITCase.result)
         );
     }
-
-    /**
-     * Searches for the meta file by substring in folder.
-     * @param dir Where to look for the file
-     * @param substr What to find
-     * @return Path to find
-     * @throws IOException On error
-     */
-    private static Path meta(final Path dir, final String substr) throws IOException {
-        final Optional<Path> res = Files.walk(dir)
-            .filter(
-                path -> path.getFileName().toString().endsWith(String.format("%s.xml.gz", substr))
-            ).findFirst();
-        if (res.isPresent()) {
-            return res.get();
-        } else {
-            throw new IllegalStateException(
-                String.format("Metafile %s does not exists in %s", substr, dir.toString())
-            );
-        }
-    }
-
 }
