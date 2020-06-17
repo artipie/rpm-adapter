@@ -27,13 +27,15 @@ import com.artipie.http.rq.RequestLine;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * Test for {@link RpmUpload}.
  * @since 0.9
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-public class RpmUploadRequestTest {
+public final class RpmUploadRequestTest {
 
     @Test
     void returnsFileNameKey() {
@@ -45,4 +47,23 @@ public class RpmUploadRequestTest {
         );
     }
 
+    @ParameterizedTest
+    @CsvSource({
+        "/file.rpm?override=true,true",
+        "/file.rpm?some_param=true&override=true,true",
+        ",false",
+        "/file.rpm,false",
+        "/file.rpm?some_param=true,false",
+        "/file.rpm?override=false,false",
+        "/file.rpm?override=whatever,false",
+        "/file.rpm?not_override=true,false"
+    })
+    void readsOverrideFlag(final String uri, final boolean expected) {
+        MatcherAssert.assertThat(
+            new RpmUpload.Request(
+                new RequestLine("PUT", uri, "HTTP/1.1").toString()
+            ).override(),
+            new IsEqual<>(expected)
+        );
+    }
 }
