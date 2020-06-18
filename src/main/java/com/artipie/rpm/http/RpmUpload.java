@@ -33,10 +33,13 @@ import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.rpm.Rpm;
+import com.google.common.base.Splitter;
+import com.google.common.collect.Streams;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Single;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.reactivestreams.Publisher;
@@ -120,6 +123,20 @@ final class RpmUpload implements Slice {
          */
         public Key file() {
             return new Key.From(this.path().group("rpm"));
+        }
+
+        /**
+         * Returns override param.
+         *
+         * @return Override param value, <code>false</code> - if absent
+         */
+        public boolean override() {
+            return Optional.ofNullable(new RequestLineFrom(this.line).uri().getQuery())
+                .map(
+                    query -> Streams.stream(Splitter.on("&").split(query))
+                        .anyMatch(part -> part.equals("override=true"))
+                )
+                .orElse(false);
         }
 
         /**

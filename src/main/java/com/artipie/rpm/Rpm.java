@@ -31,6 +31,7 @@ import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryChecksums;
 import com.artipie.rpm.meta.XmlRepomd;
+import com.artipie.rpm.misc.FileInDir;
 import com.artipie.rpm.misc.UncheckedConsumer;
 import com.artipie.rpm.misc.UncheckedFunc;
 import com.artipie.rpm.pkg.FilePackage;
@@ -55,10 +56,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.xml.stream.XMLStreamException;
 
 /**
@@ -400,7 +399,9 @@ public final class Rpm {
                     new UncheckedConsumer<>(
                         name -> {
                             final Path metaf = dir.resolve(String.format("%s.old.xml", name));
-                            new Gzip(Rpm.meta(dir, name)).unpack(metaf);
+                            new Gzip(
+                                new FileInDir(dir).find(String.format("%s.xml.gz", name))
+                            ).unpack(metaf);
                             data.put(name, metaf);
                         }
                     )
@@ -435,29 +436,5 @@ public final class Rpm {
         final XmlRepomd repomd = new XmlRepomd(Files.createTempFile("repomd-", ".xml"));
         repomd.begin(System.currentTimeMillis() / Tv.THOUSAND);
         return repomd;
-    }
-
-    /**
-     * Searches for the meta file by substring in folder.
-     * @param dir Where to look for the file
-     * @param substr What to find
-     * @return Path to find
-     * @throws IOException On error
-     */
-    private static Path meta(final Path dir, final String substr) throws IOException {
-        try (Stream<Path> subdirs = Files.walk(dir)) {
-            final Optional<Path> res = subdirs
-                .filter(
-                    path -> path.getFileName().toString()
-                        .endsWith(String.format("%s.xml.gz", substr))
-                ).findFirst();
-            if (res.isPresent()) {
-                return res.get();
-            } else {
-                throw new IllegalStateException(
-                    String.format("Metafile %s does not exists in %s", substr, dir.toString())
-                );
-            }
-        }
     }
 }
