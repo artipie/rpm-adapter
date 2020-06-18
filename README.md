@@ -41,10 +41,11 @@ This is the dependency you need:
 </dependency>
 ```
  
-Then, use one of the existing `com.artipie.asto.Storage` implementations to create the `Storage`,
+Then, use one of the existing `com.artipie.asto.Storage` implementations to create the `Storage`. 
+[`Artipie/asto`](https://github.com/artipie/asto) supports
 [`FileStorage`](https://github.com/artipie/asto/blob/master/src/main/java/com/artipie/asto/fs/FileStorage.java), 
 [`S3`](https://github.com/artipie/asto/blob/master/src/main/java/com/artipie/asto/s3/S3Storage.java) 
-and other storages are supported. Or you can implement `com.artipie.asto.Storage` by yourself.
+and other storages. Or you can implement `com.artipie.asto.Storage` by yourself.
 
 Then, you make an instance of `Rpm` class with your storage
 as an argument. Finally, you put your artifacts to the storage specifying repository key 
@@ -52,8 +53,14 @@ as an argument. Finally, you put your artifacts to the storage specifying reposi
 
 ```java
 import com.artipie.rpm.Rpm;
+final Storage storage = new FileStorage(Paths.get("my-artipie"));
+final String name = "rpm-repo";
+storage.save(
+    new Key.From(name, "pkg.rpm"), 
+    new Content.From(Files.readAllBytes(Paths.get("pkg.rpm")))
+).join();
 final Rpm rpm = new Rpm(storage);
-rpm.batchUpdate(new Key.From("rpm-repo"));
+rpm.batchUpdate(new Key.From(name));
 ```
 
 Read the [Javadoc](https://www.javadoc.io/doc/com.artipie/rpm-adapter/latest/index.html)
@@ -62,7 +69,7 @@ for more technical details.
 ### Naming policy and checksum computation algorithm
 
 RPM may use different names to store metadata files in the package,
-by default we use `StandardNamingPolicy.PLAIN`, to change naming policy use
+by default we use `StandardNamingPolicy.PLAIN`. To change naming policy use
 secondary constructor of `Rpm` to configure it. For instance to add `SHA1` prefixes for metadata 
 files use `StandardNamingPolicy.SHA1`. 
 
