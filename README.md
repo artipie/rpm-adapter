@@ -41,39 +41,56 @@ This is the dependency you need:
 </dependency>
 ```
  
-Then, you implement `com.yegor256.rpm.Storage` interface.
+Then, use one of the existing `com.artipie.asto.Storage` implementations to create the `Storage`. 
+[`Artipie/asto`](https://github.com/artipie/asto) supports
+[`FileStorage`](https://github.com/artipie/asto/blob/master/src/main/java/com/artipie/asto/fs/FileStorage.java), 
+[`S3`](https://github.com/artipie/asto/blob/master/src/main/java/com/artipie/asto/s3/S3Storage.java) 
+and other storages. Or you can implement `com.artipie.asto.Storage` by yourself.
 
 Then, you make an instance of `Rpm` class with your storage
-as an argument. Finally, you put your artifacts to the storage
-and instruct `Rpm` to update the meta info:
+as an argument. Finally, you put your artifacts to the storage specifying repository key 
+(`rpm-repo` in our example) and instruct `Rpm` to update the meta info:
 
 ```java
 import com.artipie.rpm.Rpm;
-Rpm rpm = new Rpm(storage);
-rpm.update("test/my.rpm");
+final Storage storage = new FileStorage(Paths.get("my-artipie"));
+final String name = "rpm-repo";
+storage.save(
+    new Key.From(name, "pkg.rpm"), 
+    new Content.From(Files.readAllBytes(Paths.get("pkg.rpm")))
+).join();
+final Rpm rpm = new Rpm(storage);
+rpm.batchUpdate(new Key.From(name));
 ```
 
-To update the whole repository with all RPM files use `batchUpdate` method of `Rpm` class:
-```java
-import com.artipie.rpm.Rpm;
-Rpm rpm = new Rpm(storage);
-rpm.batchUpdate("test");
-```
-
-Read the [Javadoc](http://www.javadoc.io/doc/com.yegor256/rpm-files)
+Read the [Javadoc](https://www.javadoc.io/doc/com.artipie/rpm-adapter/latest/index.html)
 for more technical details.
 
-### Naming policy
+### Naming policy and checksum computation algorithm
 
 RPM may use different names to store metadata files in the package,
-by default `NamingPolicy.DEFAULT` will be used, to change naming policy use
-secondary constructor of `Rpm` to configure it. For instance to add `SHA1` prefixes for metadata files
-use `new Rpm(storage, new NamingPolicy.Sha1Prefixed())`.
+by default we use `StandardNamingPolicy.PLAIN`. To change naming policy use
+secondary constructor of `Rpm` to configure it. For instance to add `SHA1` prefixes for metadata 
+files use `StandardNamingPolicy.SHA1`. 
+
+RPM may use different algorithms to calculate rpm packages checksum for metadata. By default, we use 
+`sha-256` algorithms for hashing. To change checksum calculation algorithm use secondary 
+constructor of `Rpm` and `Digest` enum to specify the algorithm:
+
+```java
+Rpm rpm = new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256);
+```
+
+### Include filelists.xml metadata
+
+RPM repository may include `filelists.xml` metadata, this metadata is not required by all rpm package
+managers. By default, we generate this metadata file but this behaviour can be configured with the
+help of `Rpm` secondary constructor.
 
 ## How it works?
 
 First, you upload your `.rpm` artifact to the repository. Then,
-you call `update()` and these four system XML files are updated
+you call `batchUpdate()` and these four system XML files are updated
 in the `repodata` directory:
 `repomd.xml`, `primary.xml.gz`, `filelists.xml.gz`, and `others.xml.gz`.
 
