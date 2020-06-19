@@ -25,6 +25,6 @@
 /**
  * Hamcrest matchers.
  *
- * @since 0.1
+ * @since 0.7
  */
 package com.artipie.rpm.hm;

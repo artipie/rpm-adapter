@@ -26,6 +26,7 @@ package com.artipie.rpm.meta;
 import com.artipie.rpm.TimingExtension;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.files.TestBundle;
+import com.artipie.rpm.hm.IsXmlEqual;
 import com.artipie.rpm.misc.FileInDir;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -41,7 +42,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.xmlunit.matchers.CompareMatcher;
 
 /**
  * Test for {@link XmlMetaJoin}.
@@ -69,14 +69,10 @@ class XmlMetaJoinITCase {
     private static Path repo;
 
     /**
-     * Path to resulting file.
-     */
-    private static Path result;
-
-    /**
      * Resources dir.
      */
-    private static final String RESOURCES = "src/test/resources-binary/repodata";
+    private static final Path FILELISTS =
+        Paths.get("src/test/resources-binary/repodata/filelists.xml.example");
 
     @BeforeAll
     static void setUpClass() throws Exception {
@@ -92,14 +88,6 @@ class XmlMetaJoinITCase {
     void setUp() throws Exception {
         XmlMetaJoinITCase.repo = Files.createDirectory(XmlMetaJoinITCase.tmp.resolve("repo"));
         new Gzip(XmlMetaJoinITCase.bundle).unpackTar(XmlMetaJoinITCase.repo);
-        XmlMetaJoinITCase.result = XmlMetaJoinITCase.repo.resolve("res.filelists.xml");
-        new Gzip(
-            new FileInDir(XmlMetaJoinITCase.repo).find("filelists.xml.gz")
-        ).unpack(XmlMetaJoinITCase.result);
-        new XmlStreamJoin("filelists").merge(
-            XmlMetaJoinITCase.result,
-            Paths.get(XmlMetaJoinITCase.RESOURCES, "filelists.xml.example")
-        );
     }
 
     @AfterEach
@@ -111,11 +99,18 @@ class XmlMetaJoinITCase {
     void joinsBigMetadataWithSmall() throws IOException {
         final Path fast = XmlMetaJoinITCase.repo.resolve("big.filelists.xml");
         new Gzip(new FileInDir(XmlMetaJoinITCase.repo).find("filelists.xml.gz")).unpack(fast);
-        new XmlMetaJoin("filelists")
-            .merge(fast, Paths.get(XmlMetaJoinITCase.RESOURCES, "filelists.xml.example"));
+        new XmlMetaJoin("filelists").merge(fast, XmlMetaJoinITCase.FILELISTS);
+        final Path result = XmlMetaJoinITCase.repo.resolve("res.filelists.xml");
+        new Gzip(
+            new FileInDir(XmlMetaJoinITCase.repo).find("filelists.xml.gz")
+        ).unpack(result);
+        new XmlStreamJoin("filelists").merge(
+            result,
+            XmlMetaJoinITCase.FILELISTS
+        );
         MatcherAssert.assertThat(
             fast,
-            CompareMatcher.isIdenticalTo(XmlMetaJoinITCase.result)
+            new IsXmlEqual(result)
         );
     }
 
@@ -123,12 +118,15 @@ class XmlMetaJoinITCase {
     void joinsSmallMetadataWithBig() throws IOException {
         final Path big = XmlMetaJoinITCase.repo.resolve("big.filelists.xml");
         final Path fast = XmlMetaJoinITCase.repo.resolve("fast.filelists.xml");
-        Files.copy(Paths.get(XmlMetaJoinITCase.RESOURCES, "filelists.xml.example"), fast);
+        Files.copy(XmlMetaJoinITCase.FILELISTS, fast);
         new Gzip(new FileInDir(XmlMetaJoinITCase.repo).find("filelists.xml.gz")).unpack(big);
         new XmlMetaJoin("filelists").merge(fast, big);
+        final Path result = XmlMetaJoinITCase.repo.resolve("res.filelists.xml");
+        Files.copy(XmlMetaJoinITCase.FILELISTS, result);
+        new XmlStreamJoin("filelists").merge(result, big);
         MatcherAssert.assertThat(
             fast,
-            CompareMatcher.isIdenticalTo(XmlMetaJoinITCase.result)
+            new IsXmlEqual(result)
         );
     }
 }

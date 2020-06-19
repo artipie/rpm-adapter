@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm.meta;
 
+import com.artipie.rpm.hm.IsXmlEqual;
 import com.jcabi.matchers.XhtmlMatchers;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -31,7 +32,6 @@ import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.xmlunit.matchers.CompareMatcher;
 
 /**
  * Test {@link XmlAlter}.
@@ -74,43 +74,33 @@ class XmlAlterTest {
 
     @Test
     public void doesNothingIfTagNotFound(@TempDir final Path temp) throws Exception {
-        final Path one = temp.resolve("one.xml");
-        final Path two = temp.resolve("two.xml");
-        Files.write(
-            one,
-            String.join(
-                "\n",
-                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-                "<one packages=\"2\" name=\"abc\"><a>2</a></one>"
-            ).getBytes()
-        );
-        Files.copy(one, two);
-        final int expected = 10;
-        new XmlAlter(one).pkgAttr("two", String.valueOf(expected));
+        final Path file = temp.resolve("one.xml");
+        final byte[] xml = String.join(
+            "\n",
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+            "<one packages=\"2\" name=\"abc\"><a>2</a></one>"
+        ).getBytes();
+        Files.write(file, xml);
+        new XmlAlter(file).pkgAttr("two", "10");
         MatcherAssert.assertThat(
-            one,
-            CompareMatcher.isIdenticalTo(two)
+            file,
+            new IsXmlEqual(xml)
         );
     }
 
     @Test
     public void doesNothingIfAttrNotFound(@TempDir final Path temp) throws Exception {
-        final Path one = temp.resolve("one.xml");
-        final Path two = temp.resolve("two.xml");
-        Files.write(
-            one,
-            String.join(
-                "\n",
-                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-                "<tag name=\"abc\"><a>2</a></tag>"
-            ).getBytes()
-        );
-        Files.copy(one, two);
-        final int expected = 10;
-        new XmlAlter(one).pkgAttr("tag", String.valueOf(expected));
+        final Path file = temp.resolve("one.xml");
+        final byte[] xml = String.join(
+            "\n",
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+            "<tag name=\"abc\"><a>2</a></tag>"
+        ).getBytes();
+        Files.write(file, xml);
+        new XmlAlter(file).pkgAttr("tag", "23");
         MatcherAssert.assertThat(
-            one,
-            CompareMatcher.isIdenticalTo(two)
+            file,
+            new IsXmlEqual(xml)
         );
     }
 
