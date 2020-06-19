@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm.meta;
 
+import com.artipie.rpm.hm.IsXmlEqual;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,7 +32,6 @@ import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.xmlunit.matchers.CompareMatcher;
 
 /**
  * Test for {@link XmlMaid.ByPkgidAttr}.
@@ -55,7 +55,7 @@ public final class ByPkgidAttrTest {
         );
         MatcherAssert.assertThat(
             file,
-            CompareMatcher.isIdenticalTo(
+            new IsXmlEqual(
                 Paths.get(ByPkgidAttrTest.REPODATA, "other.xml.example.second")
             )
         );
@@ -72,7 +72,7 @@ public final class ByPkgidAttrTest {
         );
         MatcherAssert.assertThat(
             file,
-            CompareMatcher.isIdenticalTo(
+            new IsXmlEqual(
                 Paths.get(ByPkgidAttrTest.REPODATA, "filelists.xml.example.first")
             )
         );

@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm.meta;
 
+import com.artipie.rpm.hm.IsXmlEqual;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,7 +32,6 @@ import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.xmlunit.matchers.CompareMatcher;
 
 /**
  * Test for {@link XmlPrimaryMaid}.
@@ -51,7 +51,7 @@ class XmlPrimaryMaidTest {
         );
         MatcherAssert.assertThat(
             file,
-            CompareMatcher.isIdenticalTo(
+            new IsXmlEqual(
                 Paths.get("src/test/resources-binary/repodata", "primary.xml.example.second")
             )
         );
@@ -68,7 +68,7 @@ class XmlPrimaryMaidTest {
         );
         MatcherAssert.assertThat(
             file,
-            CompareMatcher.isIdenticalTo(
+            new IsXmlEqual(
                 Paths.get("src/test/resources-binary/repodata", "primary.xml.example.first")
             )
         );
