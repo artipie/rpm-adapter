@@ -23,11 +23,11 @@
  */
 package com.artipie.rpm.http;
 
-import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.memory.InMemoryStorage;
+import com.artipie.http.Headers;
 import com.artipie.http.hm.RsHasStatus;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rs.RsStatus;
@@ -40,7 +40,6 @@ import java.util.Map;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -75,54 +74,44 @@ public class RpmUploadTest {
     }
 
     @Test
-    @Disabled
     void canReplaceArtifact() throws Exception {
         final Storage storage = new InMemoryStorage();
         final byte[] content =
             "replaced package bytes".getBytes(StandardCharsets.UTF_8);
-        new RpmUpload(storage).response(
-            "PUT /replaced.rpm",
-            new ListOf<Map.Entry<String, String>>(),
-            Flowable.fromArray(
-                ByteBuffer.wrap(
-                    "uploaded package".getBytes(StandardCharsets.UTF_8)
-                )
-            )
-        );
-        new RpmUpload(storage).response(
-            "PUT /replaced.rpm?override=true",
-            new ListOf<Map.Entry<String, String>>(),
-            Flowable.fromArray(ByteBuffer.wrap(content))
+        final Key key = new Key.From("replaced.rpm");
+        new BlockingStorage(storage).save(key, "uploaded package".getBytes());
+        MatcherAssert.assertThat(
+            new RpmUpload(storage).response(
+                new RequestLine("PUT", "/replaced.rpm?override=true", "HTTP/1.1").toString(),
+                Headers.EMPTY,
+                Flowable.fromArray(ByteBuffer.wrap(content))
+            ),
+            new RsHasStatus(RsStatus.ACCEPTED)
         );
         MatcherAssert.assertThat(
-            storage.value(new Key.From("replaced.rpm")).get(),
-            new IsEqual<>(new Content.From(content))
+            new BlockingStorage(storage).value(key),
+            new IsEqual<>(content)
         );
     }
 
     @Test
-    @Disabled
     void dontReplaceArtifact() throws Exception {
         final Storage storage = new InMemoryStorage();
         final byte[] content =
             "first package content".getBytes(StandardCharsets.UTF_8);
-        new RpmUpload(storage).response(
-            "PUT /not-replaced.rpm",
-            new ListOf<Map.Entry<String, String>>(),
-            Flowable.fromArray(ByteBuffer.wrap(content))
-        );
-        new RpmUpload(storage).response(
-            "PUT /not-replaced.rpm?override=false",
-            new ListOf<Map.Entry<String, String>>(),
-            Flowable.fromArray(
-                ByteBuffer.wrap(
-                    "second package content".getBytes(StandardCharsets.UTF_8)
-                )
-            )
+        final Key key = new Key.From("not-replaced.rpm");
+        new BlockingStorage(storage).save(key, content);
+        MatcherAssert.assertThat(
+            new RpmUpload(storage).response(
+                new RequestLine("PUT", "/not-replaced.rpm", "HTTP/1.1").toString(),
+                Headers.EMPTY,
+                Flowable.fromArray(ByteBuffer.wrap("second package content".getBytes()))
+            ),
+            new RsHasStatus(RsStatus.CONFLICT)
         );
         MatcherAssert.assertThat(
-            storage.value(new Key.From("not-replaced.rpm")).get(),
-            new IsEqual<>(new Content.From(content))
+            new BlockingStorage(storage).value(key),
+            new IsEqual<>(content)
         );
     }
 }
