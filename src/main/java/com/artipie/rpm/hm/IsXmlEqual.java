@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm.hm;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.cactoos.scalar.Unchecked;
@@ -31,7 +32,7 @@ import org.hamcrest.TypeSafeMatcher;
 import org.xmlunit.matchers.CompareMatcher;
 
 /**
- * Matcher for xmls.
+ * Matcher for XMLs.
  * @since 0.10
  */
 public final class IsXmlEqual extends TypeSafeMatcher<Path> {
@@ -76,6 +77,6 @@ public final class IsXmlEqual extends TypeSafeMatcher<Path> {
     @Override
     @SuppressWarnings("PMD.StringInstantiation")
     public void describeTo(final Description description) {
-        description.appendText(new String(this.xml));
+        description.appendText(new String(this.xml, StandardCharsets.US_ASCII));
     }
 }
