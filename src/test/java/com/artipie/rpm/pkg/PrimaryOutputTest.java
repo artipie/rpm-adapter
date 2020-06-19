@@ -28,7 +28,6 @@ import com.jcabi.log.Logger;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -63,13 +62,10 @@ class PrimaryOutputTest {
             primary.accept(new FilePackage.Headers(this.header(rpm), rpm, Digest.SHA256));
         }
         MatcherAssert.assertThat(
-            new String(Files.readAllBytes(res), StandardCharsets.UTF_8),
+            Files.readAllBytes(res),
             CompareMatcher.isIdenticalTo(
-                new String(
-                    Files.readAllBytes(
-                        Paths.get("src/test/resources-binary/repodata/abc-primary.xml")
-                    ),
-                    StandardCharsets.UTF_8
+                Files.readAllBytes(
+                    Paths.get("src/test/resources-binary/repodata/abc-primary.xml")
                 )
             ).ignoreWhitespace()
             .ignoreElementContentWhitespace()
@@ -88,14 +84,13 @@ class PrimaryOutputTest {
      * Get header.
      * @return The header
      * @param file Rpm file path
-     * @throws InvalidPackageException In case package is invalid.
-     * @throws IOException On error
+     * @throws IOException On error or invalid package
      * @todo #241:30min Introduce class from this method: the method is copied from FilePackage
      *  class, we need to extract class from it, test it and use it at least in FilePackage,
      *  ModifiableMetadataTest and here.
      */
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    private Header header(final Path file) throws InvalidPackageException, IOException {
+    private Header header(final Path file) throws IOException {
         try (FileChannel chan = FileChannel.open(file, StandardOpenOption.READ)) {
             final Format format;
             try {
@@ -104,7 +99,7 @@ class PrimaryOutputTest {
                 ).run(new ReadableChannelWrapper(chan));
                 // @checkstyle IllegalCatchCheck (1 line)
             } catch (final RuntimeException ex) {
-                throw new InvalidPackageException(ex);
+                throw new IOException("Failed to parse package", ex);
             }
             final Header header = format.getHeader();
             Logger.debug(this, "header: %s", header.toString());
