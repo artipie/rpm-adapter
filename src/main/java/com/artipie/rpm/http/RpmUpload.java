@@ -51,12 +51,6 @@ import org.reactivestreams.Publisher;
  * Slice for rpm packages upload.
  *
  * @since 0.8.3
- * @todo #253:30min Finish implementation of RpmUpload by implementing parsing of optional
- *  false by default `override` request parameter: if package with same name already exist and
- *  `override` query param flag is not true, then return 409 error. Parameter parsing should be
- *  implemented in `Request` class and tested, in `response` method we need to check parameter
- *  value and if the file exists in storage. Do not forget about tests.
- *  For more information please refer to https://github.com/artipie/rpm-adapter/issues/162:
  */
 final class RpmUpload implements Slice {
 
@@ -93,9 +87,9 @@ final class RpmUpload implements Slice {
         }
         return new AsyncResponse(
             conflict.thenApply(
-                isConflict -> {
+                conflicts -> {
                     final Response response;
-                    if (isConflict) {
+                    if (conflicts) {
                         response = new RsWithStatus(RsStatus.CONFLICT);
                     } else {
                         response = new AsyncResponse(
