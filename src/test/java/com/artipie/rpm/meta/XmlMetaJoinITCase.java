@@ -35,7 +35,6 @@ import java.nio.file.Paths;
 import java.util.Locale;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.MatcherAssert;
-import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -127,7 +126,7 @@ class XmlMetaJoinITCase {
         new XmlStreamJoin("filelists").merge(result, big);
         MatcherAssert.assertThat(
             fast,
-            new IsEqual<>(result)
+            new IsXmlEqual(result)
         );
     }
 }
