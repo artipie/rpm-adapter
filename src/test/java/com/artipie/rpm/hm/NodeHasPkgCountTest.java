@@ -24,23 +24,44 @@
 package com.artipie.rpm.hm;
 
 import com.artipie.rpm.meta.XmlPackage;
+import com.jcabi.xml.XMLDocument;
+import java.io.FileNotFoundException;
 import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
-import org.hamcrest.core.IsEqual;
+import org.hamcrest.core.IsNot;
 import org.junit.jupiter.api.Test;
+import org.llorllale.cactoos.matchers.Matches;
 
 /**
- * Test for {@link MdHasPkgAmount}.
+ * Test for {@link NodeHasPkgCount}.
  * @since 0.10
+ * @checkstyle MagicNumberCheck (500 lines)
  */
-class MdHasPkgAmountTest {
+class NodeHasPkgCountTest {
 
     @Test
-    void countsPackages() {
+    void countsPackages() throws FileNotFoundException {
         MatcherAssert.assertThat(
-            new MdHasPkgAmount(2, XmlPackage.OTHER.tag())
-                .matches(Paths.get("src/test/resources-binary/repodata/other.xml.example")),
-            new IsEqual<>(true)
+            new NodeHasPkgCount(2, XmlPackage.OTHER.tag()),
+            new Matches<>(
+                new XMLDocument(
+                    Paths.get("src/test/resources-binary/repodata/other.xml.example")
+                )
+            )
+        );
+    }
+
+    @Test
+    void doesNotMatchWhenPackagesAmountDiffers() throws FileNotFoundException {
+        MatcherAssert.assertThat(
+            new NodeHasPkgCount(10, XmlPackage.PRIMARY.tag()),
+            new IsNot<>(
+                new Matches<>(
+                    new XMLDocument(
+                        Paths.get("src/test/resources-binary/repodata/primary.xml.example")
+                    )
+                )
+            )
         );
     }
 

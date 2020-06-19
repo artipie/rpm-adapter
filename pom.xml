@@ -101,6 +101,20 @@ SOFTWARE.
       <version>1.4</version>
     </dependency>
     <dependency>
+      <groupId>com.jcabi</groupId>
+      <artifactId>jcabi-xml</artifactId>
+      <version>0.21.5</version>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.llorllale</groupId>
+      <artifactId>cactoos-matchers</artifactId>
+      <version>0.18</version>
+    </dependency>
+    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <version>28.2-jre</version>
@@ -136,15 +150,6 @@ SOFTWARE.
       <artifactId>junit-jupiter-params</artifactId>
       <version>${junit-platform.version}</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.jcabi</groupId>
-      <artifactId>jcabi-xml</artifactId>
-      <version>0.21.5</version>
-    </dependency>
-    <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest</artifactId>
     </dependency>
     <dependency>
       <groupId>org.xmlunit</groupId>
