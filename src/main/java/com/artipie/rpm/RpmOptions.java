@@ -28,7 +28,7 @@ import org.apache.commons.cli.Option;
 /**
  * Rpm repository settings options.
  * @since 0.10
- * @todo 275:30min Repository options: create class to parse repo settings from yaml. Format:
+ * @todo #275:30min Repository options: create class to parse repo settings from yaml. Format:
  *  settings:
  *  --digest: sha256
  *  --naming-policy: sha1
