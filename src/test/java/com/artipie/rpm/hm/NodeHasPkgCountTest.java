@@ -37,7 +37,7 @@ import org.llorllale.cactoos.matchers.Matches;
  * @since 0.10
  * @checkstyle MagicNumberCheck (500 lines)
  */
-class NodeHasPkgCountTest {
+final class NodeHasPkgCountTest {
 
     @Test
     void countsPackages() throws FileNotFoundException {
