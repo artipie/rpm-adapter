@@ -26,7 +26,8 @@ package com.artipie.rpm;
 import org.apache.commons.cli.Option;
 
 /**
- * Rpm repository settings options.
+ * Rpm repository configuration options. These options are used in rpm-adapter CLI mode and
+ * on Artipie storage configuration level.
  * @since 0.10
  * @todo #275:30min Repository options: create class to parse repo settings from yaml. Format:
  *  settings:
@@ -37,6 +38,8 @@ import org.apache.commons.cli.Option;
  *  from CliParsedArguments, the interface may have two implementation: FromCliArguments and
  *  FromYaml. After that these settings should be passed to `RpmSlice` and `RpmUpload` to create
  *  `Rpm` instance accordingly to the settings.
+ * @todo #275:30min Add unit test for this class to make sure it builds correct instance of
+ *  {@link Option}.
  */
 public enum RpmOptions {
 
@@ -95,7 +98,7 @@ public enum RpmOptions {
      * Builds command line option.
      * @return Instance of {@link Option}.
      */
-    public Option option() {
+    public final Option option() {
         return Option.builder(this.name.substring(0, 1))
             .argName(this.arg)
             .longOpt(this.name)
