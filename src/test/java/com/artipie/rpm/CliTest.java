@@ -23,14 +23,11 @@
  */
 package com.artipie.rpm;
 
-<<<<<<< HEAD
 import java.io.IOException;
 import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
-=======
 import org.junit.jupiter.api.Assertions;
->>>>>>> upstream/master
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -40,13 +37,9 @@ import org.junit.jupiter.api.io.TempDir;
  * @since 0.6
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
-<<<<<<< HEAD
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-class CliTest {
-
-=======
 final class CliTest {
->>>>>>> upstream/master
+
     @Test
     void testWrongArgumentCount() {
         final IllegalArgumentException err = Assertions.assertThrows(
