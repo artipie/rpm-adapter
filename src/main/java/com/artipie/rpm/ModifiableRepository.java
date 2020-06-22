@@ -26,9 +26,11 @@ package com.artipie.rpm;
 import com.artipie.rpm.meta.XmlRepomd;
 import com.artipie.rpm.misc.UncheckedConsumer;
 import com.artipie.rpm.pkg.FilePackage;
+import com.artipie.rpm.pkg.InvalidPackageException;
 import com.artipie.rpm.pkg.Metadata;
 import com.artipie.rpm.pkg.Package;
 import com.artipie.rpm.pkg.PackageOutput;
+import com.jcabi.log.Logger;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -69,14 +71,15 @@ public final class ModifiableRepository implements PackageOutput {
      * @param repomd Repomd
      * @param metadata Metadata files
      * @param digest Hashing algorithm
+     * @param tmp Temp dir to store metadata
      * @checkstyle ParameterNumberCheck (3 lines)
      */
     public ModifiableRepository(final List<String> existing, final XmlRepomd repomd,
-        final List<Metadata> metadata, final Digest digest) {
+        final List<Metadata> metadata, final Digest digest, final Path tmp) {
         this.existing = existing;
         this.metadata = metadata;
         this.digest = digest;
-        this.origin = new Repository(repomd, metadata, digest);
+        this.origin = new Repository(repomd, metadata, digest, tmp);
     }
 
     /**
@@ -88,7 +91,11 @@ public final class ModifiableRepository implements PackageOutput {
     public ModifiableRepository update(final FilePackage pkg) throws IOException {
         final String hex = new FileChecksum(pkg.path(), this.digest).hex();
         if (!this.existing.remove(hex)) {
-            this.origin.update(pkg.parsed());
+            try {
+                this.origin.update(pkg.parsed());
+            } catch (final InvalidPackageException ex) {
+                Logger.warn(this, "Failed parsing '%s': %[exception]s", pkg.path(), ex);
+            }
         }
         return this;
     }

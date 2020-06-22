@@ -94,10 +94,11 @@ public final class MetadataFile implements Metadata {
     }
 
     @Override
-    public Path save(final NamingPolicy naming, final Digest digest, final XmlRepomd repomd)
-        throws IOException {
+    // @checkstyle ParameterNumberCheck (3 lines)
+    public Path save(final NamingPolicy naming, final Digest digest, final XmlRepomd repomd,
+        final Path tmp) throws IOException {
         final Path open = this.out.file();
-        Path gzip = Files.createTempFile(this.type.filename(), ".gz");
+        Path gzip = Files.createTempFile(tmp, this.type.filename(), ".gz");
         MetadataFile.gzip(open, gzip);
         gzip = Files.move(
             gzip,

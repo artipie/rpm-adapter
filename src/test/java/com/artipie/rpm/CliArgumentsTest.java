@@ -33,9 +33,6 @@ import org.junit.jupiter.api.io.TempDir;
  * Tests for {@link CliArguments}.
  *
  * @since 0.9
- * @todo #113:30min Add more tests for CliArgumentTests.
- *  Add tests for CliArguments using all arguments, '=' signal for setting
- *  argument values and longopt name arguments.
  */
 class CliArgumentsTest {
 
@@ -77,6 +74,66 @@ class CliArgumentsTest {
         MatcherAssert.assertThat(
             new CliArguments().parsed(
                 "-dsha1"
+            ).digest(),
+            new IsEqual<>(Digest.SHA1)
+        );
+    }
+
+    @Test
+    void canParseNamingPolicyArgumentWithEquals() {
+        MatcherAssert.assertThat(
+            new CliArguments().parsed(
+                "-n=plain"
+            ).naming(),
+            new IsEqual<>(StandardNamingPolicy.PLAIN)
+        );
+    }
+
+    @Test
+    void canParseFileListsArgumentWithEquals() {
+        MatcherAssert.assertThat(
+            new CliArguments().parsed(
+                "-f=true"
+            ).fileLists(),
+            new IsEqual<>(true)
+        );
+    }
+
+    @Test
+    void canParseDigestArgumentWithEquals() {
+        MatcherAssert.assertThat(
+            new CliArguments().parsed(
+                "-d=sha256"
+            ).digest(),
+            new IsEqual<>(Digest.SHA256)
+        );
+    }
+
+    @Test
+    void canParseNamingPolicyArgumentWithLongopt() {
+        MatcherAssert.assertThat(
+            new CliArguments().parsed(
+                "-naming-policy=sha256"
+            ).naming(),
+            new IsEqual<>(StandardNamingPolicy.SHA256)
+        );
+    }
+
+    @Test
+    void canParseFileListsArgumentWithLongopt() {
+        MatcherAssert.assertThat(
+            new CliArguments().parsed(
+                "-filelists=false"
+            ).fileLists(),
+            new IsEqual<>(false)
+        );
+    }
+
+    @Test
+    void canParseDigestArgumentWithLongopt() {
+        MatcherAssert.assertThat(
+            new CliArguments().parsed(
+                "-digest=sha1"
             ).digest(),
             new IsEqual<>(Digest.SHA1)
         );

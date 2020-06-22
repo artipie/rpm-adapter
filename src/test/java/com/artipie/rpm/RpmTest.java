@@ -23,15 +23,30 @@
  */
 package com.artipie.rpm;
 
-import com.artipie.asto.Concatenation;
 import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.asto.fs.FileStorage;
 import com.artipie.asto.memory.InMemoryStorage;
-import java.nio.charset.Charset;
+import com.artipie.rpm.files.Gzip;
+import com.artipie.rpm.meta.XmlPackage;
+import com.jcabi.xml.XMLDocument;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.stream.Stream;
+import org.cactoos.Scalar;
+import org.cactoos.list.ListOf;
+import org.cactoos.list.Mapped;
+import org.cactoos.scalar.AndInThreads;
+import org.cactoos.scalar.Unchecked;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -40,52 +55,163 @@ import org.junit.jupiter.api.io.TempDir;
  * Unit tests for {@link Rpm}.
  *
  * @since 0.9
- * @todo #63:30min Don't change metadata when invalid package is sent.
- *  Currently Rpm is recalculating metadata when an invalid package is sent.
- *  It should not. Correct that and enable the test below.
+ * @todo #110:30min Meaningful error on broken package.
+ *  Rpm should throw an exception when trying to add an invalid package.
+ *  The type of exception must be IllegalArgumentException and its message
+ *  "Reading of RPM package 'package' failed, data corrupt or malformed.",
+ *  like described in showMeaningfulErrorWhenInvalidPackageSent. Implement it
+ *  and then enable the test.
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 final class RpmTest {
 
-    /**
-     * Path of repomd.xml fil.
-     */
-    private static final String REPOMD = "repodata/repomd.xml";
-
     @Test
-    @Disabled
-    void doesntBrakeMetadataWhenInvalidPackageSent(@TempDir final Path tmp)
-        throws Exception {
+    void updatesDifferentReposSimultaneouslyTwice() throws Exception {
         final Storage storage = new InMemoryStorage();
         final Rpm repo =  new Rpm(
             storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
         );
-        storage.save(
-            new Key.From("oldfile.rpm"),
-            new Content.From("anything".getBytes())
+        final List<String> keys = new ListOf<>("one", "two", "three");
+        final CountDownLatch latch = new CountDownLatch(keys.size());
+        final List<Scalar<Boolean>> tasks = new Mapped<>(
+            key -> new Unchecked<>(
+                () -> {
+                    new TestRpm.Multiple(
+                        new TestRpm.Abc(),
+                        new TestRpm.Libdeflt()
+                    ).put(storage);
+                    latch.countDown();
+                    latch.await();
+                    repo.batchUpdate(new Key.From(key)).blockingAwait();
+                    return true;
+                }
+            ),
+            keys
         );
+        new AndInThreads(tasks).value();
+        new AndInThreads(tasks).value();
+        keys.forEach(
+            key -> {
+                final Key res = new Key.From(key, "repodata");
+                RpmTest.metadataArePresent(storage, res);
+                RpmTest.repomdIsPresent(storage, res);
+            }
+        );
+    }
+
+    @Test
+    void doesntBrakeMetadataWhenInvalidPackageSent(@TempDir final Path tmp) throws Exception {
+        final Storage storage = new FileStorage(tmp);
+        final Rpm repo =  new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, true);
+        new TestRpm.Abc().put(storage);
         repo.batchUpdate(Key.ROOT).blockingAwait();
-        final String repomd = new String(
-            new Concatenation(
-                storage.value(new Key.From(RpmTest.REPOMD)).get()
-            ).single().blockingGet().array(),
-            Charset.defaultCharset()
-        );
         final byte[] broken = {0x00, 0x01, 0x02 };
-        storage.save(
-            new Key.From("broken.rpm"),
-            new Content.From(
-                broken
-            )
-        );
+        storage.save(new Key.From("broken.rpm"), new Content.From(broken)).get();
+        new TestRpm.Libdeflt().put(storage);
         repo.batchUpdate(Key.ROOT).blockingAwait();
         MatcherAssert.assertThat(
-            new String(
-                new Concatenation(
-                    storage.value(new Key.From(RpmTest.REPOMD)).get()
-                ).single().blockingGet().array(),
-                Charset.defaultCharset()
-            ),
-            new IsEqual<>(repomd)
+            countData(tmp),
+            new IsEqual<>(2)
+        );
+    }
+
+    @Test
+    void doesntBrakeMetadataWhenInvalidPackageSentOnIncrementalUpdate(@TempDir final Path tmp)
+        throws Exception {
+        final Storage storage = new FileStorage(tmp);
+        final Rpm repo =  new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, true);
+        new TestRpm.Libdeflt().put(storage);
+        repo.batchUpdate(Key.ROOT).blockingAwait();
+        final byte[] broken = {0x00, 0x01, 0x02 };
+        storage.save(new Key.From("broken-file.rpm"), new Content.From(broken)).get();
+        new TestRpm.Abc().put(storage);
+        repo.batchUpdateIncrementally(Key.ROOT).blockingAwait();
+        MatcherAssert.assertThat(
+            countData(tmp),
+            new IsEqual<>(2)
+        );
+    }
+
+    @Test
+    @Disabled
+    void showMeaningfulErrorWhenInvalidPackageSent() throws Exception {
+        final Storage storage = new InMemoryStorage();
+        final Rpm repo =  new Rpm(
+            storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
+        );
+        new TestRpm.Multiple(
+            new TestRpm.Abc(),
+            new TestRpm.Libdeflt()
+        ).put(storage);
+        repo.batchUpdate(Key.ROOT).blockingAwait();
+        new TestRpm.Invalid().put(storage);
+        Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> repo.batchUpdate(Key.ROOT).blockingAwait(),
+            "Reading of RPM package \"brokentwo.rpm\" failed, data corrupt or malformed."
+        );
+    }
+
+    private static int countData(final Path path) throws IOException {
+        final Path primary = path.resolve("primary.xml");
+        new Gzip(path.resolve(meta(path))).unpack(primary);
+        return Integer.parseInt(
+            new XMLDocument(new String(Files.readAllBytes(primary), StandardCharsets.UTF_8))
+                .xpath("count(/*[local-name()='metadata']/*[local-name()='package'])")
+                .get(0)
+        );
+    }
+
+    /**
+     * Searches for the meta file by substring in folder.
+     * @param dir Where to look for the file
+     * @return Path to find
+     * @throws IOException On error
+     */
+    private static Path meta(final Path dir) throws IOException {
+        try (Stream<Path> walk = Files.walk(dir)) {
+            final Optional<Path> res = walk
+                .filter(
+                    path -> path.getFileName().toString().endsWith("primary.xml.gz")
+                ).findFirst();
+            if (res.isPresent()) {
+                return res.get();
+            } else {
+                throw new IllegalStateException(
+                    String.format("Metafile %s does not exists in %s", "primary", dir.toString())
+                );
+            }
+        }
+    }
+
+    /**
+     * Checks that metadata are present.
+     * @param storage Storage
+     * @param repo Repodata key
+     */
+    private static void metadataArePresent(final Storage storage, final Key repo) {
+        new XmlPackage.Stream(true).get().forEach(
+            item ->
+                MatcherAssert.assertThat(
+                    String.format("Metadata %s is present", item.filename()),
+                    storage.list(repo).join().stream()
+                        .map(Key::string).filter(str -> str.contains(item.filename())).count(),
+                    new IsEqual<>(1L)
+                )
+        );
+    }
+
+    /**
+     * Checks that repomd is present.
+     * @param storage Storage
+     * @param key Key
+     */
+    private static void repomdIsPresent(final Storage storage, final Key key) {
+        MatcherAssert.assertThat(
+            "Repomd is present",
+            storage.list(key).join().stream()
+                .map(Key::string).filter(str -> str.contains("repomd")).count(),
+            new IsEqual<>(1L)
         );
     }
 }

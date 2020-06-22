@@ -424,16 +424,32 @@ public final class XmlPrimary implements Closeable {
         }
 
         /**
-         * Add list of providers.
-         * @param providers Provider names
+         * Adds `provides` element.
+         * @param names Libraries list provided by the package
+         * @param versions Versions
          * @return Self
          * @throws XMLStreamException On XML error
+         * @todo #220:30min We need to experimentally check that names and versions do not
+         *  mix up in `provides`: download oxygen-gtk2-1.3.4-3.el7.x86_64.rpm from test bundle100
+         *  (see TestBundle.class), add it to resources folder and create xml primary from it.
+         *  This rpm has not full `provides` information:
+         *  <rpm:entry name="liboxygen-gtk.so()(64bit)"/>
+         *  <rpm:entry name="oxygen-gtk2" flags="EQ" epoch="0" ver="1.3.4" rel="3.el7"/>
+         *  <rpm:entry name="oxygen-gtk2(x86-64)" flags="EQ" epoch="0" ver="1.3.4" rel="3.el7"/>
+         *  Make sure we write it the same way.
+         * @todo #220:30min Provides entry also can have `flags`, `epoch` and `rel` attributes.
+         *  Find a way to obtain this information from rpm and add it here. Do not forget about
+         *  test.
          */
-        public Format providers(final Iterable<String> providers) throws XMLStreamException {
+        public Format provides(final List<String> names, final List<String> versions)
+            throws XMLStreamException {
             this.xml.writeStartElement(XmlPrimary.NAMESPACE, "provides");
-            for (final String name : providers) {
+            for (int ind = 0; ind < names.size(); ind = ind + 1) {
                 this.xml.writeStartElement(XmlPrimary.NAMESPACE, "entry");
-                this.xml.writeAttribute("name", name);
+                this.xml.writeAttribute("name", names.get(ind));
+                if (ind < versions.size()) {
+                    this.xml.writeAttribute("ver", versions.get(ind));
+                }
                 this.xml.writeEndElement();
             }
             this.xml.writeEndElement();
