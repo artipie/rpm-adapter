@@ -45,6 +45,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 
 /**
@@ -146,12 +147,16 @@ final class RpmUpload implements Slice {
          * @return Override param value, <code>false</code> - if absent
          */
         public boolean override() {
-            return Optional.ofNullable(new RequestLineFrom(this.line).uri().getQuery())
-                .map(
-                    query -> Streams.stream(Splitter.on("&").split(query))
-                        .anyMatch(part -> part.equals("override=true"))
-                )
-                .orElse(false);
+            return this.params().anyMatch(part -> part.equals("override=true"));
+        }
+
+        /**
+         * Returns `skip_update` param.
+         *
+         * @return Skip update param value, <code>false</code> - if absent
+         */
+        public boolean skipUpdate() {
+            return this.params().anyMatch(part -> part.equals("skip_update=true"));
         }
 
         /**
@@ -166,6 +171,17 @@ final class RpmUpload implements Slice {
                 throw new IllegalStateException(String.format("Unexpected path: %s", path));
             }
             return matcher;
+        }
+
+        /**
+         * Extracts stream of parameters from request query.
+         *
+         * @return Stream of parameters.
+         */
+        private Stream<String> params() {
+            return Optional.ofNullable(new RequestLineFrom(this.line).uri().getQuery())
+                .map(query -> Streams.stream(Splitter.on("&").split(query)))
+                .orElse(Stream.empty());
         }
     }
 }
