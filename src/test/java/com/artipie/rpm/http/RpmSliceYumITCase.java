@@ -52,11 +52,14 @@ import org.testcontainers.containers.GenericContainer;
 
 /**
  * Test for {@link RpmSlice}.
- * @since 0.11
+ * @since 0.10
+ * @todo #273:30min We need to test that dnf rpm client can interact with rpm repository
+ *  created by rpm-adapter. Test can be the same as this one but use dnf instead of yum. Please
+ *  introduce separate class for this test.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-public final class RpmRepoSliceITCase {
+public final class RpmSliceYumITCase {
 
     /**
      * Vertx instance.
@@ -66,7 +69,7 @@ public final class RpmRepoSliceITCase {
     /**
      * Settings files.
      */
-    private final Path stngs = Paths.get("src/test/resources/example.repo");
+    private final Path setting = Paths.get("src/test/resources/example.repo");
 
     /**
      * Vertx slice server instance.
@@ -79,13 +82,22 @@ public final class RpmRepoSliceITCase {
     private GenericContainer<?> cntn;
 
     @Test
-    void listAndInstall() throws Exception {
+    void canListAndInstallFromArtipieRepo() throws Exception {
         this.start(Permissions.FREE, Identities.ANONYMOUS, "");
-        this.asserts();
+        MatcherAssert.assertThat(
+            "Lists 'time' package",
+            this.exec("list"),
+            new StringContainsInOrder(new ListOf<>("time.x86_64", "1.7-45.el7"))
+        );
+        MatcherAssert.assertThat(
+            "Installs time package",
+            this.exec("install"),
+            new StringContainsInOrder(new ListOf<>("time-1.7-45.el7.x86_64", "Complete!"))
+        );
     }
 
     @Test
-    void listAndInstallWithAuth() throws Exception {
+    void canListAndInstallFromArtipieRepoWithAuth() throws Exception {
         final String mark = "mark";
         final String pswd = "abc";
         this.start(
@@ -103,40 +115,40 @@ public final class RpmRepoSliceITCase {
             ),
             String.format("%s:%s@", mark, pswd)
         );
-        this.asserts();
+        MatcherAssert.assertThat(
+            "Lists 'time' package",
+            this.exec("list"),
+            new StringContainsInOrder(new ListOf<>("time.x86_64", "1.7-45.el7"))
+        );
+        MatcherAssert.assertThat(
+            "Installs time package",
+            this.exec("install"),
+            new StringContainsInOrder(new ListOf<>("time-1.7-45.el7.x86_64", "Complete!"))
+        );
     }
 
     @AfterEach
     void stopContainer() throws IOException {
         this.server.close();
         this.cntn.stop();
-        Files.deleteIfExists(this.stngs);
+        Files.deleteIfExists(this.setting);
     }
 
     @AfterAll
     static void close() {
-        RpmRepoSliceITCase.VERTX.close();
+        RpmSliceYumITCase.VERTX.close();
     }
 
     /**
-     * Assertions.
+     * Executes command in container.
+     * @param action What to do
+     * @return String stdout
      * @throws Exception On error
      */
-    private void asserts() throws Exception {
-        MatcherAssert.assertThat(
-            "Lists 'time' package",
-            this.cntn.execInContainer(
-                "yum", "repo-pkgs", "example", "list"
-            ).getStdout(),
-            new StringContainsInOrder(new ListOf<>("time.x86_64", "1.7-45.el7"))
-        );
-        MatcherAssert.assertThat(
-            "Installs time package",
-            this.cntn.execInContainer(
-                "yum", "-y", "repo-pkgs", "example", "install"
-            ).getStdout(),
-            new StringContainsInOrder(new ListOf<>("time-1.7-45.el7.x86_64", "Complete!"))
-        );
+    private String exec(final String action) throws Exception {
+        return this.cntn.execInContainer(
+            "yum", "repo-pkgs", "example", action
+        ).getStdout();
     }
 
     /**
@@ -153,14 +165,14 @@ public final class RpmRepoSliceITCase {
         new Rpm(storage, new NamingPolicy.HashPrefixed(Digest.SHA1), Digest.SHA256, true)
             .batchUpdate(Key.ROOT).blockingAwait();
         this.server = new VertxSliceServer(
-            RpmRepoSliceITCase.VERTX,
+            RpmSliceYumITCase.VERTX,
             new LoggingSlice(new RpmSlice(storage, perms, auth))
         );
         final int port = this.server.start();
         Testcontainers.exposeHostPorts(port);
-        this.stngs.toFile().createNewFile();
+        this.setting.toFile().createNewFile();
         Files.write(
-            this.stngs,
+            this.setting,
             new ListOf<>(
                 "[example]",
                 "name=Example Repository",
