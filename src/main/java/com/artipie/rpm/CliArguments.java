@@ -80,7 +80,7 @@ public final class CliArguments {
      */
     public Path repository() {
         final List<String> args = this.cli.getArgList();
-        if (args.size() != 1) {
+        if (args.isEmpty()) {
             throw new IllegalArgumentException(
                 String.format(
                     "Expected repository path but got: %s",

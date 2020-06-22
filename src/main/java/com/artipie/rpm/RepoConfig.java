@@ -27,7 +27,7 @@ import org.apache.commons.lang3.NotImplementedException;
 
 /**
  * Repository configuration.
- * @since 0.11
+ * @since 0.10
  * @todo #281:30min Create `Simple` implementation of `RepoConfig` which accepts digest, naming and
  *  filelists as constructor parameters, this implementation should also have empty constructor to
  *  create default configuration: (StandardNamingPolicy.PLAIN, Digest.SHA256, false). After that:
@@ -58,7 +58,7 @@ public interface RepoConfig {
 
     /**
      * Repository configuration from yaml.
-     * @since 0.11
+     * @since 0.10
      * @todo #281:30min Implement this class to read repository settings from yaml.
      *  Format:
      *  |settings:
@@ -66,7 +66,8 @@ public interface RepoConfig {
      *  |  naming-policy: sha1
      *  |  filelists: true
      *  as described in https://github.com/artipie/artipie/issues/227. For yaml parsing use eo-yaml
-     *  (check example in artipie/artipie AuthFromYaml class), do not forget about test.
+     *  (check example in artipie/artipie AuthFromYaml class) and accept `YamlMapping` instance
+     *  into ctor (and probably keep it as field). Do not forget about test.
      */
     final class FromYaml implements RepoConfig {
 
