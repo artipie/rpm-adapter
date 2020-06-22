@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Locale;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
@@ -45,36 +44,6 @@ import org.apache.commons.cli.ParseException;
 public final class CliArguments {
 
     /**
-     * Digest option.
-     */
-    private static final Option DIGEST = Option.builder("d")
-        .argName("dgst")
-        .longOpt("digest")
-        .desc("(optional, default sha256) configures Digest instance for Rpm: sha256 or sha1")
-        .hasArg()
-        .build();
-
-    /**
-     * Naming policy option.
-     */
-    private static final Option NAMING_POLICY = Option.builder("n")
-        .argName("np")
-        .longOpt("naming-policy")
-        .desc("(optional, default plain) configures NamingPolicy for Rpm: plain, sha256 or sha1")
-        .hasArg()
-        .build();
-
-    /**
-     * FileLists option.
-     */
-    private static final Option FILE_LISTS = Option.builder("f")
-        .argName("fl")
-        .longOpt("filelists")
-        .desc("(optional, default true) includes File Lists for Rpm: true or false")
-        .hasArg()
-        .build();
-
-    /**
      * Cli options.
      */
     private final Options options;
@@ -85,9 +54,9 @@ public final class CliArguments {
     public CliArguments() {
         this (
             new Options()
-                .addOption(CliArguments.DIGEST)
-                .addOption(CliArguments.NAMING_POLICY)
-                .addOption(CliArguments.FILE_LISTS)
+                .addOption(RpmOptions.DIGEST.option())
+                .addOption(RpmOptions.NAMING_POLICY.option())
+                .addOption(RpmOptions.FILELISTS.option())
         );
     }
 
@@ -149,7 +118,7 @@ public final class CliArguments {
         public Digest digest() {
             return Digest.valueOf(
                 this.cli.getOptionValue(
-                    CliArguments.DIGEST.getOpt(), "sha256"
+                    RpmOptions.DIGEST.option().getOpt(), "sha256"
                 ).toUpperCase(Locale.US)
             );
         }
@@ -163,7 +132,7 @@ public final class CliArguments {
         public NamingPolicy naming() {
             return StandardNamingPolicy.valueOf(
                 this.cli.getOptionValue(
-                    CliArguments.NAMING_POLICY.getOpt(), "plain"
+                    RpmOptions.NAMING_POLICY.option().getOpt(), "plain"
                 ).toUpperCase(Locale.US)
             );
         }
@@ -195,7 +164,7 @@ public final class CliArguments {
          */
         public boolean fileLists() {
             return Boolean.parseBoolean(
-                this.cli.getOptionValue(CliArguments.FILE_LISTS.getOpt(), "true")
+                this.cli.getOptionValue(RpmOptions.FILELISTS.option().getOpt(), "true")
             );
         }
     }
