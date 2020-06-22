@@ -176,7 +176,9 @@ final class RpmUpload implements Slice {
         /**
          * Checks that request query contains param with value.
          *
-         * @return <code>true</code> if there is param with value, <code>false</code> - otherwise.
+         * @param param Param with value string.
+         * @return Result is <code>true</code> if there is param with value,
+         *  <code>false</code> - otherwise.
          */
         private boolean hasParamValue(final String param) {
             return Optional.ofNullable(new RequestLineFrom(this.line).uri().getQuery())
