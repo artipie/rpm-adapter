@@ -25,7 +25,6 @@ package com.artipie.rpm;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.fs.FileStorage;
-import com.artipie.rpm.CliArguments.CliParsedArguments;
 import java.nio.file.Path;
 
 /**
@@ -63,12 +62,13 @@ public final class Cli {
         }
     )
     public static void main(final String... args) {
-        final CliParsedArguments cliargs = new CliArguments().parsed(args);
-        final NamingPolicy naming = cliargs.naming();
+        final CliArguments cliargs = new CliArguments(args);
+        final RepoConfig cnfg = cliargs.config();
+        final NamingPolicy naming = cnfg.naming();
         System.out.printf("RPM naming-policy=%s\n", naming);
-        final Digest digest = cliargs.digest();
+        final Digest digest = cnfg.digest();
         System.out.printf("RPM digest=%s\n", digest);
-        final boolean filelists = cliargs.fileLists();
+        final boolean filelists = cnfg.filelists();
         System.out.printf("RPM file-lists=%s\n", filelists);
         final Path repository = cliargs.repository();
         System.out.printf("RPM repository=%s\n", repository);
