@@ -67,4 +67,25 @@ public final class RpmUploadRequestTest {
             new IsEqual<>(expected)
         );
     }
+
+    @ParameterizedTest
+    @CsvSource({
+        "/file.rpm?skip_update=true,true",
+        "/file.rpm?some_param=true&skip_update=true,true",
+        "/file.rpm?some_param=false&skip_update=true,true",
+        ",false",
+        "/file.rpm,false",
+        "/file.rpm?some_param=true,false",
+        "/file.rpm?skip_update=false,false",
+        "/file.rpm?skip_update=whatever,false",
+        "/file.rpm?not_skip_update=true,false"
+    })
+    void readsSkipUpdateFlag(final String uri, final boolean expected) {
+        MatcherAssert.assertThat(
+            new RpmUpload.Request(
+                new RequestLine("PUT", uri, "HTTP/1.1").toString()
+            ).skipUpdate(),
+            new IsEqual<>(expected)
+        );
+    }
 }

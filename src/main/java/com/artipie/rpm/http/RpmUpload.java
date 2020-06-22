@@ -45,6 +45,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 
 /**
@@ -146,12 +147,16 @@ final class RpmUpload implements Slice {
          * @return Override param value, <code>false</code> - if absent
          */
         public boolean override() {
-            return Optional.ofNullable(new RequestLineFrom(this.line).uri().getQuery())
-                .map(
-                    query -> Streams.stream(Splitter.on("&").split(query))
-                        .anyMatch(part -> part.equals("override=true"))
-                )
-                .orElse(false);
+            return this.hasParamValue("override=true");
+        }
+
+        /**
+         * Returns `skip_update` param.
+         *
+         * @return Skip update param value, <code>false</code> - if absent
+         */
+        public boolean skipUpdate() {
+            return this.hasParamValue("skip_update=true");
         }
 
         /**
@@ -166,6 +171,20 @@ final class RpmUpload implements Slice {
                 throw new IllegalStateException(String.format("Unexpected path: %s", path));
             }
             return matcher;
+        }
+
+        /**
+         * Checks that request query contains param with value.
+         *
+         * @param param Param with value string.
+         * @return Result is <code>true</code> if there is param with value,
+         *  <code>false</code> - otherwise.
+         */
+        private boolean hasParamValue(final String param) {
+            return Optional.ofNullable(new RequestLineFrom(this.line).uri().getQuery())
+                .map(query -> Streams.stream(Splitter.on("&").split(query)))
+                .orElse(Stream.empty())
+                .anyMatch(part -> part.equals(param));
         }
     }
 }
