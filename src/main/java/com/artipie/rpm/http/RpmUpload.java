@@ -35,25 +35,23 @@ import com.artipie.http.rs.RsWithStatus;
 import com.artipie.rpm.Rpm;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Streams;
-import hu.akarnokd.rxjava2.interop.SingleInterop;
+import hu.akarnokd.rxjava2.interop.CompletableInterop;
+import io.reactivex.Completable;
 import io.reactivex.Single;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 
 /**
  * Slice for rpm packages upload.
  *
  * @since 0.8.3
- * @todo #253:30min Finish implementation of RpmUpload by implementing parsing of optional
- *  false by default `override` request parameter: if package with same name already exist and
- *  `override` query param flag is not true, then return 409 error. Parameter parsing should be
- *  implemented in `Request` class and tested, in `response` method we need to check parameter
- *  value and if the file exists in storage. Do not forget about tests.
- *  For more information please refer to https://github.com/artipie/rpm-adapter/issues/162:
  */
 final class RpmUpload implements Slice {
 
@@ -81,15 +79,33 @@ final class RpmUpload implements Slice {
     public Response response(final String line, final Iterable<Map.Entry<String, String>> headers,
         final Publisher<ByteBuffer> body) {
         final Request request = new Request(line);
+        final Key key = request.file();
+        final CompletionStage<Boolean> conflict;
+        if (request.override()) {
+            conflict = CompletableFuture.completedFuture(false);
+        } else {
+            conflict = this.asto.exists(key);
+        }
         return new AsyncResponse(
-            SingleInterop.fromFuture(
-                this.asto.save(
-                    request.file(),
-                    new Content.From(body)
-                ).thenApply(ignored -> true)
+            conflict.thenApply(
+                conflicts -> {
+                    final Response response;
+                    if (conflicts) {
+                        response = new RsWithStatus(RsStatus.CONFLICT);
+                    } else {
+                        response = new AsyncResponse(
+                            CompletableInterop.fromFuture(
+                                this.asto.save(key, new Content.From(body))
+                            ).andThen(
+                                Completable.defer(() -> this.rpm.batchUpdate(Key.ROOT))
+                            ).andThen(
+                                Single.just(new RsWithStatus(RsStatus.ACCEPTED))
+                            )
+                        );
+                    }
+                    return response;
+                }
             )
-                .flatMapCompletable(ignored -> this.rpm.batchUpdate(Key.ROOT))
-                .<Response>andThen(Single.just(new RsWithStatus(RsStatus.ACCEPTED)))
         );
     }
 
@@ -131,12 +147,16 @@ final class RpmUpload implements Slice {
          * @return Override param value, <code>false</code> - if absent
          */
         public boolean override() {
-            return Optional.ofNullable(new RequestLineFrom(this.line).uri().getQuery())
-                .map(
-                    query -> Streams.stream(Splitter.on("&").split(query))
-                        .anyMatch(part -> part.equals("override=true"))
-                )
-                .orElse(false);
+            return this.hasParamValue("override=true");
+        }
+
+        /**
+         * Returns `skip_update` param.
+         *
+         * @return Skip update param value, <code>false</code> - if absent
+         */
+        public boolean skipUpdate() {
+            return this.hasParamValue("skip_update=true");
         }
 
         /**
@@ -151,6 +171,20 @@ final class RpmUpload implements Slice {
                 throw new IllegalStateException(String.format("Unexpected path: %s", path));
             }
             return matcher;
+        }
+
+        /**
+         * Checks that request query contains param with value.
+         *
+         * @param param Param with value string.
+         * @return Result is <code>true</code> if there is param with value,
+         *  <code>false</code> - otherwise.
+         */
+        private boolean hasParamValue(final String param) {
+            return Optional.ofNullable(new RequestLineFrom(this.line).uri().getQuery())
+                .map(query -> Streams.stream(Splitter.on("&").split(query)))
+                .orElse(Stream.empty())
+                .anyMatch(part -> part.equals(param));
         }
     }
 }
