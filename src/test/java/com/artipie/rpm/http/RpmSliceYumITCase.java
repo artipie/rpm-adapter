@@ -147,7 +147,7 @@ public final class RpmSliceYumITCase {
      */
     private String exec(final String action) throws Exception {
         return this.cntn.execInContainer(
-            "yum", "repo-pkgs", "example", action
+            "yum", "-y", "repo-pkgs", "example", action
         ).getStdout();
     }
 
