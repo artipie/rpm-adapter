@@ -147,7 +147,7 @@ final class RpmUpload implements Slice {
          * @return Override param value, <code>false</code> - if absent
          */
         public boolean override() {
-            return this.params().anyMatch(part -> part.equals("override=true"));
+            return this.hasParamValue("override=true");
         }
 
         /**
@@ -156,7 +156,7 @@ final class RpmUpload implements Slice {
          * @return Skip update param value, <code>false</code> - if absent
          */
         public boolean skipUpdate() {
-            return this.params().anyMatch(part -> part.equals("skip_update=true"));
+            return this.hasParamValue("skip_update=true");
         }
 
         /**
@@ -174,14 +174,15 @@ final class RpmUpload implements Slice {
         }
 
         /**
-         * Extracts stream of parameters from request query.
+         * Checks that request query contains param with value.
          *
-         * @return Stream of parameters.
+         * @return <code>true</code> if there is param with value, <code>false</code> - otherwise.
          */
-        private Stream<String> params() {
+        private boolean hasParamValue(final String param) {
             return Optional.ofNullable(new RequestLineFrom(this.line).uri().getQuery())
                 .map(query -> Streams.stream(Splitter.on("&").split(query)))
-                .orElse(Stream.empty());
+                .orElse(Stream.empty())
+                .anyMatch(part -> part.equals(param));
         }
     }
 }
