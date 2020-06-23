@@ -71,6 +71,11 @@ public class RpmUploadTest {
             new BlockingStorage(storage).value(new Key.From("uploaded.rpm")),
             new IsEqual<>(content)
         );
+        MatcherAssert.assertThat(
+            "Metadata updated",
+            new BlockingStorage(storage).list(new Key.From("repodata")).isEmpty(),
+            new IsEqual<>(false)
+        );
     }
 
     @Test
@@ -112,6 +117,33 @@ public class RpmUploadTest {
         MatcherAssert.assertThat(
             new BlockingStorage(storage).value(key),
             new IsEqual<>(content)
+        );
+    }
+
+    @Test
+    void skipsUpdate() throws Exception {
+        final Storage storage = new InMemoryStorage();
+        final byte[] content = Files.readAllBytes(
+            Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm")
+        );
+        MatcherAssert.assertThat(
+            "ACCEPTED 202 returned",
+            new RpmUpload(storage).response(
+                new RequestLine("PUT", "/my-package.rpm?skip_update=true", "HTTP/1.1").toString(),
+                Headers.EMPTY,
+                Flowable.fromArray(ByteBuffer.wrap(content))
+            ),
+            new RsHasStatus(RsStatus.ACCEPTED)
+        );
+        MatcherAssert.assertThat(
+            "Content saved to storage",
+            new BlockingStorage(storage).value(new Key.From("my-package.rpm")),
+            new IsEqual<>(content)
+        );
+        MatcherAssert.assertThat(
+            "Metadata not updated",
+            new BlockingStorage(storage).list(new Key.From("repodata")).isEmpty(),
+            new IsEqual<>(true)
         );
     }
 }

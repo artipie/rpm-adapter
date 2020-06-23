@@ -76,7 +76,8 @@ final class RpmUpload implements Slice {
     }
 
     @Override
-    public Response response(final String line, final Iterable<Map.Entry<String, String>> headers,
+    public Response response(
+        final String line, final Iterable<Map.Entry<String, String>> headers,
         final Publisher<ByteBuffer> body) {
         final Request request = new Request(line);
         final Key key = request.file();
@@ -97,7 +98,17 @@ final class RpmUpload implements Slice {
                             CompletableInterop.fromFuture(
                                 this.asto.save(key, new Content.From(body))
                             ).andThen(
-                                Completable.defer(() -> this.rpm.batchUpdate(Key.ROOT))
+                                Completable.defer(
+                                    () -> {
+                                        final Completable result;
+                                        if (request.skipUpdate()) {
+                                            result = Completable.complete();
+                                        } else {
+                                            result = this.rpm.batchUpdate(Key.ROOT);
+                                        }
+                                        return result;
+                                    }
+                                )
                             ).andThen(
                                 Single.just(new RsWithStatus(RsStatus.ACCEPTED))
                             )
@@ -111,6 +122,7 @@ final class RpmUpload implements Slice {
 
     /**
      * Request line.
+     *
      * @since 0.9
      */
     static final class Request {
@@ -127,6 +139,7 @@ final class RpmUpload implements Slice {
 
         /**
          * Ctor.
+         *
          * @param line Line from request
          */
         Request(final String line) {
@@ -135,6 +148,7 @@ final class RpmUpload implements Slice {
 
         /**
          * Returns file key.
+         *
          * @return File key
          */
         public Key file() {
