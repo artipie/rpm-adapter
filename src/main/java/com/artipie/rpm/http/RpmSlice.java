@@ -39,11 +39,6 @@ import com.artipie.http.slice.SliceDownload;
 /**
  * Artipie {@link Slice} for RPM repository HTTP API.
  * @since 0.7
- * @todo #259:30min Add integration test for rpm repository: we need to verify that
- *  original rpm client (yum and dnf) can understand and work with rpm repository. Create rpm repo
- *  with our Rpm#batchUpdate first, then configure yum/dnf repository accordingly and
- *  list/install packages from this repository. To set authorisation see
- *  https://stackoverflow.com/a/26852734/1723695
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class RpmSlice extends Slice.Wrap {
