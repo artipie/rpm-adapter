@@ -129,7 +129,7 @@ public class RpmUploadTest {
         );
         MatcherAssert.assertThat(
             "ACCEPTED 202 returned",
-            new RpmUpload(storage).response(
+            new RpmUpload(storage, new RepoConfig.Simple()).response(
                 new RequestLine("PUT", "/my-package.rpm?skip_update=true", "HTTP/1.1").toString(),
                 Headers.EMPTY,
                 Flowable.fromArray(ByteBuffer.wrap(content))
