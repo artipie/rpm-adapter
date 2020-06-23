@@ -86,6 +86,14 @@ public enum RpmOptions {
     }
 
     /**
+     * Option name.
+     * @return String name
+     */
+    public String optionName() {
+        return this.name;
+    }
+
+    /**
      * Builds command line option.
      * @return Instance of {@link Option}.
      */
