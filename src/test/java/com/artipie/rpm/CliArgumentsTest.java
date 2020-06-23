@@ -39,7 +39,7 @@ class CliArgumentsTest {
     @Test
     void canParseRepositoryArgument(@TempDir final Path temp) {
         MatcherAssert.assertThat(
-            new CliArguments().parsed(
+            new CliArguments(
                 String.format(
                     "%s",
                     temp.getFileName()
@@ -50,31 +50,31 @@ class CliArgumentsTest {
     }
 
     @Test
-    void canParseNamingPolicyArgument(@TempDir final Path temp) {
+    void canParseNamingPolicyArgument() {
         MatcherAssert.assertThat(
-            new CliArguments().parsed(
+            new CliArguments(
                 "-nsha1"
-            ).naming(),
+            ).config().naming(),
             new IsEqual<>(StandardNamingPolicy.SHA1)
         );
     }
 
     @Test
-    void canParseFileListsArgument(@TempDir final Path temp) {
+    void canParseFileListsArgument() {
         MatcherAssert.assertThat(
-            new CliArguments().parsed(
+            new CliArguments(
                 "-ffalse"
-            ).fileLists(),
+            ).config().filelists(),
             new IsEqual<>(false)
         );
     }
 
     @Test
-    void canParseDigestArgument(@TempDir final Path temp) {
+    void canParseDigestArgument() {
         MatcherAssert.assertThat(
-            new CliArguments().parsed(
+            new CliArguments(
                 "-dsha1"
-            ).digest(),
+            ).config().digest(),
             new IsEqual<>(Digest.SHA1)
         );
     }
@@ -82,9 +82,9 @@ class CliArgumentsTest {
     @Test
     void canParseNamingPolicyArgumentWithEquals() {
         MatcherAssert.assertThat(
-            new CliArguments().parsed(
+            new CliArguments(
                 "-n=plain"
-            ).naming(),
+            ).config().naming(),
             new IsEqual<>(StandardNamingPolicy.PLAIN)
         );
     }
@@ -92,9 +92,9 @@ class CliArgumentsTest {
     @Test
     void canParseFileListsArgumentWithEquals() {
         MatcherAssert.assertThat(
-            new CliArguments().parsed(
+            new CliArguments(
                 "-f=true"
-            ).fileLists(),
+            ).config().filelists(),
             new IsEqual<>(true)
         );
     }
@@ -102,9 +102,9 @@ class CliArgumentsTest {
     @Test
     void canParseDigestArgumentWithEquals() {
         MatcherAssert.assertThat(
-            new CliArguments().parsed(
+            new CliArguments(
                 "-d=sha256"
-            ).digest(),
+            ).config().digest(),
             new IsEqual<>(Digest.SHA256)
         );
     }
@@ -112,9 +112,9 @@ class CliArgumentsTest {
     @Test
     void canParseNamingPolicyArgumentWithLongopt() {
         MatcherAssert.assertThat(
-            new CliArguments().parsed(
+            new CliArguments(
                 "-naming-policy=sha256"
-            ).naming(),
+            ).config().naming(),
             new IsEqual<>(StandardNamingPolicy.SHA256)
         );
     }
@@ -122,9 +122,9 @@ class CliArgumentsTest {
     @Test
     void canParseFileListsArgumentWithLongopt() {
         MatcherAssert.assertThat(
-            new CliArguments().parsed(
+            new CliArguments(
                 "-filelists=false"
-            ).fileLists(),
+            ).config().filelists(),
             new IsEqual<>(false)
         );
     }
@@ -132,9 +132,9 @@ class CliArgumentsTest {
     @Test
     void canParseDigestArgumentWithLongopt() {
         MatcherAssert.assertThat(
-            new CliArguments().parsed(
+            new CliArguments(
                 "-digest=sha1"
-            ).digest(),
+            ).config().digest(),
             new IsEqual<>(Digest.SHA1)
         );
     }
