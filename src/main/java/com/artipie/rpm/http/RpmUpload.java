@@ -32,6 +32,7 @@ import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
+import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.Rpm;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Streams;
@@ -69,10 +70,11 @@ final class RpmUpload implements Slice {
      * RPM repository HTTP API.
      *
      * @param storage Storage
+     * @param config Repository configuration
      */
-    RpmUpload(final Storage storage) {
+    RpmUpload(final Storage storage, final RepoConfig config) {
         this.asto = storage;
-        this.rpm = new Rpm(storage);
+        this.rpm = new Rpm(storage, config);
     }
 
     @Override

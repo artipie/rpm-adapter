@@ -31,6 +31,7 @@ import com.artipie.http.Headers;
 import com.artipie.http.hm.RsHasStatus;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rs.RsStatus;
+import com.artipie.rpm.RepoConfig;
 import io.reactivex.Flowable;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -59,7 +60,7 @@ public class RpmUploadTest {
         );
         MatcherAssert.assertThat(
             "ACCEPTED 202 returned",
-            new RpmUpload(storage).response(
+            new RpmUpload(storage, new RepoConfig.Simple()).response(
                 new RequestLine("PUT", "/uploaded.rpm", "HTTP/1.1").toString(),
                 new ListOf<Map.Entry<String, String>>(),
                 Flowable.fromArray(ByteBuffer.wrap(content))
@@ -81,7 +82,7 @@ public class RpmUploadTest {
         final Key key = new Key.From("replaced.rpm");
         new BlockingStorage(storage).save(key, "uploaded package".getBytes());
         MatcherAssert.assertThat(
-            new RpmUpload(storage).response(
+            new RpmUpload(storage, new RepoConfig.Simple()).response(
                 new RequestLine("PUT", "/replaced.rpm?override=true", "HTTP/1.1").toString(),
                 Headers.EMPTY,
                 Flowable.fromArray(ByteBuffer.wrap(content))
@@ -102,7 +103,7 @@ public class RpmUploadTest {
         final Key key = new Key.From("not-replaced.rpm");
         new BlockingStorage(storage).save(key, content);
         MatcherAssert.assertThat(
-            new RpmUpload(storage).response(
+            new RpmUpload(storage, new RepoConfig.Simple()).response(
                 new RequestLine("PUT", "/not-replaced.rpm", "HTTP/1.1").toString(),
                 Headers.EMPTY,
                 Flowable.fromArray(ByteBuffer.wrap("second package content".getBytes()))
