@@ -23,24 +23,19 @@
  */
 package com.artipie.rpm;
 
-import java.io.IOException;
 import java.nio.file.Path;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test case for {@link Cli}.
  *
  * @since 0.6
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
+ * @checkstyle LineLengthCheck (70 lines)
  */
-
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+@SuppressWarnings("PMD.AvoidThrowingNewInstanceOfSameException")
 final class CliTest {
     @Test
     void testWrongArgumentCount() {
@@ -55,54 +50,20 @@ final class CliTest {
     }
 
     @Test
-    void testRunWithArgument(@TempDir final Path temp) {
-        final IllegalArgumentException thrown = Assertions.assertThrows(
-            IllegalArgumentException.class,
-            () -> Cli.main(new String[]{"-n", "-dsha1", "-ffalse", temp.toString()})
-        );
-        assertTrue(thrown.getMessage().contains("Can't parse arguments"));
-    }
-
-
-
-
-    @Test
-    void testRunWithArgumentWithEquals(@TempDir final Path temp) {
+    void testRunWithCorrectArgument(@TempDir final Path temp) {
         try {
             Cli.main(new String[]{"-n=sha256", "-d=sha1", "-f=true", temp.toString()});
         } catch (final IllegalArgumentException exception) {
-            MatcherAssert.assertThat(
-                String.format("Exception occurred: %s", exception.getMessage()),
-                "Incorrect parameters",
-                new IsEqual<>(exception.getMessage())
-            );
+            throw new IllegalArgumentException(exception);
         }
     }
 
     @Test
-    void testRunWithArgumentWithEqualsAndLongopt(@TempDir final Path temp) {
-        try {
-            Cli.main(new String[]{"-nsha256", "-d=sha1", "-filelists=true", temp.toString()});
-        } catch (final IllegalArgumentException exception) {
-            MatcherAssert.assertThat(
-                String.format("Exception occurred: %s", exception.getMessage()),
-                "Incorrect parameters",
-                new IsEqual<>(exception.getMessage())
-            );
-        }
-    }
-
-    @Test
-    void testRunWithArgumentWithLongopt(@TempDir final Path temp) throws IOException {
-        try {
-            // @checkstyle LineLengthCheck (1 lines)
-            Cli.main(new String[]{"-naming-policy=sha256", "-digest=sha1", "-filelists=true", temp.toString()});
-        } catch (final IllegalArgumentException exception) {
-            MatcherAssert.assertThat(
-                String.format("Exception occurred: %s", exception.getMessage()),
-                "Incorrect parameters",
-                new IsEqual<>(exception.getMessage())
-            );
-        }
+    void testParseWithWrongArgument(@TempDir final Path temp) {
+        final IllegalArgumentException err = Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> Cli.main(new String[]{"-naming-policy=sha256", "-digest=sha1", "-lists=true", temp.toString()})
+        );
+        Assertions.assertTrue(err.getMessage().contains("Can't parse arguments"));
     }
 }
