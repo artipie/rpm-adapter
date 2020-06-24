@@ -31,15 +31,17 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Test case for {@link Cli}.
  *
  * @since 0.6
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
+
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 final class CliTest {
-
     @Test
     void testWrongArgumentCount() {
         final IllegalArgumentException err = Assertions.assertThrows(
@@ -54,16 +56,15 @@ final class CliTest {
 
     @Test
     void testRunWithArgument(@TempDir final Path temp) {
-        try {
-            Cli.main(new String[]{"-nsha256", "-dsha1", "-ftrue", temp.toString()});
-        } catch (final IllegalArgumentException exception) {
-            MatcherAssert.assertThat(
-                String.format("Exception occurred: %s", exception.getMessage()),
-                "Incorrect parameters",
-                new IsEqual<>(exception.getMessage())
-            );
-        }
+        final IllegalArgumentException thrown = Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> Cli.main(new String[]{"-n", "-dsha1", "-ffalse", temp.toString()})
+        );
+        assertTrue(thrown.getMessage().contains("Can't parse arguments"));
     }
+
+
+
 
     @Test
     void testRunWithArgumentWithEquals(@TempDir final Path temp) {
