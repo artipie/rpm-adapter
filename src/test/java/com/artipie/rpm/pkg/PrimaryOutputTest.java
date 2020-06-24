@@ -24,22 +24,13 @@
 package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
-import com.jcabi.log.Logger;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.logging.Level;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.redline_rpm.ReadableChannelWrapper;
-import org.redline_rpm.Scanner;
-import org.redline_rpm.header.Format;
-import org.redline_rpm.header.Header;
 import org.xmlunit.matchers.CompareMatcher;
 
 /**
@@ -59,7 +50,9 @@ class PrimaryOutputTest {
             primary.start();
             final Path rpm =
                 Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm");
-            primary.accept(new FilePackage.Headers(this.header(rpm), rpm, Digest.SHA256));
+            primary.accept(
+                new FilePackage.Headers(new FilePackageHeader(rpm).header(), rpm, Digest.SHA256)
+            );
         }
         MatcherAssert.assertThat(
             Files.readAllBytes(res),
@@ -79,32 +72,4 @@ class PrimaryOutputTest {
             )
         );
     }
-
-    /**
-     * Get header.
-     * @return The header
-     * @param file Rpm file path
-     * @throws IOException On error or invalid package
-     * @todo #241:30min Introduce class from this method: the method is copied from FilePackage
-     *  class, we need to extract class from it, test it and use it at least in FilePackage,
-     *  ModifiableMetadataTest and here.
-     */
-    @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    private Header header(final Path file) throws IOException {
-        try (FileChannel chan = FileChannel.open(file, StandardOpenOption.READ)) {
-            final Format format;
-            try {
-                format = new Scanner(
-                    new PrintStream(Logger.stream(Level.FINE, this))
-                ).run(new ReadableChannelWrapper(chan));
-                // @checkstyle IllegalCatchCheck (1 line)
-            } catch (final RuntimeException ex) {
-                throw new IOException("Failed to parse package", ex);
-            }
-            final Header header = format.getHeader();
-            Logger.debug(this, "header: %s", header.toString());
-            return header;
-        }
-    }
-
 }
