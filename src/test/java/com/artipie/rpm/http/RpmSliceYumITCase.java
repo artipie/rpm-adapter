@@ -32,6 +32,7 @@ import com.artipie.http.auth.Permissions;
 import com.artipie.http.slice.LoggingSlice;
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.NamingPolicy;
+import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.Rpm;
 import com.artipie.rpm.TestRpm;
 import com.artipie.vertx.VertxSliceServer;
@@ -162,11 +163,13 @@ public final class RpmSliceYumITCase {
         throws Exception {
         final Storage storage = new InMemoryStorage();
         new TestRpm.Time().put(storage);
-        new Rpm(storage, new NamingPolicy.HashPrefixed(Digest.SHA1), Digest.SHA256, true)
-            .batchUpdate(Key.ROOT).blockingAwait();
+        final RepoConfig config = new RepoConfig.Simple(
+            Digest.SHA256, new NamingPolicy.HashPrefixed(Digest.SHA1), true
+        );
+        new Rpm(storage, config).batchUpdate(Key.ROOT).blockingAwait();
         this.server = new VertxSliceServer(
             RpmSliceYumITCase.VERTX,
-            new LoggingSlice(new RpmSlice(storage, perms, auth))
+            new LoggingSlice(new RpmSlice(storage, perms, auth, config))
         );
         final int port = this.server.start();
         Testcontainers.exposeHostPorts(port);

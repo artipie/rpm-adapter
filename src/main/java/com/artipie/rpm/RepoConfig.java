@@ -28,13 +28,6 @@ import org.apache.commons.lang3.NotImplementedException;
 /**
  * Repository configuration.
  * @since 0.10
- * @todo #281:30min Create `Simple` implementation of `RepoConfig` which accepts digest, naming and
- *  filelists as constructor parameters, this implementation should also have empty constructor to
- *  create default configuration: (StandardNamingPolicy.PLAIN, Digest.SHA256, false). After that:
- *  1) add `RepoConfig` as field to `Rpm` instead of 3 fields, do not change existing ctors, add
- *  new one and use `Simple` implementation
- *  2) add `RepoConfig` to `RpmUpload` (and `RpmSlice`) to create `Rpm` instance with given
- *  configuration
  */
 public interface RepoConfig {
 
@@ -84,6 +77,62 @@ public interface RepoConfig {
         @Override
         public boolean filelists() {
             throw new NotImplementedException("To do");
+        }
+    }
+
+    /**
+     * Simple.
+     * @since 0.10
+     */
+    final class Simple implements RepoConfig {
+
+        /**
+         * Digest.
+         */
+        private final Digest dgst;
+
+        /**
+         * Naming policy.
+         */
+        private final NamingPolicy npolicy;
+
+        /**
+         * Is filelist needed?
+         */
+        private final boolean filelist;
+
+        /**
+         * Ctor.
+         * @param dgst Digest
+         * @param npolicy Naming policy
+         * @param filelist Filelist
+         */
+        public Simple(final Digest dgst, final NamingPolicy npolicy, final boolean filelist) {
+            this.dgst = dgst;
+            this.npolicy = npolicy;
+            this.filelist = filelist;
+        }
+
+        /**
+         * Ctor.
+         */
+        public Simple() {
+            this(Digest.SHA256, StandardNamingPolicy.PLAIN, false);
+        }
+
+        @Override
+        public Digest digest() {
+            return this.dgst;
+        }
+
+        @Override
+        public NamingPolicy naming() {
+            return this.npolicy;
+        }
+
+        @Override
+        public boolean filelists() {
+            return this.filelist;
         }
     }
 }
