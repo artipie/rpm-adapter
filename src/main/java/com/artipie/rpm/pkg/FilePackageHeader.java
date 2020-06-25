@@ -38,7 +38,7 @@ import org.redline_rpm.header.Header;
 /**
  * Header of RPM package file.
  *
- * @since 0.11
+ * @since 0.10
  */
 final class FilePackageHeader {
 
