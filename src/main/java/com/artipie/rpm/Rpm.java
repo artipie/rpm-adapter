@@ -87,19 +87,9 @@ public final class Rpm {
     private final Storage storage;
 
     /**
-     * Naming policy.
+     * Repository configuration.
      */
-    private final NamingPolicy naming;
-
-    /**
-     * Digest algorithm for check-sums.
-     */
-    private final Digest digest;
-
-    /**
-     * Include filelists?
-     */
-    private final boolean filelists;
+    private final RepoConfig config;
 
     /**
      * New Rpm for repository in storage. Does not include filelists.xml in update.
@@ -128,10 +118,17 @@ public final class Rpm {
      */
     public Rpm(final Storage stg, final NamingPolicy naming, final Digest dgst,
         final boolean filelists) {
-        this.storage = stg;
-        this.naming = naming;
-        this.digest = dgst;
-        this.filelists = filelists;
+        this(stg, new RepoConfig.Simple(dgst, naming, filelists));
+    }
+
+    /**
+     * Ctor.
+     * @param storage The storage
+     * @param config Repository configuration
+     */
+    public Rpm(final Storage storage, final RepoConfig config) {
+        this.storage = storage;
+        this.config = config;
     }
 
     /**
@@ -214,7 +211,7 @@ public final class Rpm {
             .doOnSuccess(rep -> Logger.info(this, "repository updated"))
             .doOnSuccess(Repository::close)
             .doOnSuccess(rep -> Logger.info(this, "repository closed"))
-            .flatMapObservable(repo -> Observable.fromIterable(repo.save(this.naming)))
+            .flatMapObservable(repo -> Observable.fromIterable(repo.save(this.config.naming())))
             .doOnNext(file -> Files.move(file, tmpdir.resolve(file.getFileName())))
             .flatMapSingle(path -> this.moveRepodataToStorage(local, path, prefix))
             .map(path -> path.getFileName().toString())
@@ -267,7 +264,7 @@ public final class Rpm {
             .doOnSuccess(rep -> Logger.info(this, "repository closed"))
             .doOnSuccess(ModifiableRepository::clear)
             .doOnSuccess(rep -> Logger.info(this, "repository cleared"))
-            .flatMapObservable(rep -> Observable.fromIterable(rep.save(this.naming)))
+            .flatMapObservable(rep -> Observable.fromIterable(rep.save(this.config.naming())))
             .doOnNext(
                 file -> Files.move(
                     file, tmpdir.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING
@@ -370,12 +367,12 @@ public final class Rpm {
         try {
             return new Repository(
                 Rpm.xmlRepomd(),
-                new XmlPackage.Stream(this.filelists).get().map(
+                new XmlPackage.Stream(this.config.filelists()).get().map(
                     new UncheckedFunc<XmlPackage, MetadataFile, IOException>(
                         item -> new MetadataFile(item, item.output().start())
                     )
                 ).collect(Collectors.toList()),
-                this.digest,
+                this.config.digest(),
                 tmp
             );
         } catch (final XMLStreamException ex) {
@@ -394,7 +391,7 @@ public final class Rpm {
         throws IOException {
         try {
             final Map<String, Path> data = new HashMap<>();
-            new XmlPackage.Stream(this.filelists).get().map(XmlPackage::filename)
+            new XmlPackage.Stream(this.config.filelists()).get().map(XmlPackage::filename)
                 .forEach(
                     new UncheckedConsumer<>(
                         name -> {
@@ -409,7 +406,7 @@ public final class Rpm {
             return new ModifiableRepository(
                 new XmlPrimaryChecksums(data.get(XmlPackage.PRIMARY.filename())).read(),
                 Rpm.xmlRepomd(),
-                new XmlPackage.Stream(this.filelists).get().map(
+                new XmlPackage.Stream(this.config.filelists()).get().map(
                     new UncheckedFunc<>(
                         item ->
                             new ModifiableMetadata(
@@ -418,7 +415,7 @@ public final class Rpm {
                             )
                     )
                 ).collect(Collectors.toList()),
-                this.digest,
+                this.config.digest(),
                 metadir
             );
         } catch (final XMLStreamException ex) {

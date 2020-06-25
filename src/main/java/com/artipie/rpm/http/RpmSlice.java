@@ -35,15 +35,11 @@ import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rt.RtRule;
 import com.artipie.http.rt.SliceRoute;
 import com.artipie.http.slice.SliceDownload;
+import com.artipie.rpm.RepoConfig;
 
 /**
  * Artipie {@link Slice} for RPM repository HTTP API.
  * @since 0.7
- * @todo #259:30min Add integration test for rpm repository: we need to verify that
- *  original rpm client (yum and dnf) can understand and work with rpm repository. Create rpm repo
- *  with our Rpm#batchUpdate first, then configure yum/dnf repository accordingly and
- *  list/install packages from this repository. To set authorisation see
- *  https://stackoverflow.com/a/26852734/1723695
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class RpmSlice extends Slice.Wrap {
@@ -53,7 +49,7 @@ public final class RpmSlice extends Slice.Wrap {
      * @param storage The storage.
      */
     public RpmSlice(final Storage storage) {
-        this(storage, Permissions.FREE, Identities.ANONYMOUS);
+        this(storage, Permissions.FREE, Identities.ANONYMOUS, new RepoConfig.Simple());
     }
 
     /**
@@ -63,7 +59,7 @@ public final class RpmSlice extends Slice.Wrap {
      * @param auth Auth details.
      */
     public RpmSlice(final Storage storage, final Permissions perms, final Authentication auth) {
-        this(storage, perms, new BasicIdentities(auth));
+        this(storage, perms, new BasicIdentities(auth), new RepoConfig.Simple());
     }
 
     /**
@@ -71,8 +67,15 @@ public final class RpmSlice extends Slice.Wrap {
      * @param storage Storage
      * @param perms Access permissions.
      * @param users Concrete identities.
+     * @param config Repository configuration.
+     * @checkstyle ParameterNumberCheck (10 lines)
      */
-    public RpmSlice(final Storage storage, final Permissions perms, final Identities users) {
+    public RpmSlice(
+        final Storage storage,
+        final Permissions perms,
+        final Identities users,
+        final RepoConfig config
+    ) {
         super(
             new SliceRoute(
                 new SliceRoute.Path(
@@ -86,7 +89,7 @@ public final class RpmSlice extends Slice.Wrap {
                 new SliceRoute.Path(
                     new RtRule.ByMethod(RqMethod.PUT),
                     new SliceAuth(
-                        new RpmUpload(storage),
+                        new RpmUpload(storage, config),
                         new Permission.ByName("upload", perms),
                         users
                     )

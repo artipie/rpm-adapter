@@ -29,6 +29,7 @@ import com.artipie.http.auth.BasicIdentities;
 import com.artipie.http.auth.Identities;
 import com.artipie.http.auth.Permissions;
 import com.artipie.http.slice.LoggingSlice;
+import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.TestRpm;
 import com.artipie.vertx.VertxSliceServer;
 import io.vertx.reactivex.core.Vertx;
@@ -136,7 +137,7 @@ final class RpmSliceITCase {
         new TestRpm.Time().put(storage);
         this.server = new VertxSliceServer(
             RpmSliceITCase.VERTX,
-            new LoggingSlice(new RpmSlice(storage, perms, auth))
+            new LoggingSlice(new RpmSlice(storage, perms, auth, new RepoConfig.Simple()))
         );
         this.port = this.server.start();
         Testcontainers.exposeHostPorts(this.port);

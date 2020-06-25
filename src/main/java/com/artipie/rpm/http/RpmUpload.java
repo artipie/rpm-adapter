@@ -32,6 +32,7 @@ import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
+import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.Rpm;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Streams;
@@ -69,14 +70,16 @@ final class RpmUpload implements Slice {
      * RPM repository HTTP API.
      *
      * @param storage Storage
+     * @param config Repository configuration
      */
-    RpmUpload(final Storage storage) {
+    RpmUpload(final Storage storage, final RepoConfig config) {
         this.asto = storage;
-        this.rpm = new Rpm(storage);
+        this.rpm = new Rpm(storage, config);
     }
 
     @Override
-    public Response response(final String line, final Iterable<Map.Entry<String, String>> headers,
+    public Response response(
+        final String line, final Iterable<Map.Entry<String, String>> headers,
         final Publisher<ByteBuffer> body) {
         final Request request = new Request(line);
         final Key key = request.file();
@@ -97,7 +100,17 @@ final class RpmUpload implements Slice {
                             CompletableInterop.fromFuture(
                                 this.asto.save(key, new Content.From(body))
                             ).andThen(
-                                Completable.defer(() -> this.rpm.batchUpdate(Key.ROOT))
+                                Completable.defer(
+                                    () -> {
+                                        final Completable result;
+                                        if (request.skipUpdate()) {
+                                            result = Completable.complete();
+                                        } else {
+                                            result = this.rpm.batchUpdate(Key.ROOT);
+                                        }
+                                        return result;
+                                    }
+                                )
                             ).andThen(
                                 Single.just(new RsWithStatus(RsStatus.ACCEPTED))
                             )
@@ -111,6 +124,7 @@ final class RpmUpload implements Slice {
 
     /**
      * Request line.
+     *
      * @since 0.9
      */
     static final class Request {
@@ -127,6 +141,7 @@ final class RpmUpload implements Slice {
 
         /**
          * Ctor.
+         *
          * @param line Line from request
          */
         Request(final String line) {
@@ -135,6 +150,7 @@ final class RpmUpload implements Slice {
 
         /**
          * Returns file key.
+         *
          * @return File key
          */
         public Key file() {
