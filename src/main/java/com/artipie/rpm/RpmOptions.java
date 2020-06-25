@@ -89,7 +89,7 @@ public enum RpmOptions {
      * Option name.
      * @return String name
      */
-    public String optionName() {
+    public final String optionName() {
         return this.name;
     }
 

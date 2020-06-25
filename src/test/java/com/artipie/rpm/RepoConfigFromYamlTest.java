@@ -26,10 +26,8 @@ package com.artipie.rpm;
 import com.amihaiemil.eoyaml.Yaml;
 import java.util.Optional;
 import org.cactoos.func.ProcOf;
-import org.cactoos.list.ListOf;
-import org.hamcrest.Matcher;
 import org.hamcrest.MatcherAssert;
-import org.hamcrest.core.AllOf;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.llorllale.cactoos.matchers.MatcherOf;
 
@@ -46,12 +44,10 @@ public final class RepoConfigFromYamlTest {
                 Yaml.createYamlMappingBuilder().add("digest", "sha1")
                 .add("naming-policy", "sha256").add("filelists", "false").build()
             ),
-            new AllOf<RepoConfig.FromYaml>(
-                new ListOf<Matcher<? super RepoConfig.FromYaml>>(
-                    new MatcherOf<>(cnfg -> cnfg.digest() == Digest.SHA1),
-                    new MatcherOf<>(cnfg -> cnfg.naming() == StandardNamingPolicy.SHA256),
-                    new MatcherOf<>(fromYaml -> !fromYaml.filelists())
-                )
+            Matchers.allOf(
+                new MatcherOf<>(cnfg -> cnfg.digest() == Digest.SHA1),
+                new MatcherOf<>(cnfg -> cnfg.naming() == StandardNamingPolicy.SHA256),
+                new MatcherOf<>(fromYaml -> !fromYaml.filelists())
             )
         );
     }
@@ -60,12 +56,10 @@ public final class RepoConfigFromYamlTest {
     void returnsDefaults() {
         MatcherAssert.assertThat(
             new RepoConfig.FromYaml(Optional.empty()),
-            new AllOf<RepoConfig.FromYaml>(
-                new ListOf<Matcher<? super RepoConfig.FromYaml>>(
-                    new MatcherOf<>(cnfg -> cnfg.digest() == Digest.SHA256),
-                    new MatcherOf<>(cnfg -> cnfg.naming() == StandardNamingPolicy.PLAIN),
-                    new MatcherOf<>(new ProcOf<>(RepoConfig.FromYaml::filelists))
-                )
+            Matchers.allOf(
+                new MatcherOf<>(cnfg -> cnfg.digest() == Digest.SHA256),
+                new MatcherOf<>(cnfg -> cnfg.naming() == StandardNamingPolicy.PLAIN),
+                new MatcherOf<>(new ProcOf<>(RepoConfig.FromYaml::filelists))
             )
         );
     }
