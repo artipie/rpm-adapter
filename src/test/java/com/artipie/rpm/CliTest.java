@@ -32,10 +32,8 @@ import org.junit.jupiter.api.io.TempDir;
  * Test case for {@link Cli}.
  *
  * @since 0.6
- * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle LineLengthCheck (70 lines)
  */
-@SuppressWarnings("PMD.AvoidThrowingNewInstanceOfSameException")
 final class CliTest {
     @Test
     void testWrongArgumentCount() {
@@ -51,18 +49,14 @@ final class CliTest {
 
     @Test
     void testRunWithCorrectArgument(@TempDir final Path temp) {
-        try {
-            Cli.main(new String[]{"-n=sha256", "-d=sha1", "-f=true", temp.toString()});
-        } catch (final IllegalArgumentException exception) {
-            throw new IllegalArgumentException(exception);
-        }
+        Cli.main(new String[]{"-n=sha256", "-d=sha1", "-f=true", temp.toString()});
     }
 
     @Test
     void testParseWithWrongArgument(@TempDir final Path temp) {
         final IllegalArgumentException err = Assertions.assertThrows(
             IllegalArgumentException.class,
-            () -> Cli.main(new String[]{"-naming-policy=sha256", "-digest=sha1", "-lists=true", temp.toString()})
+            () -> Cli.main(new String[] {"-naming-policy=sha256", "-digest=sha1", "-lists=true", temp.toString()})
         );
         Assertions.assertTrue(err.getMessage().contains("Can't parse arguments"));
     }
