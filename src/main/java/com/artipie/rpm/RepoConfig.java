@@ -23,7 +23,10 @@
  */
 package com.artipie.rpm;
 
-import org.apache.commons.lang3.NotImplementedException;
+import com.amihaiemil.eoyaml.Yaml;
+import com.amihaiemil.eoyaml.YamlMapping;
+import java.util.Locale;
+import java.util.Optional;
 
 /**
  * Repository configuration.
@@ -52,31 +55,47 @@ public interface RepoConfig {
     /**
      * Repository configuration from yaml.
      * @since 0.10
-     * @todo #281:30min Implement this class to read repository settings from yaml.
-     *  Format:
-     *  |settings:
-     *  |  digest: sha256
-     *  |  naming-policy: sha1
-     *  |  filelists: true
-     *  as described in https://github.com/artipie/artipie/issues/227. For yaml parsing use eo-yaml
-     *  (check example in artipie/artipie AuthFromYaml class) and accept `YamlMapping` instance
-     *  into ctor (and probably keep it as field). Do not forget about test.
      */
     final class FromYaml implements RepoConfig {
 
+        /**
+         * Settings.
+         */
+        private final YamlMapping yaml;
+
+        /**
+         * Ctor.
+         * @param yaml Yaml settings
+         */
+        public FromYaml(final YamlMapping yaml) {
+            this.yaml = yaml;
+        }
+
+        /**
+         * Ctor.
+         * @param yaml Yaml settings
+         */
+        public FromYaml(final Optional<YamlMapping> yaml) {
+            this(yaml.orElse(Yaml.createYamlMappingBuilder().build()));
+        }
+
         @Override
         public Digest digest() {
-            throw new NotImplementedException("Not implemented");
+            return Optional.ofNullable(this.yaml.string(RpmOptions.DIGEST.optionName()))
+                .map(dgst -> Digest.valueOf(dgst.toUpperCase(Locale.US))).orElse(Digest.SHA256);
         }
 
         @Override
         public NamingPolicy naming() {
-            throw new NotImplementedException("Not done yet");
+            return Optional.ofNullable(this.yaml.string(RpmOptions.NAMING_POLICY.optionName()))
+                .map(naming -> StandardNamingPolicy.valueOf(naming.toUpperCase(Locale.US)))
+                .orElse(StandardNamingPolicy.PLAIN);
         }
 
         @Override
         public boolean filelists() {
-            throw new NotImplementedException("To do");
+            return !Boolean.FALSE.toString()
+                .equals(this.yaml.string(RpmOptions.FILELISTS.optionName()));
         }
     }
 
