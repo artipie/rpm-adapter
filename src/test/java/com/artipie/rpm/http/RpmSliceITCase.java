@@ -74,15 +74,16 @@ final class RpmSliceITCase {
 
     @Test
     void installs() throws Exception {
-        this.start(Permissions.FREE, Identities.ANONYMOUS);
+        final TestRpm rpm = new TestRpm.Time();
+        this.start(rpm, Permissions.FREE, Identities.ANONYMOUS);
         MatcherAssert.assertThat(
             this.executeCommand(
                 String.format(
-                    "http://host.testcontainers.internal:%d/%s",
-                    this.port, "time-1.7-45.el7.x86_64.rpm"
+                    "http://host.testcontainers.internal:%d/%s.rpm",
+                    this.port, rpm.name()
                 )
             ),
-            new StringContainsInOrder(new ListOf<>("time-1.7-45.el7.x86_64", "Complete!"))
+            new StringContainsInOrder(new ListOf<>(rpm.name(), "Complete!"))
         );
     }
 
@@ -90,7 +91,9 @@ final class RpmSliceITCase {
     void installsWithAuth() throws Exception {
         final String john = "john";
         final String pswd = "123";
+        final TestRpm rpm = new TestRpm.Time();
         this.start(
+            rpm,
             (name, perm) -> john.equals(name) && "download".equals(perm),
             new BasicIdentities(
                 (name, pass) -> {
@@ -107,11 +110,11 @@ final class RpmSliceITCase {
         MatcherAssert.assertThat(
             this.executeCommand(
                 String.format(
-                    "http://%s:%s@host.testcontainers.internal:%d/%s", john,
-                    pswd, this.port, "time-1.7-45.el7.x86_64.rpm"
+                    "http://%s:%s@host.testcontainers.internal:%d/%s.rpm", john,
+                    pswd, this.port, rpm.name()
                 )
             ),
-            new StringContainsInOrder(new ListOf<>("time-1.7-45.el7.x86_64", "Complete!"))
+            new StringContainsInOrder(new ListOf<>(rpm.name(), "Complete!"))
         );
     }
 
@@ -132,9 +135,11 @@ final class RpmSliceITCase {
         ).getStdout();
     }
 
-    private void start(final Permissions perms, final Identities auth) throws Exception {
+    private void start(
+        final TestRpm rpm, final Permissions perms, final Identities auth
+    ) throws Exception {
         final Storage storage = new InMemoryStorage();
-        new TestRpm.Time().put(storage);
+        rpm.put(storage);
         this.server = new VertxSliceServer(
             RpmSliceITCase.VERTX,
             new LoggingSlice(new RpmSlice(storage, perms, auth, new RepoConfig.Simple()))
