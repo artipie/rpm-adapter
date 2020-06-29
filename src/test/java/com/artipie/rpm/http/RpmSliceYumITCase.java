@@ -54,9 +54,6 @@ import org.testcontainers.containers.GenericContainer;
 /**
  * Test for {@link RpmSlice}.
  * @since 0.10
- * @todo #273:30min We need to test that dnf rpm client can interact with rpm repository
- *  created by rpm-adapter. Test can be the same as this one but use dnf instead of yum. Please
- *  introduce separate class for this test.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
@@ -83,47 +80,75 @@ public final class RpmSliceYumITCase {
     private GenericContainer<?> cntn;
 
     @Test
-    void canListAndInstallFromArtipieRepo() throws Exception {
-        this.start(Permissions.FREE, Identities.ANONYMOUS, "");
+    void yumCanListAndInstallFromArtipieRepo() throws Exception {
+        this.start(Permissions.FREE, Identities.ANONYMOUS, "", "centos");
         MatcherAssert.assertThat(
             "Lists 'time' package",
-            this.exec("list"),
+            this.yumExec("list"),
             new StringContainsInOrder(new ListOf<>("time.x86_64", "1.7-45.el7"))
         );
         MatcherAssert.assertThat(
-            "Installs time package",
-            this.exec("install"),
+            "Installs 'time' package",
+            this.yumExec("install"),
             new StringContainsInOrder(new ListOf<>("time-1.7-45.el7.x86_64", "Complete!"))
         );
     }
 
     @Test
-    void canListAndInstallFromArtipieRepoWithAuth() throws Exception {
+    void yumCanListAndInstallFromArtipieRepoWithAuth() throws Exception {
         final String mark = "mark";
         final String pswd = "abc";
         this.start(
             (name, perm) -> mark.equals(name) && "download".equals(perm),
-            new BasicIdentities(
-                (name, pass) -> {
-                    final Optional<String> res;
-                    if (mark.equals(name) && pswd.equals(pass)) {
-                        res = Optional.of(name);
-                    } else {
-                        res = Optional.empty();
-                    }
-                    return res;
-                }
-            ),
-            String.format("%s:%s@", mark, pswd)
+            this.auth(mark, pswd),
+            String.format("%s:%s@", mark, pswd),
+            "centos"
         );
         MatcherAssert.assertThat(
             "Lists 'time' package",
-            this.exec("list"),
+            this.yumExec("list"),
+            new StringContainsInOrder(new ListOf<>("time.x86_64", "1.7-45.el7"))
+        );
+        MatcherAssert.assertThat(
+            "Installs 'time' package",
+            this.yumExec("install"),
+            new StringContainsInOrder(new ListOf<>("time-1.7-45.el7.x86_64", "Complete!"))
+        );
+    }
+
+    @Test
+    void dnfCanListAndInstallFromArtipieRepo() throws Exception {
+        this.start(Permissions.FREE, Identities.ANONYMOUS, "", "fedora");
+        MatcherAssert.assertThat(
+            "Lists 'time' package",
+            this.dnfExec("list"),
+            new StringContainsInOrder(new ListOf<>("time.x86_64", "1.7-45.el7"))
+        );
+        MatcherAssert.assertThat(
+            "Installs 'time' package",
+            this.dnfExec("install"),
+            new StringContainsInOrder(new ListOf<>("time-1.7-45.el7.x86_64", "Complete!"))
+        );
+    }
+
+    @Test
+    void dnfCanListAndInstallFromArtipieRepoWithAuth() throws Exception {
+        final String john = "john";
+        final String pswd = "123";
+        this.start(
+            (name, perm) -> john.equals(name) && "download".equals(perm),
+            this.auth(john, pswd),
+            String.format("%s:%s@", john, pswd),
+            "fedora"
+        );
+        MatcherAssert.assertThat(
+            "Lists 'time' package",
+            this.dnfExec("list"),
             new StringContainsInOrder(new ListOf<>("time.x86_64", "1.7-45.el7"))
         );
         MatcherAssert.assertThat(
             "Installs time package",
-            this.exec("install"),
+            this.dnfExec("install"),
             new StringContainsInOrder(new ListOf<>("time-1.7-45.el7.x86_64", "Complete!"))
         );
     }
@@ -141,14 +166,46 @@ public final class RpmSliceYumITCase {
     }
 
     /**
-     * Executes command in container.
+     * Basic identities.
+     * @param user User name
+     * @param pswd Password
+     * @return Identities
+     */
+    private Identities auth(final String user, final String pswd) {
+        return new BasicIdentities(
+            (name, pass) -> {
+                final Optional<String> res;
+                if (user.equals(name) && pswd.equals(pass)) {
+                    res = Optional.of(name);
+                } else {
+                    res = Optional.empty();
+                }
+                return res;
+            }
+        );
+    }
+
+    /**
+     * Executes yum command in container.
      * @param action What to do
      * @return String stdout
      * @throws Exception On error
      */
-    private String exec(final String action) throws Exception {
+    private String yumExec(final String action) throws Exception {
         return this.cntn.execInContainer(
             "yum", "-y", "repo-pkgs", "example", action
+        ).getStdout();
+    }
+
+    /**
+     * Executes dnf command in container.
+     * @param action What to do
+     * @return String stdout
+     * @throws Exception On error
+     */
+    private String dnfExec(final String action) throws Exception {
+        return this.cntn.execInContainer(
+            "dnf", "-y", "repository-packages", "example", action
         ).getStdout();
     }
 
@@ -157,10 +214,12 @@ public final class RpmSliceYumITCase {
      * @param perms Permissions
      * @param auth Identities
      * @param cred String with user name and password to add in url, uname:pswd@
+     * @param linux Linux distribution name
      * @throws Exception On error
+     * @checkstyle ParameterNumberCheck (10 lines)
      */
-    private void start(final Permissions perms, final Identities auth, final String cred)
-        throws Exception {
+    private void start(final Permissions perms, final Identities auth, final String cred,
+        final String linux) throws Exception {
         final Storage storage = new InMemoryStorage();
         new TestRpm.Time().put(storage);
         final RepoConfig config = new RepoConfig.Simple(
@@ -184,10 +243,10 @@ public final class RpmSliceYumITCase {
                 "gpgcheck=0"
             )
         );
-        this.cntn = new GenericContainer<>("centos:latest")
+        this.cntn = new GenericContainer<>(String.format("%s:latest", linux))
             .withCommand("tail", "-f", "/dev/null")
             .withWorkingDirectory("/home/")
-            .withFileSystemBind("./src/test/resources", "/home");
+            .withFileSystemBind("src/test/resources", "/home");
         this.cntn.start();
         this.cntn.execInContainer("mv", "/home/example.repo", "/etc/yum.repos.d/");
     }
