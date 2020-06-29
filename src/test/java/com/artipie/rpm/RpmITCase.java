@@ -25,6 +25,7 @@ package com.artipie.rpm;
 
 import com.artipie.asto.Concatenation;
 import com.artipie.asto.Key;
+import com.artipie.asto.Remaining;
 import com.artipie.asto.Storage;
 import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.fs.FileStorage;
@@ -36,7 +37,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.FileUtils;
@@ -80,18 +80,6 @@ final class RpmITCase {
     private static Path bundle;
 
     /**
-     * Abc test rmp file.
-     */
-    private static final Path ABC =
-        Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm");
-
-    /**
-     * Libdeflt test rmp file.
-     */
-    private static final Path LIBDEFLT =
-        Paths.get("src/test/resources-binary/libdeflt1_0-2020.03.27-25.1.armv7hl.rpm");
-
-    /**
      * Test bundle size.
      */
     private static final TestBundle.Size SIZE =
@@ -133,7 +121,7 @@ final class RpmITCase {
     void generatesMetadataIncrementally() throws IOException, InterruptedException {
         this.modifyRepo();
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
-            .updateBatchIncrementally(Key.ROOT)
+            .batchUpdateIncrementally(Key.ROOT)
             .blockingAwait();
     }
 
@@ -167,7 +155,7 @@ final class RpmITCase {
     @Test
     void dontKeepOldMetadataWhenUpdatingIncrementally() throws InterruptedException {
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
-            .updateBatchIncrementally(Key.ROOT)
+            .batchUpdateIncrementally(Key.ROOT)
             .blockingAwait();
         final BlockingStorage bsto = new BlockingStorage(this.storage);
         MatcherAssert.assertThat(
@@ -181,7 +169,7 @@ final class RpmITCase {
                 .findFirst().orElseThrow(() -> new IllegalStateException("not key found"));
             bsto.delete(first);
             new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
-                .updateBatchIncrementally(Key.ROOT)
+                .batchUpdateIncrementally(Key.ROOT)
                 .blockingAwait();
         }
         MatcherAssert.assertThat(
@@ -203,7 +191,7 @@ final class RpmITCase {
     void generatesRepomdIncrementallyMetadata() throws Exception {
         this.modifyRepo();
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
-            .updateBatchIncrementally(Key.ROOT)
+            .batchUpdateIncrementally(Key.ROOT)
             .blockingAwait();
         this.assertion();
     }
@@ -217,14 +205,7 @@ final class RpmITCase {
         bsto.list(Key.ROOT).stream()
             .filter(name -> name.string().contains("oxygen"))
             .forEach(new UncheckedConsumer<>(item -> bsto.delete(new Key.From(item))));
-        bsto.save(
-            new Key.From(RpmITCase.ABC.getFileName().toString()),
-            Files.readAllBytes(RpmITCase.ABC)
-        );
-        bsto.save(
-            new Key.From(RpmITCase.LIBDEFLT.getFileName().toString()),
-            Files.readAllBytes(RpmITCase.LIBDEFLT)
-        );
+        new TestRpm.Multiple(new TestRpm.Abc(), new TestRpm.Libdeflt()).put(this.storage);
     }
 
     /**
@@ -235,9 +216,11 @@ final class RpmITCase {
     private void assertion() throws InterruptedException, ExecutionException {
         MatcherAssert.assertThat(
             new String(
-                new Concatenation(
-                    this.storage.value(new Key.From("repodata/repomd.xml")).get()
-                ).single().blockingGet().array(),
+                new Concatenation(this.storage.value(new Key.From("repodata/repomd.xml")).get())
+                    .single()
+                    .map(buf -> new Remaining(buf, true))
+                    .map(Remaining::bytes)
+                    .blockingGet(),
                 Charset.defaultCharset()
             ),
             XhtmlMatchers.hasXPaths(

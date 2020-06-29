@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm.meta;
 
+import com.artipie.rpm.hm.IsXmlEqual;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,7 +31,6 @@ import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.xmlunit.matchers.CompareMatcher;
 
 /**
  * Test for {@link XmlMetaJoin}.
@@ -54,9 +54,7 @@ class XmlMetaJoinTest {
         );
         MatcherAssert.assertThat(
             file,
-            CompareMatcher.isIdenticalTo(
-                Paths.get(XmlMetaJoinTest.REPO, "primary.xml.example")
-            )
+            new IsXmlEqual(Paths.get(XmlMetaJoinTest.REPO, "primary.xml.example"))
         );
     }
 
@@ -84,20 +82,17 @@ class XmlMetaJoinTest {
             ).getBytes()
         );
         new XmlMetaJoin("parent").merge(target, part);
-        final Path expected = temp.resolve("expected.xml");
-        Files.write(
-            expected,
-            String.join(
-                "\n",
-                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-                "<parent>",
-                "<a>1</a><b>2</b><c>2</c><d>3</d>",
-                "</parent>"
-            ).getBytes()
-        );
         MatcherAssert.assertThat(
             target,
-            CompareMatcher.isIdenticalTo(expected)
+            new IsXmlEqual(
+                String.join(
+                    "\n",
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+                    "<parent>",
+                    "<a>1</a><b>2</b><c>2</c><d>3</d>",
+                    "</parent>"
+                )
+            )
         );
     }
 
@@ -128,20 +123,17 @@ class XmlMetaJoinTest {
             ).getBytes()
         );
         new XmlMetaJoin("parent").merge(target, part);
-        final Path expected = temp.resolve("expected.xml");
-        Files.write(
-            expected,
-            String.join(
-                "\n",
-                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-                "<parent>",
-                "<a>A</a><b>B</b><c>C</c><d>D</d>",
-                "</parent>"
-            ).getBytes()
-        );
         MatcherAssert.assertThat(
             target,
-            CompareMatcher.isIdenticalTo(expected)
+            new IsXmlEqual(
+                String.join(
+                    "\n",
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+                    "<parent>",
+                    "<a>A</a><b>B</b><c>C</c><d>D</d>",
+                    "</parent>"
+                )
+            )
         );
     }
 

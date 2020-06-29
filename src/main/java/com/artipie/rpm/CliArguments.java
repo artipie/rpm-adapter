@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Locale;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
@@ -45,59 +44,59 @@ import org.apache.commons.cli.ParseException;
 public final class CliArguments {
 
     /**
-     * Digest option.
-     */
-    private static final Option DIGEST = Option.builder("d")
-        .argName("dgst")
-        .longOpt("digest")
-        .desc("(optional, default sha256) configures Digest instance for Rpm: sha256 or sha1")
-        .hasArg()
-        .build();
-
-    /**
-     * Naming policy option.
-     */
-    private static final Option NAMING_POLICY = Option.builder("n")
-        .argName("np")
-        .longOpt("naming-policy")
-        .desc("(optional, default plain) configures NamingPolicy for Rpm: plain, sha256 or sha1")
-        .hasArg()
-        .build();
-
-    /**
-     * FileLists option.
-     */
-    private static final Option FILE_LISTS = Option.builder("f")
-        .argName("fl")
-        .longOpt("filelists")
-        .desc("(optional, default true) includes File Lists for Rpm: true or false")
-        .hasArg()
-        .build();
-
-    /**
      * Cli options.
      */
-    private final Options options;
+    private static final Options OPTIONS = new Options()
+        .addOption(RpmOptions.DIGEST.option())
+        .addOption(RpmOptions.NAMING_POLICY.option())
+        .addOption(RpmOptions.FILELISTS.option());
+
+    /**
+     * Cli.
+     */
+    private final CommandLine cli;
 
     /**
      * Ctor.
+     * @param cli Command line
      */
-    public CliArguments() {
-        this (
-            new Options()
-                .addOption(CliArguments.DIGEST)
-                .addOption(CliArguments.NAMING_POLICY)
-                .addOption(CliArguments.FILE_LISTS)
-        );
+    public CliArguments(final CommandLine cli) {
+        this.cli = cli;
     }
 
     /**
      * Ctor.
-     *
-     * @param options Cli options.
+     * @param args Command line arguments
      */
-    private CliArguments(final Options options) {
-        this.options = options;
+    public CliArguments(final String... args) {
+        this(CliArguments.parsed(args));
+    }
+
+    /**
+     * Repository.
+     *
+     * @return Repository.
+     * @throws IllegalArgumentException If the arg value is incorrect
+     */
+    public Path repository() {
+        final List<String> args = this.cli.getArgList();
+        if (args.isEmpty()) {
+            throw new IllegalArgumentException(
+                String.format(
+                    "Expected repository path but got: %s",
+                    args
+                )
+            );
+        }
+        return Paths.get(args.get(0));
+    }
+
+    /**
+     * Repository configuration.
+     * @return Config
+     */
+    public RepoConfig config() {
+        return new FromCliArguments(this.cli);
     }
 
     /**
@@ -107,11 +106,9 @@ public final class CliArguments {
      * @return Parsed arguments
      * @throws IllegalArgumentException If there is an error during arg parsing
      */
-    public CliParsedArguments parsed(final String... args) {
+    private static CommandLine parsed(final String... args) {
         try {
-            return new CliParsedArguments(
-                new DefaultParser().parse(this.options, args)
-            );
+            return new DefaultParser().parse(CliArguments.OPTIONS, args);
         } catch (final ParseException ex) {
             throw new IllegalArgumentException(
                 String.format("Can't parse arguments '%s'", Arrays.asList(args)),
@@ -125,7 +122,7 @@ public final class CliArguments {
      *
      * @since 0.9
      */
-    public final class CliParsedArguments {
+    public static final class FromCliArguments implements RepoConfig {
 
         /**
          * Cli.
@@ -136,66 +133,32 @@ public final class CliArguments {
          * Ctor.
          * @param cli Cli.
          */
-        private CliParsedArguments(final CommandLine cli) {
+        private FromCliArguments(final CommandLine cli) {
             this.cli = cli;
         }
 
-        /**
-         * Digest.
-         *
-         * @return Digest.
-         * @throws IllegalArgumentException If the arg value is incorrect
-         */
+        @Override
         public Digest digest() {
             return Digest.valueOf(
                 this.cli.getOptionValue(
-                    CliArguments.DIGEST.getOpt(), "sha256"
+                    RpmOptions.DIGEST.option().getOpt(), "sha256"
                 ).toUpperCase(Locale.US)
             );
         }
 
-        /**
-         * Naming.
-         *
-         * @return Naming.
-         * @throws IllegalArgumentException If the arg value is incorrect
-         */
+        @Override
         public NamingPolicy naming() {
             return StandardNamingPolicy.valueOf(
                 this.cli.getOptionValue(
-                    CliArguments.NAMING_POLICY.getOpt(), "plain"
+                    RpmOptions.NAMING_POLICY.option().getOpt(), "plain"
                 ).toUpperCase(Locale.US)
             );
         }
 
-        /**
-         * Repository.
-         *
-         * @return Repository.
-         * @throws IllegalArgumentException If the arg value is incorrect
-         */
-        public Path repository() {
-            final List<String> args = this.cli.getArgList();
-            if (args.size() != 1) {
-                throw new IllegalArgumentException(
-                    String.format(
-                        "Expected repository path but got: %s",
-                        args
-                    )
-                );
-            }
-            return Paths.get(args.get(0));
-        }
-
-        /**
-         * Include File Lists.
-         *
-         * @return Boolean.
-         * @throws IllegalArgumentException If the arg value is incorrect
-         */
-        public boolean fileLists() {
+        @Override
+        public boolean filelists() {
             return Boolean.parseBoolean(
-                this.cli.getOptionValue(CliArguments.FILE_LISTS.getOpt(), "true")
+                this.cli.getOptionValue(RpmOptions.FILELISTS.option().getOpt(), "true")
             );
         }
     }

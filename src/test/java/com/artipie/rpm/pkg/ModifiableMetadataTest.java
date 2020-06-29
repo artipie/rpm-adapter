@@ -28,28 +28,19 @@ import com.artipie.rpm.StandardNamingPolicy;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlRepomd;
 import com.jcabi.aspects.Tv;
-import com.jcabi.log.Logger;
 import com.jcabi.matchers.XhtmlMatchers;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.logging.Level;
 import javax.xml.stream.XMLStreamException;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsNot;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.redline_rpm.ReadableChannelWrapper;
-import org.redline_rpm.Scanner;
-import org.redline_rpm.header.Format;
-import org.redline_rpm.header.Header;
 
 /**
  * Test for {@link ModifiableMetadata}.
@@ -70,16 +61,19 @@ class ModifiableMetadataTest {
         );
         final Path rpm =
             Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm");
-        mtd.accept(new FilePackage.Headers(this.header(rpm), rpm, Digest.SHA256));
+        mtd.accept(
+            new FilePackage.Headers(new FilePackageHeader(rpm).header(), rpm, Digest.SHA256)
+        );
         mtd.close();
         mtd.brush(
             new ListOf<String>("7eaefd1cb4f9740558da7f12f9cb5a6141a47f5d064a98d46c29959869af1a44")
         );
         MatcherAssert.assertThat(
-            "Has 'abc' and 'nginx' packages",
+            "Has 'abc' and 'nginx' packages, writes `packages` attribute correctly",
             new String(Files.readAllBytes(res), StandardCharsets.UTF_8),
             XhtmlMatchers.hasXPath(
-                //@checkstyle LineLengthCheck (2 lines)
+                //@checkstyle LineLengthCheck (3 lines)
+                "/*[local-name()='metadata' and @packages='2']",
                 "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='abc']",
                 "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='nginx']"
             )
@@ -125,20 +119,4 @@ class ModifiableMetadataTest {
             )
         );
     }
-
-    /**
-     * Creates header from rpm file.
-     * @param file File
-     * @return Header
-     * @throws IOException On error
-     */
-    private Header header(final Path file) throws IOException {
-        try (FileChannel chan = FileChannel.open(file, StandardOpenOption.READ)) {
-            final Format format = new Scanner(
-                new PrintStream(Logger.stream(Level.FINE, this))
-            ).run(new ReadableChannelWrapper(chan));
-            return format.getHeader();
-        }
-    }
-
 }

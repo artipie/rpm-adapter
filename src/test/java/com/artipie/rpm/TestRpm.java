@@ -30,14 +30,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.cactoos.list.ListOf;
 
 /**
  * Test rpm.
  * @since 0.9
- * @todo #235:30min Continue test rpms implementation: first, create `Multiple` implementation of
- *  this interface. Multiple implementation should accept several TestRpm in the ctor and put all
- *  the rpms into storage on `put`. Second, create `Invalid` implementation to add invalid package
- *  to storage. Third, find all usages of the test rpms and replace with these classes usages.
  */
 public interface TestRpm {
 
@@ -47,6 +44,26 @@ public interface TestRpm {
      * @throws IOException On error
      */
     void put(Storage storage) throws IOException;
+
+    /**
+     * Name of the rpm.
+     * @return Name of the rpm
+     */
+    String name();
+
+    /**
+     * Time sentos rpm.
+     * @since 0.9
+     */
+    final class Time extends FromPath {
+
+        /**
+         * Ctor.
+         */
+        public Time() {
+            super("time-1.7-45.el7.x86_64.rpm");
+        }
+    }
 
     /**
      * Abc test rpm.
@@ -114,6 +131,71 @@ public interface TestRpm {
                 new Key.From(this.path.getFileName().toString()),
                 new Content.From(Files.readAllBytes(this.path))
             ).join();
+        }
+
+        @Override
+        public String name() {
+            return this.path.getFileName().toString().replaceAll("\\.rpm$", "");
+        }
+    }
+
+    /**
+     * An invalid rpm.
+     * @since 0.9
+     */
+    final class Invalid implements TestRpm {
+        @Override
+        public void put(final Storage storage) throws IOException {
+            storage.save(
+                new Key.From(String.format("%s.rpm", this.name())),
+                new Content.From(new byte[] {0x00, 0x01, 0x02 })
+            ).join();
+        }
+
+        @Override
+        public String name() {
+            return "invalid";
+        }
+
+    }
+
+    /**
+     * Multiple test rpms.
+     * @since 0.9
+     */
+    final class Multiple implements TestRpm {
+
+        /**
+         * Rpms.
+         */
+        private final Iterable<TestRpm> rpms;
+
+        /**
+         * Ctor.
+         * @param rpms Rpms.
+         */
+        public Multiple(final TestRpm... rpms) {
+            this(new ListOf<>(rpms));
+        }
+
+        /**
+         * Ctor.
+         * @param rpms Rpms.
+         */
+        public Multiple(final Iterable<TestRpm> rpms) {
+            this.rpms = rpms;
+        }
+
+        @Override
+        public void put(final Storage storage) throws IOException {
+            for (final TestRpm rpm: this.rpms) {
+                rpm.put(storage);
+            }
+        }
+
+        @Override
+        public String name() {
+            throw new UnsupportedOperationException();
         }
     }
 }

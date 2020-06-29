@@ -31,6 +31,7 @@ import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryChecksums;
 import com.artipie.rpm.meta.XmlRepomd;
+import com.artipie.rpm.misc.FileInDir;
 import com.artipie.rpm.misc.StorageLock;
 import com.artipie.rpm.misc.UncheckedConsumer;
 import com.artipie.rpm.misc.UncheckedFunc;
@@ -56,7 +57,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.xml.stream.XMLStreamException;
@@ -88,19 +88,9 @@ public final class Rpm {
     private final Storage storage;
 
     /**
-     * Naming policy.
+     * Repository configuration.
      */
-    private final NamingPolicy naming;
-
-    /**
-     * Digest algorithm for check-sums.
-     */
-    private final Digest digest;
-
-    /**
-     * Include filelists?
-     */
-    private final boolean filelists;
+    private final RepoConfig config;
 
     /**
      * New Rpm for repository in storage. Does not include filelists.xml in update.
@@ -129,10 +119,17 @@ public final class Rpm {
      */
     public Rpm(final Storage stg, final NamingPolicy naming, final Digest dgst,
         final boolean filelists) {
-        this.storage = stg;
-        this.naming = naming;
-        this.digest = dgst;
-        this.filelists = filelists;
+        this(stg, new RepoConfig.Simple(dgst, naming, filelists));
+    }
+
+    /**
+     * Ctor.
+     * @param storage The storage
+     * @param config Repository configuration
+     */
+    public Rpm(final Storage storage, final RepoConfig config) {
+        this.storage = storage;
+        this.config = config;
     }
 
     /**
@@ -220,7 +217,7 @@ public final class Rpm {
             .doOnSuccess(rep -> Logger.info(this, "repository updated"))
             .doOnSuccess(Repository::close)
             .doOnSuccess(rep -> Logger.info(this, "repository closed"))
-            .flatMapObservable(repo -> Observable.fromIterable(repo.save(this.naming)))
+            .flatMapObservable(repo -> Observable.fromIterable(repo.save(this.config.naming())))
             .doOnNext(file -> Files.move(file, tmpdir.resolve(file.getFileName())))
             .flatMapSingle(path -> this.moveRepodataToStorage(local, path, prefix))
             .map(path -> path.getFileName().toString())
@@ -234,7 +231,7 @@ public final class Rpm {
      * @param prefix Repo prefix
      * @return Completable action
      */
-    public Completable updateBatchIncrementally(final Key prefix) {
+    public Completable batchUpdateIncrementally(final Key prefix) {
         final Path tmpdir;
         final Path metadir;
         try {
@@ -271,7 +268,7 @@ public final class Rpm {
             .doOnSuccess(rep -> Logger.info(this, "repository closed"))
             .doOnSuccess(ModifiableRepository::clear)
             .doOnSuccess(rep -> Logger.info(this, "repository cleared"))
-            .flatMapObservable(rep -> Observable.fromIterable(rep.save(this.naming)))
+            .flatMapObservable(rep -> Observable.fromIterable(rep.save(this.config.naming())))
             .doOnNext(
                 file -> Files.move(
                     file, tmpdir.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING
@@ -387,12 +384,12 @@ public final class Rpm {
         try {
             return new Repository(
                 Rpm.xmlRepomd(),
-                new XmlPackage.Stream(this.filelists).get().map(
+                new XmlPackage.Stream(this.config.filelists()).get().map(
                     new UncheckedFunc<XmlPackage, MetadataFile, IOException>(
                         item -> new MetadataFile(item, item.output().start())
                     )
                 ).collect(Collectors.toList()),
-                this.digest,
+                this.config.digest(),
                 tmp
             );
         } catch (final XMLStreamException ex) {
@@ -411,12 +408,14 @@ public final class Rpm {
         throws IOException {
         try {
             final Map<String, Path> data = new HashMap<>();
-            new XmlPackage.Stream(this.filelists).get().map(XmlPackage::filename)
+            new XmlPackage.Stream(this.config.filelists()).get().map(XmlPackage::filename)
                 .forEach(
                     new UncheckedConsumer<>(
                         name -> {
                             final Path metaf = dir.resolve(String.format("%s.old.xml", name));
-                            new Gzip(Rpm.meta(dir, name)).unpack(metaf);
+                            new Gzip(
+                                new FileInDir(dir).find(String.format("%s.xml.gz", name))
+                            ).unpack(metaf);
                             data.put(name, metaf);
                         }
                     )
@@ -424,7 +423,7 @@ public final class Rpm {
             return new ModifiableRepository(
                 new XmlPrimaryChecksums(data.get(XmlPackage.PRIMARY.filename())).read(),
                 Rpm.xmlRepomd(),
-                new XmlPackage.Stream(this.filelists).get().map(
+                new XmlPackage.Stream(this.config.filelists()).get().map(
                     new UncheckedFunc<>(
                         item ->
                             new ModifiableMetadata(
@@ -433,7 +432,7 @@ public final class Rpm {
                             )
                     )
                 ).collect(Collectors.toList()),
-                this.digest,
+                this.config.digest(),
                 metadir
             );
         } catch (final XMLStreamException ex) {
@@ -451,26 +450,5 @@ public final class Rpm {
         final XmlRepomd repomd = new XmlRepomd(Files.createTempFile("repomd-", ".xml"));
         repomd.begin(System.currentTimeMillis() / Tv.THOUSAND);
         return repomd;
-    }
-
-    /**
-     * Searches for the meta file by substring in folder.
-     * @param dir Where to look for the file
-     * @param substr What to find
-     * @return Path to find
-     * @throws IOException On error
-     */
-    private static Path meta(final Path dir, final String substr) throws IOException {
-        final Optional<Path> res = Files.walk(dir)
-            .filter(
-                path -> path.getFileName().toString().endsWith(String.format("%s.xml.gz", substr))
-            ).findFirst();
-        if (res.isPresent()) {
-            return res.get();
-        } else {
-            throw new IllegalStateException(
-                String.format("Metafile %s does not exists in %s", substr, dir.toString())
-            );
-        }
     }
 }

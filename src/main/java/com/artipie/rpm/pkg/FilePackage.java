@@ -25,22 +25,14 @@ package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.FileChecksum;
-import com.jcabi.log.Logger;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.logging.Level;
-import org.redline_rpm.ReadableChannelWrapper;
-import org.redline_rpm.Scanner;
 import org.redline_rpm.header.AbstractHeader;
-import org.redline_rpm.header.Format;
 import org.redline_rpm.header.Header;
 
 /**
@@ -79,7 +71,9 @@ public final class FilePackage implements Package {
 
     @Override
     public void save(final PackageOutput out, final Digest digest) throws IOException {
-        out.accept(new FilePackage.Headers(this.header(), this.file, digest));
+        out.accept(
+            new FilePackage.Headers(new FilePackageHeader(this.file).header(), this.file, digest)
+        );
         Files.delete(this.file);
     }
 
@@ -95,31 +89,7 @@ public final class FilePackage implements Package {
      * @throws IOException On error
      */
     public Package parsed() throws InvalidPackageException, IOException {
-        return new ParsedFilePackage(this.header(), this.file);
-    }
-
-    /**
-     * Get header.
-     * @return The header
-     * @throws InvalidPackageException In case package is invalid.
-     * @throws IOException On error
-     */
-    @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    private Header header() throws InvalidPackageException, IOException {
-        try (FileChannel chan = FileChannel.open(this.file, StandardOpenOption.READ)) {
-            final Format format;
-            try {
-                format = new Scanner(
-                    new PrintStream(Logger.stream(Level.FINE, this))
-                ).run(new ReadableChannelWrapper(chan));
-                // @checkstyle IllegalCatchCheck (1 line)
-            } catch (final RuntimeException ex) {
-                throw new InvalidPackageException(ex);
-            }
-            final Header header = format.getHeader();
-            Logger.debug(this, "header: %s", header.toString());
-            return header;
-        }
+        return new ParsedFilePackage(new FilePackageHeader(this.file).header(), this.file);
     }
 
     /**

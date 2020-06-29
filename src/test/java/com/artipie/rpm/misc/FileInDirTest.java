@@ -21,60 +21,48 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm.meta;
+package com.artipie.rpm.misc;
 
-import com.artipie.rpm.hm.IsXmlEqual;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Test for {@link XmlMaid.ByPkgidAttr}.
- * @since 0.3
+ * Test for {@link FileInDir}.
+ * @since 0.9
  */
-public final class ByPkgidAttrTest {
-
-    /**
-     * Repodata path.
-     */
-    public static final String REPODATA = "src/test/resources-binary/repodata";
+final class FileInDirTest {
 
     @Test
-    void clearsFirstItem(@TempDir final Path temp) throws IOException {
-        final Path file = Files.copy(
-            Paths.get(ByPkgidAttrTest.REPODATA, "other.xml.example"),
-            temp.resolve("other.xml")
-        );
-        new XmlMaid.ByPkgidAttr(file).clean(
-            new ListOf<>("7eaefd1cb4f9740558da7f12f9cb5a6141a47f5d064a98d46c29959869af1a44")
-        );
+    void findsFile(@TempDir final Path tmp) throws IOException {
+        final Path file = tmp.resolve("some_file.txt");
+        Files.write(file, "abs123".getBytes());
         MatcherAssert.assertThat(
-            file,
-            new IsXmlEqual(
-                Paths.get(ByPkgidAttrTest.REPODATA, "other.xml.example.second")
-            )
+            new FileInDir(tmp).find("_file.t"),
+            new IsEqual<>(file)
         );
     }
 
     @Test
-    void clearsLastItem(@TempDir final Path temp) throws IOException {
-        final Path file = Files.copy(
-            Paths.get(ByPkgidAttrTest.REPODATA, "filelists.xml.example"),
-            temp.resolve("filelist.xml")
+    void doesNotFindFile(@TempDir final Path tmp) throws IOException {
+        Files.write(tmp.resolve("a_file.txt"), "abc123".getBytes());
+        Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> new FileInDir(tmp).find("_notfile.t")
         );
-        new XmlMaid.ByPkgidAttr(file).clean(
-            new ListOf<>("54f1d9a1114fa85cd748174c57986004857b800fe9545fbf23af53f4791b31e2")
-        );
-        MatcherAssert.assertThat(
-            file,
-            new IsXmlEqual(
-                Paths.get(ByPkgidAttrTest.REPODATA, "filelists.xml.example.first")
-            )
+    }
+
+    @Test
+    void doesNotUseRegexToFind(@TempDir final Path tmp) throws IOException {
+        Files.write(tmp.resolve("fileXtxt"), "ab123".getBytes());
+        Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> new FileInDir(tmp).find("file.txt")
         );
     }
 }

@@ -21,43 +21,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm;
+package com.artipie.rpm.misc;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import java.util.stream.Stream;
 
 /**
- * Test case for {@link Cli}.
- *
- * @since 0.6
- * @checkstyle LineLengthCheck (70 lines)
+ * File in directory.
+ * @since 0.9
  */
-final class CliTest {
-    @Test
-    void testWrongArgumentCount() {
-        final IllegalArgumentException err = Assertions.assertThrows(
-            IllegalArgumentException.class,
-            () -> Cli.main(new String[]{})
-        );
-        Assertions.assertEquals(
-            err.getMessage(),
-            "Expected repository path but got: []"
-        );
+public final class FileInDir {
+
+    /**
+     * Directory.
+     */
+    private final Path dir;
+
+    /**
+     * Ctor.
+     * @param dir Directory
+     */
+    public FileInDir(final Path dir) {
+        this.dir = dir;
     }
 
-    @Test
-    void testRunWithCorrectArgument(@TempDir final Path temp) {
-        Cli.main(new String[]{"-n=sha256", "-d=sha1", "-f=true", temp.toString()});
+    /**
+     * Searches for the file by subst in the directory.
+     * @param substr File name substr
+     * @return Path to the file
+     * @throws IOException On Error
+     * @throws IllegalArgumentException if not found
+     */
+    public Path find(final String substr) throws IOException {
+        try (Stream<Path> files = Files.walk(this.dir)) {
+            return files.filter(path -> path.getFileName().toString().contains(substr))
+                .findFirst().orElseThrow(
+                    () -> new IllegalArgumentException(
+                        String.format(
+                            "Metafile %s does not exists in %s", substr, this.dir.toString()
+                        )
+                    )
+                );
+        }
     }
 
-    @Test
-    void testParseWithWrongArgument(@TempDir final Path temp) {
-        final IllegalArgumentException err = Assertions.assertThrows(
-            IllegalArgumentException.class,
-            () -> Cli.main(new String[] {"-naming-policy=sha256", "-digest=sha1", "-lists=true", temp.toString()})
-        );
-        Assertions.assertTrue(err.getMessage().contains("Can't parse arguments"));
-    }
 }

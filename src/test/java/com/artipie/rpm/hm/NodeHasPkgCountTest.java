@@ -21,55 +21,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm.meta;
+package com.artipie.rpm.hm;
 
-import com.artipie.rpm.hm.IsXmlEqual;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import com.artipie.rpm.meta.XmlPackage;
+import com.jcabi.xml.XMLDocument;
+import java.io.FileNotFoundException;
 import java.nio.file.Paths;
-import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.IsNot;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import org.llorllale.cactoos.matchers.Matches;
 
 /**
- * Test for {@link XmlPrimaryMaid}.
- * @since 0.8
+ * Test for {@link NodeHasPkgCount}.
+ * @since 0.10
+ * @checkstyle MagicNumberCheck (500 lines)
  */
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
-class XmlPrimaryMaidTest {
+final class NodeHasPkgCountTest {
 
     @Test
-    void clearsFirstItem(@TempDir final Path temp) throws IOException {
-        final Path file = Files.copy(
-            Paths.get("src/test/resources-binary/repodata", "primary.xml.example"),
-            temp.resolve("primary1.xml")
-        );
-        new XmlPrimaryMaid(file).clean(
-            new ListOf<>("7eaefd1cb4f9740558da7f12f9cb5a6141a47f5d064a98d46c29959869af1a44")
-        );
+    void countsPackages() throws FileNotFoundException {
         MatcherAssert.assertThat(
-            file,
-            new IsXmlEqual(
-                Paths.get("src/test/resources-binary/repodata", "primary.xml.example.second")
+            new NodeHasPkgCount(2, XmlPackage.OTHER.tag()),
+            new Matches<>(
+                new XMLDocument(
+                    Paths.get("src/test/resources-binary/repodata/other.xml.example")
+                )
             )
         );
     }
 
     @Test
-    void clearsLastItem(@TempDir final Path temp) throws IOException {
-        final Path file = Files.copy(
-            Paths.get("src/test/resources-binary/repodata", "primary.xml.example"),
-            temp.resolve("primary2.xml")
-        );
-        new XmlPrimaryMaid(file).clean(
-            new ListOf<>("54f1d9a1114fa85cd748174c57986004857b800fe9545fbf23af53f4791b31e2")
-        );
+    void doesNotMatchWhenPackagesAmountDiffers() throws FileNotFoundException {
         MatcherAssert.assertThat(
-            file,
-            new IsXmlEqual(
-                Paths.get("src/test/resources-binary/repodata", "primary.xml.example.first")
+            new NodeHasPkgCount(10, XmlPackage.PRIMARY.tag()),
+            new IsNot<>(
+                new Matches<>(
+                    new XMLDocument(
+                        Paths.get("src/test/resources-binary/repodata/primary.xml.example")
+                    )
+                )
             )
         );
     }

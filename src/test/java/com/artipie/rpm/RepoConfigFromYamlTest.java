@@ -23,41 +23,44 @@
  */
 package com.artipie.rpm;
 
-import java.nio.file.Path;
-import org.junit.jupiter.api.Assertions;
+import com.amihaiemil.eoyaml.Yaml;
+import java.util.Optional;
+import org.cactoos.func.ProcOf;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import org.llorllale.cactoos.matchers.MatcherOf;
 
 /**
- * Test case for {@link Cli}.
- *
- * @since 0.6
- * @checkstyle LineLengthCheck (70 lines)
+ * Test for {@link RepoConfig.FromYaml}.
+ * @since 0.10
  */
-final class CliTest {
+public final class RepoConfigFromYamlTest {
+
     @Test
-    void testWrongArgumentCount() {
-        final IllegalArgumentException err = Assertions.assertThrows(
-            IllegalArgumentException.class,
-            () -> Cli.main(new String[]{})
-        );
-        Assertions.assertEquals(
-            err.getMessage(),
-            "Expected repository path but got: []"
+    void readsSettings() {
+        MatcherAssert.assertThat(
+            new RepoConfig.FromYaml(
+                Yaml.createYamlMappingBuilder().add("digest", "sha1")
+                .add("naming-policy", "sha256").add("filelists", "false").build()
+            ),
+            Matchers.allOf(
+                new MatcherOf<>(cnfg -> cnfg.digest() == Digest.SHA1),
+                new MatcherOf<>(cnfg -> cnfg.naming() == StandardNamingPolicy.SHA256),
+                new MatcherOf<>(fromYaml -> !fromYaml.filelists())
+            )
         );
     }
 
     @Test
-    void testRunWithCorrectArgument(@TempDir final Path temp) {
-        Cli.main(new String[]{"-n=sha256", "-d=sha1", "-f=true", temp.toString()});
-    }
-
-    @Test
-    void testParseWithWrongArgument(@TempDir final Path temp) {
-        final IllegalArgumentException err = Assertions.assertThrows(
-            IllegalArgumentException.class,
-            () -> Cli.main(new String[] {"-naming-policy=sha256", "-digest=sha1", "-lists=true", temp.toString()})
+    void returnsDefaults() {
+        MatcherAssert.assertThat(
+            new RepoConfig.FromYaml(Optional.empty()),
+            Matchers.allOf(
+                new MatcherOf<>(cnfg -> cnfg.digest() == Digest.SHA256),
+                new MatcherOf<>(cnfg -> cnfg.naming() == StandardNamingPolicy.PLAIN),
+                new MatcherOf<>(new ProcOf<>(RepoConfig.FromYaml::filelists))
+            )
         );
-        Assertions.assertTrue(err.getMessage().contains("Can't parse arguments"));
     }
 }
