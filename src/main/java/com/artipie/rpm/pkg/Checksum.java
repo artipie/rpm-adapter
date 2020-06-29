@@ -44,4 +44,41 @@ public interface Checksum {
      * @throws IOException On error
      */
     String hex() throws IOException;
+
+    /**
+     * Simple {@link Checksum} implementation.
+     * @since 0.11
+     */
+    final class Simple implements Checksum {
+
+        /**
+         * Digest.
+         */
+        private final Digest dgst;
+
+        /**
+         * Checksum hex.
+         */
+        private final String sum;
+
+        /**
+         * Ctor.
+         * @param dgst Digest
+         * @param sum Checksum hex
+         */
+        public Simple(final Digest dgst, final String sum) {
+            this.dgst = dgst;
+            this.sum = sum;
+        }
+
+        @Override
+        public Digest digest() {
+            return this.dgst;
+        }
+
+        @Override
+        public String hex() throws IOException {
+            return this.sum;
+        }
+    }
 }
