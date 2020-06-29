@@ -23,17 +23,24 @@
  */
 package com.artipie.rpm.http;
 
+import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.auth.BasicIdentities;
 import com.artipie.http.auth.Identities;
 import com.artipie.http.auth.Permissions;
 import com.artipie.http.slice.LoggingSlice;
+import com.artipie.rpm.Digest;
+import com.artipie.rpm.NamingPolicy;
 import com.artipie.rpm.RepoConfig;
+import com.artipie.rpm.Rpm;
 import com.artipie.rpm.TestRpm;
 import com.artipie.vertx.VertxSliceServer;
 import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
@@ -45,17 +52,22 @@ import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 
 /**
- * Integration test for {@link RpmSlice}.
+ * Test for {@link RpmSlice}.
  * @since 0.10
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-final class RpmSliceITCase {
+public final class RpmSliceITCase {
 
     /**
      * Vertx instance.
      */
     private static final Vertx VERTX = Vertx.vertx();
+
+    /**
+     * Settings files.
+     */
+    private final Path setting = Paths.get("src/test/resources/example.repo");
 
     /**
      * Vertx slice server instance.
@@ -67,61 +79,85 @@ final class RpmSliceITCase {
      */
     private GenericContainer<?> cntn;
 
-    /**
-     * Port.
-     */
-    private int port;
-
     @Test
-    void installs() throws Exception {
-        final TestRpm rpm = new TestRpm.Time();
-        this.start(rpm, Permissions.FREE, Identities.ANONYMOUS);
+    void yumCanListAndInstallFromArtipieRepo() throws Exception {
+        this.start(Permissions.FREE, Identities.ANONYMOUS, "", "centos");
         MatcherAssert.assertThat(
-            this.executeCommand(
-                String.format(
-                    "http://host.testcontainers.internal:%d/%s.rpm",
-                    this.port, rpm.name()
-                )
-            ),
-            new StringContainsInOrder(new ListOf<>(rpm.name(), "Complete!"))
+            "Lists 'time' package",
+            this.yumExec("list"),
+            new StringContainsInOrder(new ListOf<>("time.x86_64", "1.7-45.el7"))
+        );
+        MatcherAssert.assertThat(
+            "Installs 'time' package",
+            this.yumExec("install"),
+            new StringContainsInOrder(new ListOf<>("time-1.7-45.el7.x86_64", "Complete!"))
         );
     }
 
     @Test
-    void installsWithAuth() throws Exception {
-        final String john = "john";
-        final String pswd = "123";
-        final TestRpm rpm = new TestRpm.Time();
+    void yumCanListAndInstallFromArtipieRepoWithAuth() throws Exception {
+        final String mark = "mark";
+        final String pswd = "abc";
         this.start(
-            rpm,
-            (name, perm) -> john.equals(name) && "download".equals(perm),
-            new BasicIdentities(
-                (name, pass) -> {
-                    final Optional<String> res;
-                    if (john.equals(name) && pswd.equals(pass)) {
-                        res = Optional.of(name);
-                    } else {
-                        res = Optional.empty();
-                    }
-                    return res;
-                }
-            )
+            (name, perm) -> mark.equals(name) && "download".equals(perm),
+            this.auth(mark, pswd),
+            String.format("%s:%s@", mark, pswd),
+            "centos"
         );
         MatcherAssert.assertThat(
-            this.executeCommand(
-                String.format(
-                    "http://%s:%s@host.testcontainers.internal:%d/%s.rpm", john,
-                    pswd, this.port, rpm.name()
-                )
-            ),
-            new StringContainsInOrder(new ListOf<>(rpm.name(), "Complete!"))
+            "Lists 'time' package",
+            this.yumExec("list"),
+            new StringContainsInOrder(new ListOf<>("time.x86_64", "1.7-45.el7"))
+        );
+        MatcherAssert.assertThat(
+            "Installs 'time' package",
+            this.yumExec("install"),
+            new StringContainsInOrder(new ListOf<>("time-1.7-45.el7.x86_64", "Complete!"))
+        );
+    }
+
+    @Test
+    void dnfCanListAndInstallFromArtipieRepo() throws Exception {
+        this.start(Permissions.FREE, Identities.ANONYMOUS, "", "fedora");
+        MatcherAssert.assertThat(
+            "Lists 'time' package",
+            this.dnfExec("list"),
+            new StringContainsInOrder(new ListOf<>("time.x86_64", "1.7-45.el7"))
+        );
+        MatcherAssert.assertThat(
+            "Installs 'time' package",
+            this.dnfExec("install"),
+            new StringContainsInOrder(new ListOf<>("time-1.7-45.el7.x86_64", "Complete!"))
+        );
+    }
+
+    @Test
+    void dnfCanListAndInstallFromArtipieRepoWithAuth() throws Exception {
+        final String john = "john";
+        final String pswd = "123";
+        this.start(
+            (name, perm) -> john.equals(name) && "download".equals(perm),
+            this.auth(john, pswd),
+            String.format("%s:%s@", john, pswd),
+            "fedora"
+        );
+        MatcherAssert.assertThat(
+            "Lists 'time' package",
+            this.dnfExec("list"),
+            new StringContainsInOrder(new ListOf<>("time.x86_64", "1.7-45.el7"))
+        );
+        MatcherAssert.assertThat(
+            "Installs time package",
+            this.dnfExec("install"),
+            new StringContainsInOrder(new ListOf<>("time-1.7-45.el7.x86_64", "Complete!"))
         );
     }
 
     @AfterEach
-    void stopContainer() {
+    void stopContainer() throws IOException {
         this.server.close();
         this.cntn.stop();
+        Files.deleteIfExists(this.setting);
     }
 
     @AfterAll
@@ -129,26 +165,90 @@ final class RpmSliceITCase {
         RpmSliceITCase.VERTX.close();
     }
 
-    private String executeCommand(final String url) throws IOException, InterruptedException {
+    /**
+     * Basic identities.
+     * @param user User name
+     * @param pswd Password
+     * @return Identities
+     */
+    private Identities auth(final String user, final String pswd) {
+        return new BasicIdentities(
+            (name, pass) -> {
+                final Optional<String> res;
+                if (user.equals(name) && pswd.equals(pass)) {
+                    res = Optional.of(name);
+                } else {
+                    res = Optional.empty();
+                }
+                return res;
+            }
+        );
+    }
+
+    /**
+     * Executes yum command in container.
+     * @param action What to do
+     * @return String stdout
+     * @throws Exception On error
+     */
+    private String yumExec(final String action) throws Exception {
         return this.cntn.execInContainer(
-            "yum", "-y", "install", url
+            "yum", "-y", "repo-pkgs", "example", action
         ).getStdout();
     }
 
-    private void start(
-        final TestRpm rpm, final Permissions perms, final Identities auth
-    ) throws Exception {
+    /**
+     * Executes dnf command in container.
+     * @param action What to do
+     * @return String stdout
+     * @throws Exception On error
+     */
+    private String dnfExec(final String action) throws Exception {
+        return this.cntn.execInContainer(
+            "dnf", "-y", "repository-packages", "example", action
+        ).getStdout();
+    }
+
+    /**
+     * Starts VertxSliceServer and docker container.
+     * @param perms Permissions
+     * @param auth Identities
+     * @param cred String with user name and password to add in url, uname:pswd@
+     * @param linux Linux distribution name
+     * @throws Exception On error
+     * @checkstyle ParameterNumberCheck (10 lines)
+     */
+    private void start(final Permissions perms, final Identities auth, final String cred,
+        final String linux) throws Exception {
         final Storage storage = new InMemoryStorage();
-        rpm.put(storage);
+        new TestRpm.Time().put(storage);
+        final RepoConfig config = new RepoConfig.Simple(
+            Digest.SHA256, new NamingPolicy.HashPrefixed(Digest.SHA1), true
+        );
+        new Rpm(storage, config).batchUpdate(Key.ROOT).blockingAwait();
         this.server = new VertxSliceServer(
             RpmSliceITCase.VERTX,
-            new LoggingSlice(new RpmSlice(storage, perms, auth, new RepoConfig.Simple()))
+            new LoggingSlice(new RpmSlice(storage, perms, auth, config))
         );
-        this.port = this.server.start();
-        Testcontainers.exposeHostPorts(this.port);
-        this.cntn = new GenericContainer<>("centos:latest")
-            .withCommand("tail", "-f", "/dev/null");
+        final int port = this.server.start();
+        Testcontainers.exposeHostPorts(port);
+        this.setting.toFile().createNewFile();
+        Files.write(
+            this.setting,
+            new ListOf<>(
+                "[example]",
+                "name=Example Repository",
+                String.format("baseurl=http://%shost.testcontainers.internal:%d/", cred, port),
+                "enabled=1",
+                "gpgcheck=0"
+            )
+        );
+        this.cntn = new GenericContainer<>(String.format("%s:latest", linux))
+            .withCommand("tail", "-f", "/dev/null")
+            .withWorkingDirectory("/home/")
+            .withFileSystemBind("src/test/resources", "/home");
         this.cntn.start();
+        this.cntn.execInContainer("mv", "/home/example.repo", "/etc/yum.repos.d/");
     }
 
 }
