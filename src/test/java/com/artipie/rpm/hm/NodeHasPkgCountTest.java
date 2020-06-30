@@ -27,14 +27,11 @@ import com.artipie.rpm.meta.XmlPackage;
 import com.jcabi.xml.XMLDocument;
 import java.io.FileNotFoundException;
 import java.nio.file.Paths;
-import org.hamcrest.Description;
 import org.hamcrest.MatcherAssert;
-import org.hamcrest.StringDescription;
-import org.hamcrest.core.IsEqual;
 import org.hamcrest.core.IsNot;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.llorllale.cactoos.matchers.Matches;
+import org.llorllale.cactoos.matchers.Mismatches;
 
 /**
  * Test for {@link NodeHasPkgCount}.
@@ -82,24 +79,18 @@ final class NodeHasPkgCountTest {
     }
 
     @Test
-    @Disabled
     void describesCorrectlyWhenPackagesAmountDiffers() throws FileNotFoundException {
-        final Description desc = new StringDescription();
-        new NodeHasPkgCount(10, XmlPackage.PRIMARY.tag(), desc).matches(
-            new XMLDocument(
-                Paths.get(NodeHasPkgCountTest.PRIMARY)
-            )
-        );
         MatcherAssert.assertThat(
-            desc.toString(),
-            new IsEqual<>(
-                "2 packages found, `packages` attribute value is 2, expected 10 package count"
+            new NodeHasPkgCount(10, XmlPackage.PRIMARY.tag()),
+            new Mismatches<>(
+                new XMLDocument(Paths.get(NodeHasPkgCountTest.PRIMARY)),
+                "10 packages expected",
+                "2 packages found, `packages` attribute value is 2"
             )
         );
     }
 
     @Test
-    @Disabled
     void doesNotMatchWhenPackageAttributeDiffers() throws FileNotFoundException {
         MatcherAssert.assertThat(
             new NodeHasPkgCount(2, XmlPackage.OTHER.tag()),
@@ -114,22 +105,13 @@ final class NodeHasPkgCountTest {
     }
 
     @Test
-    @Disabled
     void describesCorrectlyWhenPackageAttributeDiffers() throws FileNotFoundException {
-        final Description desc = new StringDescription();
-        new NodeHasPkgCount(
-            2,
-            XmlPackage.OTHER.tag(),
-            desc
-        ).matches(
-            new XMLDocument(
-                Paths.get(NodeHasPkgCountTest.WRONG)
-            )
-        );
         MatcherAssert.assertThat(
-            desc.toString(),
-            new IsEqual<>(
-                "2 packages found, `packages` attribute value is 3, expected 2 package count"
+            new NodeHasPkgCount(2, XmlPackage.OTHER.tag()),
+            new Mismatches<>(
+                new XMLDocument(Paths.get(NodeHasPkgCountTest.WRONG)),
+                "2 packages expected",
+                "2 packages found, `packages` attribute value is 3"
             )
         );
     }
