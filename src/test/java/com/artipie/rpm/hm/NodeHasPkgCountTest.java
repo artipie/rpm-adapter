@@ -38,7 +38,7 @@ import org.llorllale.cactoos.matchers.Mismatches;
 /**
  * Test for {@link NodeHasPkgCount}.
  * @since 0.10
- * @todo 307:30min Test methods for description verification fail on windows: figure out why,
+ * @todo #307:30min Test methods for description verification fail on windows: figure out why,
  *  fix it and remove disable annotation.
  * @checkstyle MagicNumberCheck (500 lines)
  */
