@@ -24,10 +24,8 @@
 package com.artipie.rpm.meta;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.OptionalInt;
 import java.util.regex.Matcher;
@@ -44,6 +42,11 @@ public class PackagesCount {
      * RegEx pattern for packages attribute.
      */
     private static final Pattern ATTR = Pattern.compile("packages=\"(\\d+)\"");
+
+    /**
+     * Max number of lines to read from file.
+     */
+    private static final int MAX_LINES = 10;
 
     /**
      * File path.
@@ -63,15 +66,16 @@ public class PackagesCount {
      * Read packages count from `packages` attribute.
      *
      * @return Packages count.
+     * @throws IOException In case I/O error occurred reading the file.
      */
     public int value() throws IOException {
-        try (FileInputStream fis = new FileInputStream(this.path.toFile())) {
-            final BufferedReader reader = new BufferedReader(
-                new InputStreamReader(fis, StandardCharsets.UTF_8)
-            );
+        try (BufferedReader reader = Files.newBufferedReader(this.path)) {
             OptionalInt result = OptionalInt.empty();
-            String line;
-            while ((line = reader.readLine()) != null) {
+            for (int lines = 0; lines < PackagesCount.MAX_LINES; lines = lines + 1) {
+                final String line = reader.readLine();
+                if (line == null) {
+                    break;
+                }
                 final Matcher matcher = ATTR.matcher(line);
                 if (matcher.find()) {
                     result = OptionalInt.of(Integer.parseInt(matcher.group(1)));
