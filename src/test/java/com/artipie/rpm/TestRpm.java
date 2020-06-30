@@ -144,17 +144,31 @@ public interface TestRpm {
      * @since 0.9
      */
     final class Invalid implements TestRpm {
+
+        /**
+         * Invalid bytes content.
+         */
+        private final byte[] content = new byte[] {0x00, 0x01, 0x02 };
+
         @Override
         public void put(final Storage storage) throws IOException {
             storage.save(
                 new Key.From(String.format("%s.rpm", this.name())),
-                new Content.From(new byte[] {0x00, 0x01, 0x02 })
+                new Content.From(this.content)
             ).join();
         }
 
         @Override
         public String name() {
             return "invalid";
+        }
+
+        /**
+         * Bytes representation.
+         * @return Invalid bytes content
+         */
+        public byte[] bytes() {
+            return this.content;
         }
 
     }
