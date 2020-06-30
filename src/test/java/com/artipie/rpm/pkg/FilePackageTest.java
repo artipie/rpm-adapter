@@ -24,6 +24,7 @@
 package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
+import com.artipie.rpm.TestRpm;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,6 +32,7 @@ import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.hamcrest.core.IsInstanceOf;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -56,6 +58,24 @@ class FilePackageTest {
                 Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm")
             ).parsed(),
             new IsInstanceOf(ParsedFilePackage.class)
+        );
+    }
+
+    @Test
+    void throwsExceptionIfFileDoesNotExists() {
+        Assertions.assertThrows(
+            IOException.class,
+            () -> new FilePackage(Paths.get("some/file")).parsed()
+        );
+    }
+
+    @Test
+    void throwsExceptionIfFileIsInvalid(@TempDir final Path temp) throws IOException {
+        final Path rpm = temp.resolve("bad.rpm");
+        Files.write(rpm, new TestRpm.Invalid().bytes());
+        Assertions.assertThrows(
+            InvalidPackageException.class,
+            () -> new FilePackage(rpm).parsed()
         );
     }
 

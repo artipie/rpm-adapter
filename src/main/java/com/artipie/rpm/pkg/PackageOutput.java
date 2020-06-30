@@ -92,7 +92,7 @@ public interface PackageOutput extends Closeable {
             private final Path file;
 
             /**
-             * Was package output was accepted?
+             * Was package output accepted?
              */
             private boolean accepted;
 
@@ -141,7 +141,7 @@ public interface PackageOutput extends Closeable {
             }
 
             /**
-             * Was package output was accepted?
+             * Was package output accepted?
              * @return True if {@link Fake#accept(Package.Meta)} was called
              */
             public boolean isAccepted() {
