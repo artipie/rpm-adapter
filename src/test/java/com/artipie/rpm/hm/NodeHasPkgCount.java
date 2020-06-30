@@ -24,17 +24,19 @@
 package com.artipie.rpm.hm;
 
 import com.jcabi.xml.XMLDocument;
+import org.hamcrest.Description;
 import org.hamcrest.core.IsEqual;
 import org.llorllale.cactoos.matchers.MatcherEnvelope;
 
 /**
  * Metadata has given amount of packages.
  * @since 0.10
- * @todo #241:30min This matcher should also verify that `packages` attribute of metadata files
+ * @todo #285:30min This matcher should also verify that `packages` attribute of metadata files
  *  has correct value of packages (the same as packages count). Add this check, correct mismatch
  *  description to say how many packages was found, what is `packages` attribute value and what is
- *  expected, do not forget about tests. After that use this matcher in `RpmTest`, `RpmITCase`
- *  and possibly in ModifiableMetadataTest and MetadataFileTest.
+ *  expected. The tests are already implemented, so enable them after implementing. After that
+ *  use this matcher in `RpmTest`, `RpmITCase` and possibly in ModifiableMetadataTest and
+ *  MetadataFileTest.
  */
 public final class NodeHasPkgCount extends MatcherEnvelope<XMLDocument> {
 
@@ -48,6 +50,20 @@ public final class NodeHasPkgCount extends MatcherEnvelope<XMLDocument> {
             xml -> new IsEqual<>(count).matches(countPackages(tag, xml)),
             desc -> desc.appendValue(count),
             (xml, desc) -> desc.appendValue(countPackages(tag, xml))
+        );
+    }
+
+    /**
+     * Constructor with {@link Description}.
+     * @param count Expected packages count.
+     * @param tag Xml tag.
+     * @param description Hamcrest description for matcher.
+     */
+    public NodeHasPkgCount(final int count, final String tag, final Description description) {
+        super(
+            xml -> new IsEqual<>(count).matches(countPackages(tag, xml)),
+            desc -> description.appendValue(count),
+            (xml, desc) -> description.appendValue(countPackages(tag, xml))
         );
     }
 
