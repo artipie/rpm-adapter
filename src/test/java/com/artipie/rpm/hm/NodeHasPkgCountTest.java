@@ -85,7 +85,7 @@ final class NodeHasPkgCountTest {
             new Mismatches<>(
                 new XMLDocument(Paths.get(NodeHasPkgCountTest.PRIMARY)),
                 "10 packages expected",
-                "2 packages found, `packages` attribute value is 2"
+                "2 packages found, 'packages' attribute value is 2"
             )
         );
     }
@@ -111,7 +111,7 @@ final class NodeHasPkgCountTest {
             new Mismatches<>(
                 new XMLDocument(Paths.get(NodeHasPkgCountTest.WRONG)),
                 "2 packages expected",
-                "2 packages found, `packages` attribute value is 3"
+                "2 packages found, 'packages' attribute value is 3"
             )
         );
     }

@@ -54,7 +54,7 @@ public final class NodeHasPkgCount extends MatcherEnvelope<XMLDocument> {
             desc -> desc.appendText(String.format("%d packages expected", count)),
             (xml, desc) -> desc.appendText(
                 String.format(
-                    "%d packages found, `packages` attribute value is %d",
+                    "%d packages found, 'packages' attribute value is %d",
                     countPackages(tag, xml), packagesAttributeValue(xml)
                 )
             )
