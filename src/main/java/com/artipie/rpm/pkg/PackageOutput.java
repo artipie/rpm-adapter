@@ -92,12 +92,18 @@ public interface PackageOutput extends Closeable {
             private final Path file;
 
             /**
+             * Was package output accepted?
+             */
+            private boolean accepted;
+
+            /**
              * Ctor.
              *
              * @param file File path
              */
             public Fake(final Path file) {
                 this.file = file;
+                this.accepted = false;
             }
 
             @Override
@@ -111,7 +117,7 @@ public interface PackageOutput extends Closeable {
 
             @Override
             public void accept(final Package.Meta meta) {
-                // nothing
+                this.accepted = true;
             }
 
             @Override
@@ -132,6 +138,14 @@ public interface PackageOutput extends Closeable {
             @Override
             public String tag() {
                 return "fake";
+            }
+
+            /**
+             * Was package output accepted?
+             * @return True if {@link Fake#accept(Package.Meta)} was called
+             */
+            public boolean isAccepted() {
+                return this.accepted;
             }
         }
     }

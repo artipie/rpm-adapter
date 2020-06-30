@@ -58,7 +58,7 @@ public final class RepoConfigFromYamlTest {
             new RepoConfig.FromYaml(Optional.empty()),
             Matchers.allOf(
                 new MatcherOf<>(cnfg -> cnfg.digest() == Digest.SHA256),
-                new MatcherOf<>(cnfg -> cnfg.naming() == StandardNamingPolicy.PLAIN),
+                new MatcherOf<>(cnfg -> cnfg.naming() == StandardNamingPolicy.SHA256),
                 new MatcherOf<>(new ProcOf<>(RepoConfig.FromYaml::filelists))
             )
         );
