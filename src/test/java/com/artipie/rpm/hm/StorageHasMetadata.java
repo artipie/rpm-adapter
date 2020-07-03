@@ -29,7 +29,6 @@ import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.meta.XmlPackage;
 import com.jcabi.xml.XMLDocument;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -87,29 +86,27 @@ public final class StorageHasMetadata extends AllOf<Storage> {
      * @param pckg Package type
      * @param expected Amount of expected items in metadata
      * @return True if metadata is correct
-     * @throws IOException On IO error
-     * @throws InterruptedException On storage op error
+     * @throws Exception On error
      * @checkstyle ParameterNumberCheck (10 lines)
      */
     private static boolean hasMetadata(
         final Storage storage, final Path temp, final XmlPackage pckg, final int expected
-    ) throws InterruptedException, IOException {
+    ) throws Exception {
         final BlockingStorage bsto = new BlockingStorage(storage);
         final List<Key> repodata = bsto.list(new Key.From("repodata")).stream()
             .filter(key -> key.string().contains(pckg.filename())).collect(Collectors.toList());
-        if (repodata.size() != 1) {
-            throw new IOException(
-                String.format(
-                    "Found %d metadatas %s in storage, expected 1", repodata.size(),  pckg.name()
-                )
-            );
+        final boolean res;
+        if (repodata.size() == 1) {
+            final Key meta = repodata.get(0);
+            final Path gzip = Files.createTempFile(temp, pckg.name(), "xml.gz");
+            Files.write(gzip, bsto.value(meta));
+            final Path xml = Files.createTempFile(temp, pckg.name(), "xml");
+            new Gzip(gzip).unpack(xml);
+            res = new NodeHasPkgCount(expected, pckg.tag()).matches(new XMLDocument(xml));
+        } else {
+            res = false;
         }
-        final Key meta = repodata.get(0);
-        final Path gzip = Files.createTempFile(temp, pckg.name(), "xml.gz");
-        Files.write(gzip, bsto.value(meta));
-        final Path xml = Files.createTempFile(temp, pckg.name(), "xml");
-        new Gzip(gzip).unpack(xml);
-        return new NodeHasPkgCount(expected, pckg.tag()).matches(new XMLDocument(xml));
+        return res;
     }
 
 }
