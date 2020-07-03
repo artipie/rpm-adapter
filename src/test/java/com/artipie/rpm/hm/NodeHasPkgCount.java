@@ -24,19 +24,23 @@
 package com.artipie.rpm.hm;
 
 import com.jcabi.xml.XMLDocument;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.hamcrest.core.IsEqual;
 import org.llorllale.cactoos.matchers.MatcherEnvelope;
 
 /**
  * Metadata has given amount of packages.
  * @since 0.10
- * @todo #241:30min This matcher should also verify that `packages` attribute of metadata files
- *  has correct value of packages (the same as packages count). Add this check, correct mismatch
- *  description to say how many packages was found, what is `packages` attribute value and what is
- *  expected, do not forget about tests. After that use this matcher in `RpmTest`, `RpmITCase`
- *  and possibly in ModifiableMetadataTest and MetadataFileTest.
+ * @todo #307:30min Use this matcher in `RpmTest` to validate that generated metadata files have
+ *  correct packages amount.
  */
 public final class NodeHasPkgCount extends MatcherEnvelope<XMLDocument> {
+
+    /**
+     * RegEx pattern for packages attribute.
+     */
+    private static final Pattern ATTR = Pattern.compile("packages=\"(\\d+)\"");
 
     /**
      * Ctor.
@@ -45,9 +49,15 @@ public final class NodeHasPkgCount extends MatcherEnvelope<XMLDocument> {
      */
     public NodeHasPkgCount(final int count, final String tag) {
         super(
-            xml -> new IsEqual<>(count).matches(countPackages(tag, xml)),
-            desc -> desc.appendValue(count),
-            (xml, desc) -> desc.appendValue(countPackages(tag, xml))
+            xml -> new IsEqual<>(count).matches(countPackages(tag, xml))
+                && new IsEqual<>(count).matches(packagesAttributeValue(xml)),
+            desc -> desc.appendText(String.format("%d packages expected", count)),
+            (xml, desc) -> desc.appendText(
+                String.format(
+                    "%d packages found, 'packages' attribute value is %d",
+                    countPackages(tag, xml), packagesAttributeValue(xml)
+                )
+            )
         );
     }
 
@@ -63,6 +73,20 @@ public final class NodeHasPkgCount extends MatcherEnvelope<XMLDocument> {
                 String.format("count(/*[local-name()='%s']/*[local-name()='package'])", tag)
             ).get(0)
         );
+    }
+
+    /**
+     * Returns `packages` attribute value.
+     * @param xml Xml document
+     * @return Value of the attribute
+     */
+    private static int packagesAttributeValue(final XMLDocument xml) {
+        final Matcher matcher = ATTR.matcher(xml.toString());
+        int res = Integer.MIN_VALUE;
+        if (matcher.find()) {
+            res = Integer.parseInt(matcher.group(1));
+        }
+        return res;
     }
 
 }

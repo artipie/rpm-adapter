@@ -99,24 +99,24 @@ public final class TestBundle {
         /**
          * Hundred rpms bundle.
          */
-        HUNDRED("bundle100"),
+        HUNDRED(100),
 
         /**
          * Thousand rpms bundle.
          */
-        THOUSAND("bundle1000");
+        THOUSAND(1000);
 
         /**
-         * Value.
+         * Test bundle size.
          */
-        private final String val;
+        private final int cnt;
 
         /**
          * Ctor.
-         * @param val Value
+         * @param count Rpm packages count
          */
-        Size(final String val) {
-            this.val = val;
+        Size(final int count) {
+            this.cnt = count;
         }
 
         /**
@@ -124,7 +124,15 @@ public final class TestBundle {
          * @return Name
          */
         public String filename() {
-            return this.val;
+            return String.format("bundle%d", this.cnt);
+        }
+
+        /**
+         * Rpm packages in bundle count.
+         * @return Int count
+         */
+        public int count() {
+            return this.cnt;
         }
 
         /**
@@ -135,7 +143,7 @@ public final class TestBundle {
             try {
                 return new URL(
                     String.format(
-                        "https://artipie.s3.amazonaws.com/rpm-test/%s.tar.gz", this.val
+                        "https://artipie.s3.amazonaws.com/rpm-test/%s.tar.gz", this.filename()
                     )
                 );
             } catch (final MalformedURLException ex) {

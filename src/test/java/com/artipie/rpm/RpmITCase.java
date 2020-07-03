@@ -31,14 +31,18 @@ import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.files.TestBundle;
+import com.artipie.rpm.hm.NodeHasPkgCount;
+import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.misc.UncheckedConsumer;
 import com.jcabi.matchers.XhtmlMatchers;
+import com.jcabi.xml.XMLDocument;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -53,13 +57,8 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Integration test for {@link Rpm}.
  * @since 0.6
- * @todo #85:30min Continue the automation of batchUpdate tests.
- *  We still need to check the files to check primary.xml, others.xml and
- *  filelists.xml. These files are stored in storage at path:
- *  `repomd/SHA1-TYPE.xml.gz`, where SHA1 is a HEX from SHA1 of file content
- *  and TYPE is a type of file (primary, others, filelists). Don't forget to
- *  uncompress it first.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
+ * @checkstyle ClassFanOutComplexityCheck (500 lines)
  * @checkstyle MagicNumberCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
@@ -111,18 +110,44 @@ final class RpmITCase {
     }
 
     @Test
-    void generatesMetadata() {
+    void generatesMetadata() throws Exception {
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
+        final BlockingStorage bsto = new BlockingStorage(this.storage);
+        for (
+            final XmlPackage pckg : new XmlPackage.Stream(true).get().collect(Collectors.toList())
+        ) {
+            final Path xml = this.metadataFromStorage(bsto, pckg);
+            MatcherAssert.assertThat(
+                String.format(
+                    "Metadata %s has %d rpm packages", pckg.name(), RpmITCase.SIZE.count()
+                ),
+                new XMLDocument(xml),
+                new NodeHasPkgCount(RpmITCase.SIZE.count(), pckg.tag())
+            );
+        }
     }
 
     @Test
-    void generatesMetadataIncrementally() throws IOException, InterruptedException {
+    void generatesMetadataIncrementally() throws Exception {
         this.modifyRepo();
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
             .batchUpdateIncrementally(Key.ROOT)
             .blockingAwait();
+        final BlockingStorage bsto = new BlockingStorage(this.storage);
+        for (
+            final XmlPackage pckg : new XmlPackage.Stream(true).get().collect(Collectors.toList())
+        ) {
+            final Path xml = this.metadataFromStorage(bsto, pckg);
+            MatcherAssert.assertThat(
+                String.format(
+                    "Metadata %s has %d rpm packages", pckg.name(), RpmITCase.SIZE.count() - 4
+                ),
+                new XMLDocument(xml),
+                new NodeHasPkgCount(RpmITCase.SIZE.count() - 4, pckg.tag())
+            );
+        }
     }
 
     @Test
@@ -206,6 +231,27 @@ final class RpmITCase {
             .filter(name -> name.string().contains("oxygen"))
             .forEach(new UncheckedConsumer<>(item -> bsto.delete(new Key.From(item))));
         new TestRpm.Multiple(new TestRpm.Abc(), new TestRpm.Libdeflt()).put(this.storage);
+    }
+
+    /**
+     * Loads and unpackes metadata from storage.
+     * @param bsto BlockingStorage
+     * @param pckg XmlPackage type
+     * @return Xml path
+     * @throws Exception On error
+     */
+    private Path metadataFromStorage(final BlockingStorage bsto, final XmlPackage pckg)
+        throws Exception {
+        final Key meta = bsto.list(new Key.From("repodata")).stream()
+            .filter(key -> key.string().contains(pckg.filename())).findFirst()
+            .orElseThrow(
+                () -> new RuntimeException(String.format("Metadata %s not found", pckg.name()))
+            );
+        final Path gzip = Files.createTempFile(RpmITCase.tmp, pckg.name(), "xml.gz");
+        Files.write(gzip, bsto.value(meta));
+        final Path xml = Files.createTempFile(RpmITCase.tmp, pckg.name(), "xml");
+        new Gzip(gzip).unpack(xml);
+        return xml;
     }
 
     /**
