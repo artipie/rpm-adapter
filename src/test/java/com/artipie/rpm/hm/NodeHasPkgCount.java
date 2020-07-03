@@ -32,8 +32,6 @@ import org.llorllale.cactoos.matchers.MatcherEnvelope;
 /**
  * Metadata has given amount of packages.
  * @since 0.10
- * @todo #307:30min Use this matcher in `RpmTest` to validate that generated metadata files have
- *  correct packages amount.
  */
 public final class NodeHasPkgCount extends MatcherEnvelope<XMLDocument> {
 
