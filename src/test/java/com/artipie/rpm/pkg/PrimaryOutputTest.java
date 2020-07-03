@@ -58,7 +58,7 @@ class PrimaryOutputTest {
             Files.readAllBytes(res),
             CompareMatcher.isIdenticalTo(
                 Files.readAllBytes(
-                    Paths.get("src/test/resources-binary/repodata/abc-primary.xml")
+                    Paths.get("src/test/resources-binary/repodata/abc-primary.xml.example")
                 )
             ).ignoreWhitespace()
             .ignoreElementContentWhitespace()

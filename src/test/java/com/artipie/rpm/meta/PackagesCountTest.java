@@ -21,64 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm.pkg;
+package com.artipie.rpm.meta;
 
-import com.artipie.rpm.Digest;
-import java.io.IOException;
+import java.nio.file.Paths;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Test;
 
 /**
- * RPM checksum.
- * @since 0.6
+ * Tests for {@link PackagesCount}.
+ *
+ * @since 0.11
  */
-public interface Checksum {
+class PackagesCountTest {
 
-    /**
-     * Digest.
-     * @return Digest
-     */
-    Digest digest();
-
-    /**
-     * Checksum hex string.
-     * @return Hex string
-     * @throws IOException On error
-     */
-    String hex() throws IOException;
-
-    /**
-     * Simple {@link Checksum} implementation.
-     * @since 0.11
-     */
-    final class Simple implements Checksum {
-
-        /**
-         * Digest.
-         */
-        private final Digest dgst;
-
-        /**
-         * Checksum hex.
-         */
-        private final String sum;
-
-        /**
-         * Ctor.
-         * @param dgst Digest
-         * @param sum Checksum hex
-         */
-        public Simple(final Digest dgst, final String sum) {
-            this.dgst = dgst;
-            this.sum = sum;
-        }
-
-        @Override
-        public Digest digest() {
-            return this.dgst;
-        }
-
-        @Override
-        public String hex() throws IOException {
-            return this.sum;
-        }
+    @Test
+    void shouldReadValue() throws Exception {
+        MatcherAssert.assertThat(
+            new PackagesCount(
+                Paths.get("src/test/resources-binary/repodata/primary.xml.example")
+            ).value(),
+            new IsEqual<>(2)
+        );
     }
 }

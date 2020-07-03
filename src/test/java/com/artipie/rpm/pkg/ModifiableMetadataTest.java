@@ -25,10 +25,12 @@ package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.StandardNamingPolicy;
+import com.artipie.rpm.hm.NodeHasPkgCount;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlRepomd;
 import com.jcabi.aspects.Tv;
 import com.jcabi.matchers.XhtmlMatchers;
+import com.jcabi.xml.XMLDocument;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -38,6 +40,7 @@ import java.nio.file.Paths;
 import javax.xml.stream.XMLStreamException;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.hamcrest.core.IsNot;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -70,12 +73,14 @@ class ModifiableMetadataTest {
         );
         MatcherAssert.assertThat(
             "Has 'abc' and 'nginx' packages, writes `packages` attribute correctly",
-            new String(Files.readAllBytes(res), StandardCharsets.UTF_8),
-            XhtmlMatchers.hasXPath(
-                //@checkstyle LineLengthCheck (3 lines)
-                "/*[local-name()='metadata' and @packages='2']",
-                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='abc']",
-                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='nginx']"
+            new XMLDocument(res),
+            Matchers.allOf(
+                XhtmlMatchers.hasXPath(
+                    //@checkstyle LineLengthCheck (3 lines)
+                    "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='abc']",
+                    "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='nginx']"
+                ),
+                new NodeHasPkgCount(2, XmlPackage.PRIMARY.tag())
             )
         );
         MatcherAssert.assertThat(
