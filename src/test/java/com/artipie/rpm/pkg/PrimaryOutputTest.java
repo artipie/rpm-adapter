@@ -128,10 +128,12 @@ class PrimaryOutputTest {
     }
 
     @Test
-    void createsCorrectMaidInstance(@TempDir final Path temp) {
-        MatcherAssert.assertThat(
-            new PrimaryOutput(temp.resolve("fake.xml")).maid(),
-            new IsInstanceOf(XmlPrimaryMaid.class)
-        );
+    void createsCorrectMaidInstance(@TempDir final Path temp) throws IOException {
+        try (PrimaryOutput output = new PrimaryOutput(temp.resolve("fake.xml"))) {
+            MatcherAssert.assertThat(
+                output.maid(),
+                new IsInstanceOf(XmlPrimaryMaid.class)
+            );
+        }
     }
 }
