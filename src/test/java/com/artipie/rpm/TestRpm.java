@@ -35,10 +35,6 @@ import org.cactoos.list.ListOf;
 /**
  * Test rpm.
  * @since 0.9
- * @todo #248:30min Add a method `name()` to this interface that
- *  returns the name of the rpm file. When it is done, update all
- *  all the test that needs this information to use this method.
- *  In particular, this should be at least done in RpmSliceITCase.
  */
 public interface TestRpm {
 
@@ -48,6 +44,12 @@ public interface TestRpm {
      * @throws IOException On error
      */
     void put(Storage storage) throws IOException;
+
+    /**
+     * Name of the rpm.
+     * @return Name of the rpm
+     */
+    String name();
 
     /**
      * Time sentos rpm.
@@ -130,6 +132,11 @@ public interface TestRpm {
                 new Content.From(Files.readAllBytes(this.path))
             ).join();
         }
+
+        @Override
+        public String name() {
+            return this.path.getFileName().toString().replaceAll("\\.rpm$", "");
+        }
     }
 
     /**
@@ -137,13 +144,33 @@ public interface TestRpm {
      * @since 0.9
      */
     final class Invalid implements TestRpm {
+
+        /**
+         * Invalid bytes content.
+         */
+        private final byte[] content = new byte[] {0x00, 0x01, 0x02 };
+
         @Override
         public void put(final Storage storage) throws IOException {
             storage.save(
-                new Key.From("invalid.rpm"),
-                new Content.From(new byte[] {0x00, 0x01, 0x02 })
+                new Key.From(String.format("%s.rpm", this.name())),
+                new Content.From(this.content)
             ).join();
         }
+
+        @Override
+        public String name() {
+            return "invalid";
+        }
+
+        /**
+         * Bytes representation.
+         * @return Invalid bytes content
+         */
+        public byte[] bytes() {
+            return this.content;
+        }
+
     }
 
     /**
@@ -178,6 +205,11 @@ public interface TestRpm {
             for (final TestRpm rpm: this.rpms) {
                 rpm.put(storage);
             }
+        }
+
+        @Override
+        public String name() {
+            throw new UnsupportedOperationException();
         }
     }
 }
