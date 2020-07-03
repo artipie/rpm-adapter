@@ -37,10 +37,8 @@ import com.artipie.rpm.Rpm;
 import com.artipie.rpm.TestRpm;
 import com.artipie.vertx.VertxSliceServer;
 import io.vertx.reactivex.core.Vertx;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Optional;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
@@ -48,6 +46,7 @@ import org.hamcrest.text.StringContainsInOrder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 
@@ -65,9 +64,11 @@ public final class RpmSliceITCase {
     private static final Vertx VERTX = Vertx.vertx();
 
     /**
-     * Settings files.
+     * Temporary directory for all tests.
+     * @checkstyle VisibilityModifierCheck (3 lines)
      */
-    private final Path setting = Paths.get("src/test/resources/example.repo");
+    @TempDir
+    Path tmp;
 
     /**
      * Vertx slice server instance.
@@ -81,7 +82,7 @@ public final class RpmSliceITCase {
 
     @Test
     void yumCanListAndInstallFromArtipieRepo() throws Exception {
-        this.start(Permissions.FREE, Identities.ANONYMOUS, "", "centos");
+        this.start(Permissions.FREE, Identities.ANONYMOUS, "", "centos:centos8");
         MatcherAssert.assertThat(
             "Lists 'time' package",
             this.yumExec("list"),
@@ -102,7 +103,7 @@ public final class RpmSliceITCase {
             (name, perm) -> mark.equals(name) && "download".equals(perm),
             this.auth(mark, pswd),
             String.format("%s:%s@", mark, pswd),
-            "centos"
+            "centos:centos8"
         );
         MatcherAssert.assertThat(
             "Lists 'time' package",
@@ -118,7 +119,7 @@ public final class RpmSliceITCase {
 
     @Test
     void dnfCanListAndInstallFromArtipieRepo() throws Exception {
-        this.start(Permissions.FREE, Identities.ANONYMOUS, "", "fedora");
+        this.start(Permissions.FREE, Identities.ANONYMOUS, "", "fedora:32");
         MatcherAssert.assertThat(
             "Lists 'time' package",
             this.dnfExec("list"),
@@ -139,7 +140,7 @@ public final class RpmSliceITCase {
             (name, perm) -> john.equals(name) && "download".equals(perm),
             this.auth(john, pswd),
             String.format("%s:%s@", john, pswd),
-            "fedora"
+            "fedora:32"
         );
         MatcherAssert.assertThat(
             "Lists 'time' package",
@@ -154,10 +155,9 @@ public final class RpmSliceITCase {
     }
 
     @AfterEach
-    void stopContainer() throws IOException {
+    void stopContainer() {
         this.server.close();
         this.cntn.stop();
-        Files.deleteIfExists(this.setting);
     }
 
     @AfterAll
@@ -214,7 +214,7 @@ public final class RpmSliceITCase {
      * @param perms Permissions
      * @param auth Identities
      * @param cred String with user name and password to add in url, uname:pswd@
-     * @param linux Linux distribution name
+     * @param linux Linux distribution name and version
      * @throws Exception On error
      * @checkstyle ParameterNumberCheck (10 lines)
      */
@@ -232,9 +232,10 @@ public final class RpmSliceITCase {
         );
         final int port = this.server.start();
         Testcontainers.exposeHostPorts(port);
-        this.setting.toFile().createNewFile();
+        final Path setting = this.tmp.resolve("example.repo");
+        this.tmp.resolve("example.repo").toFile().createNewFile();
         Files.write(
-            this.setting,
+            setting,
             new ListOf<>(
                 "[example]",
                 "name=Example Repository",
@@ -243,10 +244,10 @@ public final class RpmSliceITCase {
                 "gpgcheck=0"
             )
         );
-        this.cntn = new GenericContainer<>(String.format("%s:latest", linux))
+        this.cntn = new GenericContainer<>(linux)
             .withCommand("tail", "-f", "/dev/null")
             .withWorkingDirectory("/home/")
-            .withFileSystemBind("src/test/resources", "/home");
+            .withFileSystemBind(this.tmp.toString(), "/home");
         this.cntn.start();
         this.cntn.execInContainer("mv", "/home/example.repo", "/etc/yum.repos.d/");
     }

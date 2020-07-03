@@ -77,7 +77,7 @@ final class RpmSliceDownloadITCase {
         final TestRpm rpm = new TestRpm.Time();
         this.start(rpm, Permissions.FREE, Identities.ANONYMOUS);
         MatcherAssert.assertThat(
-            this.executeCommand(
+            this.yumInstall(
                 String.format(
                     "http://host.testcontainers.internal:%d/%s.rpm",
                     this.port, rpm.name()
@@ -108,7 +108,7 @@ final class RpmSliceDownloadITCase {
             )
         );
         MatcherAssert.assertThat(
-            this.executeCommand(
+            this.yumInstall(
                 String.format(
                     "http://%s:%s@host.testcontainers.internal:%d/%s.rpm", john,
                     pswd, this.port, rpm.name()
@@ -129,7 +129,7 @@ final class RpmSliceDownloadITCase {
         RpmSliceDownloadITCase.VERTX.close();
     }
 
-    private String executeCommand(final String url) throws IOException, InterruptedException {
+    private String yumInstall(final String url) throws IOException, InterruptedException {
         return this.cntn.execInContainer(
             "yum", "-y", "install", url
         ).getStdout();
@@ -146,7 +146,7 @@ final class RpmSliceDownloadITCase {
         );
         this.port = this.server.start();
         Testcontainers.exposeHostPorts(this.port);
-        this.cntn = new GenericContainer<>("centos:latest")
+        this.cntn = new GenericContainer<>("centos:centos8")
             .withCommand("tail", "-f", "/dev/null");
         this.cntn.start();
     }
