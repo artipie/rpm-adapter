@@ -130,6 +130,7 @@ class PrimaryOutputTest {
     @Test
     void createsCorrectMaidInstance(@TempDir final Path temp) throws IOException {
         try (PrimaryOutput output = new PrimaryOutput(temp.resolve("fake.xml"))) {
+            output.start();
             MatcherAssert.assertThat(
                 output.maid(),
                 new IsInstanceOf(XmlPrimaryMaid.class)
