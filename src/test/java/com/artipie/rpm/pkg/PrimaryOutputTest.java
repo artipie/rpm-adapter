@@ -112,7 +112,7 @@ class PrimaryOutputTest {
             Files.readAllBytes(res),
             CompareMatcher.isIdenticalTo(
                 Files.readAllBytes(
-                    Paths.get("src/test/resources-binary/repodata/libdeflt-primary.xml")
+                    Paths.get("src/test/resources-binary/repodata/libdeflt-primary.xml.example")
                 )
             ).ignoreWhitespace()
             .ignoreElementContentWhitespace()
