@@ -89,7 +89,7 @@ public interface RepoConfig {
         public NamingPolicy naming() {
             return Optional.ofNullable(this.yaml.string(RpmOptions.NAMING_POLICY.optionName()))
                 .map(naming -> StandardNamingPolicy.valueOf(naming.toUpperCase(Locale.US)))
-                .orElse(StandardNamingPolicy.PLAIN);
+                .orElse(StandardNamingPolicy.SHA256);
         }
 
         @Override
