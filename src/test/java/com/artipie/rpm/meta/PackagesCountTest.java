@@ -23,10 +23,14 @@
  */
 package com.artipie.rpm.meta;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Tests for {@link PackagesCount}.
@@ -43,5 +47,24 @@ class PackagesCountTest {
             ).value(),
             new IsEqual<>(2)
         );
+    }
+
+    @Test
+    void shouldFailIfAttributeIsMissing(final @TempDir Path dir) throws Exception {
+        final PackagesCount count = new PackagesCount(
+            Files.write(dir.resolve("empty.xml"), "".getBytes())
+        );
+        Assertions.assertThrows(IllegalArgumentException.class, count::value);
+    }
+
+    @Test
+    void shouldFailIfAttributeIsTooFarFromStart(final @TempDir Path dir) throws Exception {
+        final PackagesCount count = new PackagesCount(
+            Files.write(
+                dir.resolve("big.xml"),
+                "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n<metadata packages=\"123\"/>".getBytes()
+            )
+        );
+        Assertions.assertThrows(IllegalArgumentException.class, count::value);
     }
 }

@@ -79,10 +79,11 @@ public class PackagesCount {
                 final Matcher matcher = ATTR.matcher(line);
                 if (matcher.find()) {
                     result = OptionalInt.of(Integer.parseInt(matcher.group(1)));
+                    break;
                 }
             }
             return result.orElseThrow(
-                () -> new IllegalStateException("Failed to find packages attribute")
+                () -> new IllegalArgumentException("Failed to find packages attribute")
             );
         }
     }
