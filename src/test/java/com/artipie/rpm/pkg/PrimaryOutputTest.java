@@ -24,12 +24,14 @@
 package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
+import com.artipie.rpm.meta.XmlPrimaryMaid;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
+import org.hamcrest.core.IsInstanceOf;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.xmlunit.matchers.CompareMatcher;
@@ -37,8 +39,6 @@ import org.xmlunit.matchers.CompareMatcher;
 /**
  * Test for {@link PrimaryOutput}.
  * @since 0.10
- * @todo #277:30min Extend this test: add test methods to check `maid()` method of
- *  PrimaryOutput`
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class PrimaryOutputTest {
@@ -124,6 +124,14 @@ class PrimaryOutputTest {
             ).withAttributeFilter(
                 attr -> !"file".equals(attr.getName()) && !"archive".equals(attr.getName())
             )
+        );
+    }
+
+    @Test
+    void createsCorrectMaidInstance(@TempDir final Path temp) {
+        MatcherAssert.assertThat(
+            new PrimaryOutput(temp.resolve("fake.xml")).maid(),
+            new IsInstanceOf(XmlPrimaryMaid.class)
         );
     }
 }
