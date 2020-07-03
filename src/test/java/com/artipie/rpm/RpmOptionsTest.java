@@ -23,123 +23,93 @@
  */
 package com.artipie.rpm;
 
+import org.apache.commons.cli.Option;
+import org.cactoos.list.ListOf;
+import org.hamcrest.Matcher;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.AllOf;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
+import org.llorllale.cactoos.matchers.MatcherOf;
 
 /**
  * Tests for {@link RpmOptions}.
  *
- * @since 0.10
+ * @since 0.11
+ * @checkstyle LeftCurlyCheck (500 lines)
  */
-@SuppressWarnings("PMD.TooManyMethods")
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class RpmOptionsTest {
 
     @Test
-    void createsCorrectDigestArgName() {
+    void createsCorrectDigestOption() {
         MatcherAssert.assertThat(
-            RpmOptions.DIGEST.option().getArgName(),
-            new IsEqual<>("dgst")
-        );
-    }
-
-    @Test
-    void createsCorrectDigestOpt() {
-        MatcherAssert.assertThat(
-            RpmOptions.DIGEST.option().getOpt(),
-            new IsEqual<>("d")
-        );
-    }
-
-    @Test
-    void createsCorrectDigestDescription() {
-        MatcherAssert.assertThat(
-            RpmOptions.DIGEST.option().getDescription(),
-            new IsEqual<>(
-                "(optional, default sha256) configures Digest instance for Rpm: sha256 or sha1"
+            RpmOptions.DIGEST.option(),
+            new AllOf<>(
+                new ListOf<Matcher<? super Option>>(
+                    //@checkstyle LineLengthCheck (5 lines)
+                    new MatcherOf<>(opt -> { return "dgst".equals(opt.getArgName()); }),
+                    new MatcherOf<>(opt -> { return "d".equals(opt.getOpt()); }),
+                    new MatcherOf<>(opt -> { return "(optional, default sha256) configures Digest instance for Rpm: sha256 or sha1".equals(opt.getDescription()); }),
+                    new MatcherOf<>(opt -> { return "digest".equals(opt.getLongOpt()); })
+                )
             )
         );
     }
 
     @Test
-    void createsCorrectDigestLongOpt() {
+    void createsCorrectNamingOption() {
         MatcherAssert.assertThat(
-            RpmOptions.DIGEST.option().getLongOpt(),
-            new IsEqual<>(
-                "digest"
+            RpmOptions.NAMING_POLICY.option(),
+            new AllOf<>(
+                new ListOf<Matcher<? super Option>>(
+                    //@checkstyle LineLengthCheck (5 lines)
+                    new MatcherOf<>(opt -> { return "np".equals(opt.getArgName()); }),
+                    new MatcherOf<>(opt -> { return "n".equals(opt.getOpt()); }),
+                    new MatcherOf<>(opt -> { return "(optional, default plain) configures NamingPolicy for Rpm: plain, sha256 or sha1".equals(opt.getDescription()); }),
+                    new MatcherOf<>(opt -> { return "naming-policy".equals(opt.getLongOpt()); })
+                )
             )
         );
     }
 
     @Test
-    void createsCorrectNamingPolicyArgName() {
+    void createsCorrectFilelistsOption() {
         MatcherAssert.assertThat(
-            RpmOptions.NAMING_POLICY.option().getArgName(),
-            new IsEqual<>("np")
-        );
-    }
-
-    @Test
-    void createsCorrectNamingPolicyOpt() {
-        MatcherAssert.assertThat(
-            RpmOptions.NAMING_POLICY.option().getOpt(),
-            new IsEqual<>("n")
-        );
-    }
-
-    @Test
-    void createsCorrectNamingPolicyDescription() {
-        MatcherAssert.assertThat(
-            RpmOptions.NAMING_POLICY.option().getDescription(),
-            new IsEqual<>(
-                "(optional, default plain) configures NamingPolicy for Rpm: plain, sha256 or sha1"
+            RpmOptions.FILELISTS.option(),
+            new AllOf<>(
+                new ListOf<Matcher<? super Option>>(
+                    //@checkstyle LineLengthCheck (5 lines)
+                    new MatcherOf<>(opt -> { return "fl".equals(opt.getArgName()); }),
+                    new MatcherOf<>(opt -> { return "f".equals(opt.getOpt()); }),
+                    new MatcherOf<>(opt -> { return "(optional, default true) includes File Lists for Rpm: true or false".equals(opt.getDescription()); }),
+                    new MatcherOf<>(opt -> { return "filelists".equals(opt.getLongOpt()); })
+                )
             )
         );
     }
 
     @Test
-    void createsCorrectNamingPolicyLongOpt() {
+    void returnsCorrectDigestName() {
         MatcherAssert.assertThat(
-            RpmOptions.NAMING_POLICY.option().getLongOpt(),
-            new IsEqual<>(
-                "naming-policy"
-            )
+            RpmOptions.DIGEST.optionName(),
+            new IsEqual<>("digest")
         );
     }
 
     @Test
-    void createsCorrectFileListsArgName() {
+    void returnsCorrectNamingPolicyName() {
         MatcherAssert.assertThat(
-            RpmOptions.FILELISTS.option().getArgName(),
-            new IsEqual<>("fl")
+            RpmOptions.NAMING_POLICY.optionName(),
+            new IsEqual<>("naming-policy")
         );
     }
 
     @Test
-    void createsCorrectFileListsOpt() {
+    void returnsCorrectFilistsName() {
         MatcherAssert.assertThat(
-            RpmOptions.FILELISTS.option().getOpt(),
-            new IsEqual<>("f")
-        );
-    }
-
-    @Test
-    void createsCorrectFileListsDescription() {
-        MatcherAssert.assertThat(
-            RpmOptions.FILELISTS.option().getDescription(),
-            new IsEqual<>(
-                "(optional, default true) includes File Lists for Rpm: true or false"
-            )
-        );
-    }
-
-    @Test
-    void createsCorrectFileListsLongOpt() {
-        MatcherAssert.assertThat(
-            RpmOptions.FILELISTS.option().getLongOpt(),
-            new IsEqual<>(
-                "filelists"
-            )
+            RpmOptions.FILELISTS.optionName(),
+            new IsEqual<>("filelists")
         );
     }
 }
