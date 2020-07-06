@@ -98,7 +98,7 @@ public final class MetadataFile implements Metadata {
         final Path open = this.out.file();
         Path gzip = Files.createTempFile(repodata.temp(), "", ".gz");
         MetadataFile.gzip(open, gzip);
-        gzip = Files.move(gzip, repodata.resultingMetadata(this.type, gzip));
+        gzip = Files.move(gzip, repodata.metadata(this.type, gzip));
         Logger.info(this, "gzipped %s to %s", open, gzip);
         try (XmlRepomd.Data data = repomd.beginData(this.type.filename())) {
             data.gzipChecksum(new FileChecksum(gzip, digest));

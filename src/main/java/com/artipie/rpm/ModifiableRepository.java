@@ -124,7 +124,7 @@ public final class ModifiableRepository implements PackageOutput {
 
     /**
      * Save metadata files and gzip.
-     * @param repodata Naming policy
+     * @param repodata Repodata
      * @return All metadata files
      * @throws IOException On error
      */

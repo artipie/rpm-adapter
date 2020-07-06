@@ -55,7 +55,7 @@ public interface Repodata {
      * @return Path
      * @throws IOException On error
      */
-    Path resultingMetadata(XmlPackage type, Path gzip) throws IOException;
+    Path metadata(XmlPackage type, Path gzip) throws IOException;
 
     /**
      * Temp repodata.
@@ -96,7 +96,7 @@ public interface Repodata {
         }
 
         @Override
-        public Path resultingMetadata(final XmlPackage type, final Path gzip) throws IOException {
+        public Path metadata(final XmlPackage type, final Path gzip) throws IOException {
             return this.tmp.resolve(
                 String.format("%s.xml.gz", this.policy.name(type.filename(), gzip))
             );
