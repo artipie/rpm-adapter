@@ -25,6 +25,7 @@ package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.StandardNamingPolicy;
+import com.artipie.rpm.TestRpm;
 import com.artipie.rpm.hm.NodeHasPkgCount;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlRepomd;
@@ -62,8 +63,7 @@ class ModifiableMetadataTest {
             new MetadataFile(XmlPackage.PRIMARY, new PrimaryOutput(res).start()),
             part
         );
-        final Path rpm =
-            Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm");
+        final Path rpm = new TestRpm.Abc().path();
         mtd.accept(
             new FilePackage.Headers(new FilePackageHeader(rpm).header(), rpm, Digest.SHA256)
         );

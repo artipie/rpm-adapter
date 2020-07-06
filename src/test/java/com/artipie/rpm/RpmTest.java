@@ -23,7 +23,6 @@
  */
 package com.artipie.rpm;
 
-import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.SubStorage;
@@ -110,9 +109,7 @@ final class RpmTest {
         final Rpm repo =  new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, filelists);
         new TestRpm.Abc().put(storage);
         repo.batchUpdate(Key.ROOT).blockingAwait();
-        final byte[] broken = {0x00, 0x01, 0x02 };
-        storage.save(new Key.From("broken.rpm"), new Content.From(broken)).get();
-        new TestRpm.Libdeflt().put(storage);
+        new TestRpm.Multiple(new TestRpm.Invalid(), new TestRpm.Libdeflt()).put(storage);
         repo.batchUpdate(Key.ROOT).blockingAwait();
         MatcherAssert.assertThat(
             storage,
@@ -127,9 +124,7 @@ final class RpmTest {
         final Rpm repo =  new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, filelists);
         new TestRpm.Libdeflt().put(storage);
         repo.batchUpdate(Key.ROOT).blockingAwait();
-        final byte[] broken = {0x00, 0x01, 0x02 };
-        storage.save(new Key.From("broken-file.rpm"), new Content.From(broken)).get();
-        new TestRpm.Abc().put(storage);
+        new TestRpm.Multiple(new TestRpm.Abc(), new TestRpm.Invalid()).put(storage);
         repo.batchUpdateIncrementally(Key.ROOT).blockingAwait();
         MatcherAssert.assertThat(
             storage,
