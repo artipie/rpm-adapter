@@ -24,7 +24,6 @@
 package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
-import com.artipie.rpm.NamingPolicy;
 import com.artipie.rpm.meta.XmlRepomd;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -45,15 +44,14 @@ public interface Metadata extends PackageOutput {
 
     /**
      * Save metadata to repomd, produce gzipped output.
-     * @param naming Naming policy
+     * @param repodata Repository repodata
      * @param digest Digest
      * @param repomd Repomd to update
-     * @param tmp Temp di for metafile
      * @return Gzip metadata file
      * @throws IOException On error
      * @checkstyle ParameterNumberCheck (3 lines)
      */
-    Path save(NamingPolicy naming, Digest digest, XmlRepomd repomd, Path tmp)
+    Path save(Repodata repodata, Digest digest, XmlRepomd repomd)
         throws IOException;
 
     /**

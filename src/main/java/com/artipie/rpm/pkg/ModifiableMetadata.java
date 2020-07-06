@@ -24,7 +24,6 @@
 package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
-import com.artipie.rpm.NamingPolicy;
 import com.artipie.rpm.meta.XmlAlter;
 import com.artipie.rpm.meta.XmlMetaJoin;
 import com.artipie.rpm.meta.XmlRepomd;
@@ -70,10 +69,10 @@ public final class ModifiableMetadata implements Metadata {
 
     @Override
     // @checkstyle ParameterNumberCheck (3 lines)
-    public Path save(final NamingPolicy naming, final Digest digest,
-        final XmlRepomd repomd, final Path tmp) throws IOException {
+    public Path save(final Repodata repodata, final Digest digest,
+        final XmlRepomd repomd) throws IOException {
         Files.delete(this.old);
-        return this.origin.save(naming, digest, repomd, tmp);
+        return this.origin.save(repodata, digest, repomd);
     }
 
     @Override
