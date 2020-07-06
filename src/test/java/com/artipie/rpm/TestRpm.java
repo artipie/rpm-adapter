@@ -27,6 +27,7 @@ import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -150,10 +151,14 @@ public interface TestRpm {
          * @return Path
          */
         private static Path file(final String name) {
-            return Paths.get(
-                Thread.currentThread().getContextClassLoader()
-                    .getResource(name).getPath()
-            );
+            try {
+                return Paths.get(
+                    Thread.currentThread().getContextClassLoader()
+                        .getResource(name).toURI()
+                );
+            } catch (final URISyntaxException ex) {
+                throw new IllegalStateException("Failed to load test recourses", ex);
+            }
         }
     }
 
