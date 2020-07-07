@@ -27,6 +27,7 @@ import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -50,6 +51,12 @@ public interface TestRpm {
      * @return Name of the rpm
      */
     String name();
+
+    /**
+     * Rpm path.
+     * @return Path
+     */
+    Path path();
 
     /**
      * Time sentos rpm.
@@ -100,11 +107,6 @@ public interface TestRpm {
     abstract class FromPath implements TestRpm {
 
         /**
-         * Test resources dir.
-         */
-        private static final Path RESOURCES = Paths.get("src/test/resources-binary/");
-
-        /**
          * Origin.
          */
         private final Path path;
@@ -114,7 +116,7 @@ public interface TestRpm {
          * @param file Rpm file name
          */
         protected FromPath(final String file) {
-            this(RESOURCES.resolve(file));
+            this(FromPath.file(file));
         }
 
         /**
@@ -134,8 +136,29 @@ public interface TestRpm {
         }
 
         @Override
-        public String name() {
+        public final String name() {
             return this.path.getFileName().toString().replaceAll("\\.rpm$", "");
+        }
+
+        @Override
+        public final Path path() {
+            return this.path;
+        }
+
+        /**
+         * Obtains resources from context loader.
+         * @param name File name
+         * @return Path
+         */
+        private static Path file(final String name) {
+            try {
+                return Paths.get(
+                    Thread.currentThread().getContextClassLoader()
+                        .getResource(name).toURI()
+                );
+            } catch (final URISyntaxException ex) {
+                throw new IllegalStateException("Failed to load test recourses", ex);
+            }
         }
     }
 
@@ -151,7 +174,7 @@ public interface TestRpm {
         private final byte[] content = new byte[] {0x00, 0x01, 0x02 };
 
         @Override
-        public void put(final Storage storage) throws IOException {
+        public void put(final Storage storage) {
             storage.save(
                 new Key.From(String.format("%s.rpm", this.name())),
                 new Content.From(this.content)
@@ -161,6 +184,13 @@ public interface TestRpm {
         @Override
         public String name() {
             return "invalid";
+        }
+
+        @Override
+        public Path path() {
+            throw new UnsupportedOperationException(
+                "Path is not available for invalid rpm package"
+            );
         }
 
         /**
@@ -177,7 +207,7 @@ public interface TestRpm {
      * Multiple test rpms.
      * @since 0.9
      */
-    final class Multiple implements TestRpm {
+    final class Multiple {
 
         /**
          * Rpms.
@@ -200,16 +230,16 @@ public interface TestRpm {
             this.rpms = rpms;
         }
 
-        @Override
+        /**
+         * Put rpms into storage.
+         * @param storage Storage
+         * @throws IOException On error
+         */
         public void put(final Storage storage) throws IOException {
             for (final TestRpm rpm: this.rpms) {
                 rpm.put(storage);
             }
         }
 
-        @Override
-        public String name() {
-            throw new UnsupportedOperationException();
-        }
     }
 }
