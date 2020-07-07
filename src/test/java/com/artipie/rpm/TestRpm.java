@@ -26,6 +26,7 @@ package com.artipie.rpm;
 import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.rpm.meta.XmlPackage;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -84,6 +85,18 @@ public interface TestRpm {
         public Abc() {
             super("abc-1.01-26.git20200127.fc32.ppc64le.rpm");
         }
+
+        /**
+         * Rpm metadata path.
+         * @param type Xml package type
+         * @return Path
+         * @checkstyle NonStaticMethodCheck (5 line)
+         */
+        public Path metadata(final XmlPackage type) {
+            return new TestResource(
+                String.format("repodata/abc-%s.xml.example", type.filename())
+            ).file();
+        }
     }
 
     /**
@@ -97,6 +110,18 @@ public interface TestRpm {
          */
         public Libdeflt() {
             super("libdeflt1_0-2020.03.27-25.1.armv7hl.rpm");
+        }
+
+        /**
+         * Rpm metadata path.
+         * @param type Xml package type
+         * @return Path
+         * @checkstyle NonStaticMethodCheck (5 line)
+         */
+        public Path metadata(final XmlPackage type) {
+            return new TestResource(
+                String.format("repodata/libdeflt-%s.xml.example", type.filename())
+            ).file();
         }
     }
 
@@ -116,7 +141,7 @@ public interface TestRpm {
          * @param file Rpm file name
          */
         protected FromPath(final String file) {
-            this(FromPath.file(file));
+            this(new TestResource(file).file());
         }
 
         /**
@@ -143,22 +168,6 @@ public interface TestRpm {
         @Override
         public final Path path() {
             return this.path;
-        }
-
-        /**
-         * Obtains resources from context loader.
-         * @param name File name
-         * @return Path
-         */
-        private static Path file(final String name) {
-            try {
-                return Paths.get(
-                    Thread.currentThread().getContextClassLoader()
-                        .getResource(name).toURI()
-                );
-            } catch (final URISyntaxException ex) {
-                throw new IllegalStateException("Failed to load test recourses", ex);
-            }
         }
     }
 
@@ -199,6 +208,42 @@ public interface TestRpm {
          */
         public byte[] bytes() {
             return this.content;
+        }
+
+    }
+
+    /**
+     * Get file by name from test resources.
+     * @since 0.11
+     */
+    final class TestResource {
+
+        /**
+         * File name.
+         */
+        private final String name;
+
+        /**
+         * Ctor.
+         * @param name File name
+         */
+        public TestResource(final String name) {
+            this.name = name;
+        }
+
+        /**
+         * Obtains resources from context loader.
+         * @return Path
+         */
+        public Path file() {
+            try {
+                return Paths.get(
+                    Thread.currentThread().getContextClassLoader()
+                        .getResource(this.name).toURI()
+                );
+            } catch (final URISyntaxException ex) {
+                throw new IllegalStateException("Failed to load test recourses", ex);
+            }
         }
 
     }

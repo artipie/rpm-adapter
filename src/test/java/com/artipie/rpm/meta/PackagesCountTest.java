@@ -23,9 +23,9 @@
  */
 package com.artipie.rpm.meta;
 
+import com.artipie.rpm.TestRpm;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Assertions;
@@ -43,7 +43,7 @@ class PackagesCountTest {
     void shouldReadValue() throws Exception {
         MatcherAssert.assertThat(
             new PackagesCount(
-                Paths.get("src/test/resources-binary/repodata/primary.xml.example")
+                new TestRpm.TestResource("repodata/primary.xml.example").file()
             ).value(),
             new IsEqual<>(2)
         );

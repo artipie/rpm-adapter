@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm.meta;
 
+import com.artipie.rpm.TestRpm;
 import com.artipie.rpm.TimingExtension;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.files.TestBundle;
@@ -31,7 +32,6 @@ import com.artipie.rpm.misc.FileInDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Locale;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.MatcherAssert;
@@ -72,7 +72,7 @@ class XmlMetaJoinITCase {
      * Resources dir.
      */
     private static final Path FILELISTS =
-        Paths.get("src/test/resources-binary/repodata/filelists.xml.example");
+        new TestRpm.TestResource("repodata/filelists.xml.example").file();
 
     @BeforeAll
     static void setUpClass() throws Exception {

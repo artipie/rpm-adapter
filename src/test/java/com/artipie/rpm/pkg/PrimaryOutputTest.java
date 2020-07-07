@@ -25,11 +25,11 @@ package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.TestRpm;
+import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryMaid;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.hamcrest.core.IsInstanceOf;
@@ -57,9 +57,7 @@ class PrimaryOutputTest {
         MatcherAssert.assertThat(
             Files.readAllBytes(res),
             CompareMatcher.isIdenticalTo(
-                Files.readAllBytes(
-                    Paths.get("src/test/resources-binary/repodata/abc-primary.xml.example")
-                )
+                Files.readAllBytes(new TestRpm.Abc().metadata(XmlPackage.PRIMARY))
             ).ignoreWhitespace()
             .ignoreElementContentWhitespace()
             .normalizeWhitespace()
@@ -110,9 +108,7 @@ class PrimaryOutputTest {
         MatcherAssert.assertThat(
             Files.readAllBytes(res),
             CompareMatcher.isIdenticalTo(
-                Files.readAllBytes(
-                    Paths.get("src/test/resources-binary/repodata/libdeflt-primary.xml.example")
-                )
+                Files.readAllBytes(new TestRpm.Libdeflt().metadata(XmlPackage.PRIMARY))
             ).ignoreWhitespace()
             .ignoreElementContentWhitespace()
             .normalizeWhitespace()
