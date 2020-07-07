@@ -51,7 +51,7 @@ class GzipTest {
     @Test
     void unpacksGz(final @TempDir Path tmp) throws IOException {
         final Path res = tmp.resolve("res.xml");
-        new Gzip(new TestRpm.TestResource("repodata/primary.xml.example.gz").file()).unpack(res);
+        new Gzip(new TestRpm.TestResource("repodata/primary.xml.gz.example").file()).unpack(res);
         MatcherAssert.assertThat(
             Files.readAllLines(res).toArray(),
             Matchers.arrayContaining(
