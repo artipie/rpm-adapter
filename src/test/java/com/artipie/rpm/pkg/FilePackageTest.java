@@ -54,9 +54,7 @@ class FilePackageTest {
     @Test
     void returnsParsedFile() throws IOException {
         MatcherAssert.assertThat(
-            new FilePackage(
-                Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm")
-            ).parsed(),
+            new FilePackage(new TestRpm.Abc().path()).parsed(),
             new IsInstanceOf(ParsedFilePackage.class)
         );
     }
@@ -91,10 +89,7 @@ class FilePackageTest {
     @Test
     void onSaveCallsAcceptAndDeletesFile(@TempDir final Path temp) throws IOException {
         final Path rpm = temp.resolve("test.rpm");
-        Files.copy(
-            Paths.get("src/test/resources-binary/libdeflt1_0-2020.03.27-25.1.armv7hl.rpm"),
-            rpm
-        );
+        Files.copy(new TestRpm.Libdeflt().path(), rpm);
         final PackageOutput.FileOutput.Fake out =
             new PackageOutput.FileOutput.Fake(temp.resolve("any"));
         new FilePackage(rpm).save(out, Digest.SHA256);

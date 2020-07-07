@@ -24,6 +24,7 @@
 package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
+import com.artipie.rpm.TestRpm;
 import com.artipie.rpm.meta.XmlPrimaryMaid;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -48,8 +49,7 @@ class PrimaryOutputTest {
         final Path res = temp.resolve("primary.xml");
         try (PackageOutput.FileOutput primary = new PrimaryOutput(res)) {
             primary.start();
-            final Path rpm =
-                Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm");
+            final Path rpm = new TestRpm.Abc().path();
             primary.accept(
                 new FilePackage.Headers(new FilePackageHeader(rpm).header(), rpm, Digest.SHA256)
             );
@@ -102,8 +102,7 @@ class PrimaryOutputTest {
         final Path res = temp.resolve("primary.xml");
         try (PackageOutput.FileOutput primary = new PrimaryOutput(res)) {
             primary.start();
-            final Path rpm =
-                Paths.get("src/test/resources-binary/libdeflt1_0-2020.03.27-25.1.armv7hl.rpm");
+            final Path rpm = new TestRpm.Libdeflt().path();
             primary.accept(
                 new FilePackage.Headers(new FilePackageHeader(rpm).header(), rpm, Digest.SHA256)
             );
