@@ -23,7 +23,7 @@
  */
 package com.artipie.rpm.meta;
 
-import com.artipie.rpm.TestRpm;
+import com.artipie.rpm.TestResource;
 import com.artipie.rpm.hm.IsXmlEqual;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -42,7 +42,7 @@ public final class ByPkgidAttrTest {
     @Test
     void clearsFirstItem(@TempDir final Path temp) throws IOException {
         final Path file = Files.copy(
-            new TestRpm.TestResource("repodata/other.xml.example").file(),
+            new TestResource("repodata/other.xml.example").file(),
             temp.resolve("other.xml")
         );
         new XmlMaid.ByPkgidAttr(file).clean(
@@ -50,14 +50,14 @@ public final class ByPkgidAttrTest {
         );
         MatcherAssert.assertThat(
             file,
-            new IsXmlEqual(new TestRpm.TestResource("repodata/other.xml.example.second").file())
+            new IsXmlEqual(new TestResource("repodata/other.xml.example.second").file())
         );
     }
 
     @Test
     void clearsLastItem(@TempDir final Path temp) throws IOException {
         final Path file = Files.copy(
-            new TestRpm.TestResource("repodata/filelists.xml.example").file(),
+            new TestResource("repodata/filelists.xml.example").file(),
             temp.resolve("filelist.xml")
         );
         new XmlMaid.ByPkgidAttr(file).clean(
@@ -65,7 +65,7 @@ public final class ByPkgidAttrTest {
         );
         MatcherAssert.assertThat(
             file,
-            new IsXmlEqual(new TestRpm.TestResource("repodata/filelists.xml.example.first").file())
+            new IsXmlEqual(new TestResource("repodata/filelists.xml.example.first").file())
         );
     }
 }

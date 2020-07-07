@@ -23,7 +23,7 @@
  */
 package com.artipie.rpm.meta;
 
-import com.artipie.rpm.TestRpm;
+import com.artipie.rpm.TestResource;
 import com.artipie.rpm.hm.IsXmlEqual;
 import com.jcabi.matchers.XhtmlMatchers;
 import java.nio.charset.StandardCharsets;
@@ -43,7 +43,7 @@ class XmlAlterTest {
     @Test
     public void writesCorrectPackageCount(@TempDir final Path temp) throws Exception {
         final Path file = temp.resolve("primary.xml");
-        Files.copy(new TestRpm.TestResource("repodata/primary.xml.example").file(), file);
+        Files.copy(new TestResource("repodata/primary.xml.example").file(), file);
         final int expected = 10;
         new XmlAlter(file).pkgAttr("metadata", String.valueOf(expected));
         MatcherAssert.assertThat(

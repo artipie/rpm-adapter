@@ -28,10 +28,8 @@ import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.rpm.meta.XmlPackage;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.cactoos.list.ListOf;
 
 /**
@@ -208,42 +206,6 @@ public interface TestRpm {
          */
         public byte[] bytes() {
             return this.content;
-        }
-
-    }
-
-    /**
-     * Get file by name from test resources.
-     * @since 0.11
-     */
-    final class TestResource {
-
-        /**
-         * File name.
-         */
-        private final String name;
-
-        /**
-         * Ctor.
-         * @param name File name
-         */
-        public TestResource(final String name) {
-            this.name = name;
-        }
-
-        /**
-         * Obtains resources from context loader.
-         * @return Path
-         */
-        public Path file() {
-            try {
-                return Paths.get(
-                    Thread.currentThread().getContextClassLoader()
-                        .getResource(this.name).toURI()
-                );
-            } catch (final URISyntaxException ex) {
-                throw new IllegalStateException("Failed to load test recourses", ex);
-            }
         }
 
     }
