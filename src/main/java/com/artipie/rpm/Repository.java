@@ -28,9 +28,10 @@ import com.artipie.rpm.misc.UncheckedFunc;
 import com.artipie.rpm.pkg.Metadata;
 import com.artipie.rpm.pkg.Package;
 import com.artipie.rpm.pkg.PackageOutput;
+import com.artipie.rpm.pkg.Repodata;
+import com.jcabi.aspects.Tv;
 import com.jcabi.log.Logger;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,11 +45,6 @@ import java.util.stream.Collectors;
 final class Repository implements PackageOutput {
 
     /**
-     * Repom XML output.
-     */
-    private final XmlRepomd repomd;
-
-    /**
      * Metadata outputs.
      */
     private final List<Metadata> metadata;
@@ -59,24 +55,13 @@ final class Repository implements PackageOutput {
     private final Digest digest;
 
     /**
-     * Temp dir to store metadata.
-     */
-    private final Path tmp;
-
-    /**
      * Ctor.
-     * @param repomd Repomd XML
      * @param files Metadata files outputs
      * @param digest Digest algorithm
-     * @param tmp Temp dir to store metadata
-     * @checkstyle ParameterNumberCheck (3 lines)
      */
-    Repository(final XmlRepomd repomd, final List<Metadata> files, final Digest digest,
-        final Path tmp) {
-        this.repomd = repomd;
+    Repository(final List<Metadata> files, final Digest digest) {
         this.metadata = files;
         this.digest = digest;
-        this.tmp = tmp;
     }
 
     /**
@@ -103,17 +88,18 @@ final class Repository implements PackageOutput {
 
     /**
      * Save metadata files and gzip.
-     * @param naming Naming policy
+     * @param repodata Repository repodata
      * @return All metadata files
      * @throws IOException On error
      */
-    public List<Path> save(final NamingPolicy naming) throws IOException {
-        final List<Path> outs = this.metadata.stream()
-            .map(new UncheckedFunc<>(meta -> meta.save(naming, this.digest, this.repomd, this.tmp)))
-            .collect(Collectors.toList());
-        this.repomd.close();
-        outs.add(Files.move(this.repomd.file(), this.tmp.resolve("repomd.xml")));
-        Logger.info(this, "repomd.xml closed");
-        return outs;
+    public List<Path> save(final Repodata repodata) throws IOException {
+        try (XmlRepomd repomd = repodata.createRepomd()) {
+            repomd.begin(System.currentTimeMillis() / Tv.THOUSAND);
+            final List<Path> outs = this.metadata.stream()
+                .map(new UncheckedFunc<>(meta -> meta.save(repodata, this.digest, repomd)))
+                .collect(Collectors.toList());
+            outs.add(repomd.file());
+            return outs;
+        }
     }
 }

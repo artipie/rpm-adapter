@@ -25,7 +25,6 @@ package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.FileChecksum;
-import com.artipie.rpm.NamingPolicy;
 import com.artipie.rpm.meta.XmlAlter;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlRepomd;
@@ -94,18 +93,12 @@ public final class MetadataFile implements Metadata {
     }
 
     @Override
-    // @checkstyle ParameterNumberCheck (3 lines)
-    public Path save(final NamingPolicy naming, final Digest digest, final XmlRepomd repomd,
-        final Path tmp) throws IOException {
+    public Path save(final Repodata repodata, final Digest digest, final XmlRepomd repomd)
+        throws IOException {
         final Path open = this.out.file();
-        Path gzip = Files.createTempFile(tmp, this.type.filename(), ".gz");
+        Path gzip = Files.createTempFile(repodata.temp(), "", ".gz");
         MetadataFile.gzip(open, gzip);
-        gzip = Files.move(
-            gzip,
-            gzip.getParent().resolve(
-                String.format("%s.xml.gz", naming.name(this.type.filename(), gzip))
-            )
-        );
+        gzip = Files.move(gzip, repodata.metadata(this.type, gzip));
         Logger.info(this, "gzipped %s to %s", open, gzip);
         try (XmlRepomd.Data data = repomd.beginData(this.type.filename())) {
             data.gzipChecksum(new FileChecksum(gzip, digest));

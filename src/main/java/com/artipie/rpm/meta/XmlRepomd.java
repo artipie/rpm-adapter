@@ -72,15 +72,19 @@ public final class XmlRepomd implements Closeable {
     /**
      * Begin repomd.
      * @param timestamp Current timestamp in seconds unix time.
-     * @throws XMLStreamException On error
+     * @throws IOException On error
      */
-    public void begin(final long timestamp) throws XMLStreamException {
-        this.xml.writeStartDocument(StandardCharsets.UTF_8.name(), "1.0");
-        this.xml.writeStartElement("repomd");
-        this.xml.writeDefaultNamespace("http://linux.duke.edu/metadata/repo");
-        this.xml.writeStartElement("revision");
-        this.xml.writeCharacters(String.valueOf(timestamp));
-        this.xml.writeEndElement();
+    public void begin(final long timestamp) throws IOException {
+        try {
+            this.xml.writeStartDocument(StandardCharsets.UTF_8.name(), "1.0");
+            this.xml.writeStartElement("repomd");
+            this.xml.writeDefaultNamespace("http://linux.duke.edu/metadata/repo");
+            this.xml.writeStartElement("revision");
+            this.xml.writeCharacters(String.valueOf(timestamp));
+            this.xml.writeEndElement();
+        } catch (final XMLStreamException ex) {
+            throw new IOException("Failed to start repomd", ex);
+        }
     }
 
     /**
