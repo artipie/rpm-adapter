@@ -23,12 +23,12 @@
  */
 package com.artipie.rpm.meta;
 
+import com.artipie.rpm.TestResource;
 import com.artipie.rpm.hm.IsXmlEqual;
 import com.jcabi.matchers.XhtmlMatchers;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -43,7 +43,7 @@ class XmlAlterTest {
     @Test
     public void writesCorrectPackageCount(@TempDir final Path temp) throws Exception {
         final Path file = temp.resolve("primary.xml");
-        Files.copy(Paths.get("src/test/resources-binary/repodata/primary.xml.example"), file);
+        Files.copy(new TestResource("repodata/primary.xml.example").file(), file);
         final int expected = 10;
         new XmlAlter(file).pkgAttr("metadata", String.valueOf(expected));
         MatcherAssert.assertThat(

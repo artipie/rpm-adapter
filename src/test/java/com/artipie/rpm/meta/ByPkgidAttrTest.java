@@ -23,11 +23,11 @@
  */
 package com.artipie.rpm.meta;
 
+import com.artipie.rpm.TestResource;
 import com.artipie.rpm.hm.IsXmlEqual;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
@@ -39,15 +39,10 @@ import org.junit.jupiter.api.io.TempDir;
  */
 public final class ByPkgidAttrTest {
 
-    /**
-     * Repodata path.
-     */
-    public static final String REPODATA = "src/test/resources-binary/repodata";
-
     @Test
     void clearsFirstItem(@TempDir final Path temp) throws IOException {
         final Path file = Files.copy(
-            Paths.get(ByPkgidAttrTest.REPODATA, "other.xml.example"),
+            new TestResource("repodata/other.xml.example").file(),
             temp.resolve("other.xml")
         );
         new XmlMaid.ByPkgidAttr(file).clean(
@@ -55,16 +50,14 @@ public final class ByPkgidAttrTest {
         );
         MatcherAssert.assertThat(
             file,
-            new IsXmlEqual(
-                Paths.get(ByPkgidAttrTest.REPODATA, "other.xml.example.second")
-            )
+            new IsXmlEqual(new TestResource("repodata/other.xml.example.second").file())
         );
     }
 
     @Test
     void clearsLastItem(@TempDir final Path temp) throws IOException {
         final Path file = Files.copy(
-            Paths.get(ByPkgidAttrTest.REPODATA, "filelists.xml.example"),
+            new TestResource("repodata/filelists.xml.example").file(),
             temp.resolve("filelist.xml")
         );
         new XmlMaid.ByPkgidAttr(file).clean(
@@ -72,9 +65,7 @@ public final class ByPkgidAttrTest {
         );
         MatcherAssert.assertThat(
             file,
-            new IsXmlEqual(
-                Paths.get(ByPkgidAttrTest.REPODATA, "filelists.xml.example.first")
-            )
+            new IsXmlEqual(new TestResource("repodata/filelists.xml.example.first").file())
         );
     }
 }

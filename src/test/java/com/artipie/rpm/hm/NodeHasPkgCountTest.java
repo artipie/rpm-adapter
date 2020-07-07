@@ -23,10 +23,11 @@
  */
 package com.artipie.rpm.hm;
 
+import com.artipie.rpm.TestResource;
 import com.artipie.rpm.meta.XmlPackage;
 import com.jcabi.xml.XMLDocument;
 import java.io.FileNotFoundException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsNot;
 import org.junit.jupiter.api.Test;
@@ -47,14 +48,14 @@ final class NodeHasPkgCountTest {
     /**
      * Wrong xml path.
      */
-    private static final String WRONG =
-        "src/test/resources-binary/repodata/wrong-package.xml.example";
+    private static final Path WRONG =
+        new TestResource("repodata/wrong-package.xml.example").file();
 
     /**
      * Primary xml example path.
      */
-    private static final String PRIMARY =
-        "src/test/resources-binary/repodata/primary.xml.example";
+    private static final Path PRIMARY =
+        new TestResource("repodata/primary.xml.example").file();
 
     @Test
     void countsPackages() throws FileNotFoundException {
@@ -62,7 +63,7 @@ final class NodeHasPkgCountTest {
             new NodeHasPkgCount(2, XmlPackage.OTHER.tag()),
             new Matches<>(
                 new XMLDocument(
-                    Paths.get("src/test/resources-binary/repodata/other.xml.example")
+                    new TestResource("repodata/other.xml.example").file()
                 )
             )
         );
@@ -74,9 +75,7 @@ final class NodeHasPkgCountTest {
             new NodeHasPkgCount(10, XmlPackage.PRIMARY.tag()),
             new IsNot<>(
                 new Matches<>(
-                    new XMLDocument(
-                        Paths.get(NodeHasPkgCountTest.PRIMARY)
-                    )
+                    new XMLDocument(NodeHasPkgCountTest.PRIMARY)
                 )
             )
         );
@@ -88,7 +87,7 @@ final class NodeHasPkgCountTest {
         MatcherAssert.assertThat(
             new NodeHasPkgCount(10, XmlPackage.PRIMARY.tag()),
             new Mismatches<>(
-                new XMLDocument(Paths.get(NodeHasPkgCountTest.PRIMARY)),
+                new XMLDocument(NodeHasPkgCountTest.PRIMARY),
                 "10 packages expected",
                 "2 packages found, 'packages' attribute value is 2"
             )
@@ -101,9 +100,7 @@ final class NodeHasPkgCountTest {
             new NodeHasPkgCount(2, XmlPackage.OTHER.tag()),
             new IsNot<>(
                 new Matches<>(
-                    new XMLDocument(
-                        Paths.get(NodeHasPkgCountTest.WRONG)
-                    )
+                    new XMLDocument(NodeHasPkgCountTest.WRONG)
                 )
             )
         );
@@ -115,7 +112,7 @@ final class NodeHasPkgCountTest {
         MatcherAssert.assertThat(
             new NodeHasPkgCount(2, XmlPackage.OTHER.tag()),
             new Mismatches<>(
-                new XMLDocument(Paths.get(NodeHasPkgCountTest.WRONG)),
+                new XMLDocument(NodeHasPkgCountTest.WRONG),
                 "2 packages expected",
                 "2 packages found, 'packages' attribute value is 3"
             )
