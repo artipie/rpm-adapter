@@ -94,7 +94,7 @@ public final class ModifiableMetadata implements Metadata {
     @Override
     public void accept(final Package.Meta meta) throws IOException {
         this.origin.accept(meta);
-        cnt.incrementAndGet();
+        this.cnt.incrementAndGet();
     }
 
     @Override

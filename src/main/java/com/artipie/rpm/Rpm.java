@@ -376,6 +376,7 @@ public final class Rpm {
      * Get modifiable repository for file updates.
      * @param dir Temp directory
      * @return Repository
+     * @throws IOException On error
      */
     private ModifiableRepository mdfRepository(final Path dir) throws IOException {
         return new ModifiableRepository(

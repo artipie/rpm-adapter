@@ -55,6 +55,7 @@ import org.junit.jupiter.api.io.TempDir;
  *  like described in showMeaningfulErrorWhenInvalidPackageSent. Implement it
  *  and then enable the test.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
+ * @checkstyle MagicNumberCheck (500 lines)
  */
 final class RpmTest {
 

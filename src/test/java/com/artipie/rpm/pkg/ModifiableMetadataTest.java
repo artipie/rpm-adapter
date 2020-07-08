@@ -61,7 +61,7 @@ class ModifiableMetadataTest {
         Files.copy(Paths.get("src/test/resources-binary/repodata/primary.xml.example"), part);
         final ModifiableMetadata mtd = new ModifiableMetadata(
             new MetadataFile(XmlPackage.PRIMARY, new PrimaryOutput(res).start()),
-            preceding(part)
+            this.preceding(part)
         );
         final Path rpm = new TestRpm.Abc().path();
         mtd.accept(
@@ -103,7 +103,7 @@ class ModifiableMetadataTest {
         filelists.toFile().createNewFile();
         final ModifiableMetadata mtd = new ModifiableMetadata(
             new MetadataFile(XmlPackage.FILELISTS, new FilelistsOutput(filelists).start()),
-            preceding(part)
+            this.preceding(part)
         );
         mtd.close();
         final Path repomd = temp.resolve("repomd.xml");
@@ -122,8 +122,7 @@ class ModifiableMetadataTest {
         );
     }
 
-    private PrecedingMetadata preceding(Path part) {
-
+    private PrecedingMetadata preceding(final Path part) {
         return new PrecedingMetadata() {
             @Override
             public boolean exists() {
