@@ -28,7 +28,6 @@ import com.artipie.rpm.meta.XmlAlter;
 import com.artipie.rpm.meta.XmlMetaJoin;
 import com.artipie.rpm.meta.XmlRepomd;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -73,7 +72,6 @@ public final class ModifiableMetadata implements Metadata {
             new XmlMetaJoin(this.origin.output().tag())
                 .merge(this.origin.output().file(), old.get());
             this.cnt.set(this.origin.output().maid().clean(pkgs));
-            Files.delete(old.get());
         }
         new XmlAlter(this.origin.output().file()).pkgAttr(
             this.origin.output().tag(), String.valueOf(this.cnt)
