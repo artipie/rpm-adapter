@@ -38,6 +38,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Optional;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
@@ -50,18 +51,21 @@ import org.junit.jupiter.api.io.TempDir;
  * Test for {@link ModifiableMetadata}.
  * @since 0.9
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
+ * @checkstyle MagicNumberCheck (500 lines)
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class ModifiableMetadataTest {
 
     @Test
-    void generatesMetadataFile(@TempDir final Path temp) throws IOException {
+    void generatesMetadataFileWhenRpmsWereRemovedAndAdded(@TempDir final Path temp)
+        throws IOException {
         final Path res = temp.resolve("primary.xml");
         res.toFile().createNewFile();
         final Path part = temp.resolve("part.primary.xml");
         Files.copy(Paths.get("src/test/resources-binary/repodata/primary.xml.example"), part);
         final ModifiableMetadata mtd = new ModifiableMetadata(
             new MetadataFile(XmlPackage.PRIMARY, new PrimaryOutput(res).start()),
-            this.preceding(part)
+            this.preceding(Optional.of(part))
         );
         final Path rpm = new TestRpm.Abc().path();
         mtd.accept(
@@ -96,6 +100,105 @@ class ModifiableMetadataTest {
     }
 
     @Test
+    void generatesMetadataFileWhenRpmsWereRemoved(@TempDir final Path temp) throws IOException {
+        final Path res = temp.resolve("other.xml");
+        res.toFile().createNewFile();
+        final Path part = temp.resolve("part.other.xml");
+        Files.copy(Paths.get("src/test/resources-binary/repodata/other.xml.example"), part);
+        final ModifiableMetadata mtd = new ModifiableMetadata(
+            new MetadataFile(XmlPackage.OTHER, new OthersOutput(res).start()),
+            this.preceding(Optional.of(part))
+        );
+        mtd.close();
+        mtd.brush(
+            new ListOf<String>("54f1d9a1114fa85cd748174c57986004857b800fe9545fbf23af53f4791b31e2")
+        );
+        MatcherAssert.assertThat(
+            "Has 'aom' package, writes `packages` attribute correctly",
+            new XMLDocument(res),
+            Matchers.allOf(
+                XhtmlMatchers.hasXPath(
+                    "/*[local-name()='otherdata']/*[local-name()='package' and @name='aom']"
+                ),
+                new NodeHasPkgCount(1, XmlPackage.OTHER.tag())
+            )
+        );
+        MatcherAssert.assertThat(
+            "Does not have 'nginx' package",
+            new String(Files.readAllBytes(res), StandardCharsets.UTF_8),
+            new IsNot<>(
+                XhtmlMatchers.hasXPath(
+                    "/*[local-name()='otherdata']/*[local-name()='package' and @name='nginx']"
+                )
+            )
+        );
+    }
+
+    @Test
+    void generatesMetadataFileWhenRpmsWereAdded(@TempDir final Path temp) throws IOException {
+        final Path res = temp.resolve("filelists.xml");
+        res.toFile().createNewFile();
+        final Path part = temp.resolve("part.filelists.xml");
+        Files.copy(Paths.get("src/test/resources-binary/repodata/filelists.xml.example"), part);
+        final ModifiableMetadata mtd = new ModifiableMetadata(
+            new MetadataFile(XmlPackage.FILELISTS, new FilelistsOutput(res).start()),
+            this.preceding(Optional.of(part))
+        );
+        final Path rpm = new TestRpm.Abc().path();
+        mtd.accept(
+            new FilePackage.Headers(new FilePackageHeader(rpm).header(), rpm, Digest.SHA256)
+        );
+        mtd.close();
+        mtd.brush(Collections.emptyList());
+        MatcherAssert.assertThat(
+            "Has 'aom', 'nginx' and 'abc' packages, writes `packages` attribute correctly",
+            new XMLDocument(res),
+            Matchers.allOf(
+                XhtmlMatchers.hasXPath(
+                    "/*[local-name()='filelists']/*[local-name()='package' and @name='aom']",
+                    "/*[local-name()='filelists']/*[local-name()='package' and @name='nginx']",
+                    "/*[local-name()='filelists']/*[local-name()='package' and @name='abc']"
+                ),
+                new NodeHasPkgCount(3, XmlPackage.FILELISTS.tag())
+            )
+        );
+    }
+
+    @Test
+    void generatesMetadataFileForNewRepo(@TempDir final Path temp) throws IOException {
+        final Path res = temp.resolve("primary.xml");
+        res.toFile().createNewFile();
+        final ModifiableMetadata mtd = new ModifiableMetadata(
+            new MetadataFile(XmlPackage.PRIMARY, new PrimaryOutput(res).start()),
+            this.preceding(Optional.empty())
+        );
+        final Path abc = new TestRpm.Abc().path();
+        mtd.accept(
+            new FilePackage.Headers(new FilePackageHeader(abc).header(), abc, Digest.SHA256)
+        );
+        final Path libdeflt = new TestRpm.Libdeflt().path();
+        mtd.accept(
+            new FilePackage.Headers(
+                new FilePackageHeader(libdeflt).header(), libdeflt, Digest.SHA256
+            )
+        );
+        mtd.close();
+        mtd.brush(Collections.emptyList());
+        MatcherAssert.assertThat(
+            "Has 'libdeflt1_0' and 'abc' packages, writes `packages` attribute correctly",
+            new XMLDocument(res),
+            Matchers.allOf(
+                XhtmlMatchers.hasXPath(
+                    //@checkstyle LineLengthCheck (2 lines)
+                    "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='abc']",
+                    "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='libdeflt1_0']"
+                ),
+                new NodeHasPkgCount(2, XmlPackage.PRIMARY.tag())
+            )
+        );
+    }
+
+    @Test
     void savesItselfToRepomd(@TempDir final Path temp) throws IOException {
         final Path filelists = temp.resolve("test.filelists.xml");
         final Path part = temp.resolve("part.filelists.xml");
@@ -103,7 +206,7 @@ class ModifiableMetadataTest {
         filelists.toFile().createNewFile();
         final ModifiableMetadata mtd = new ModifiableMetadata(
             new MetadataFile(XmlPackage.FILELISTS, new FilelistsOutput(filelists).start()),
-            this.preceding(part)
+            this.preceding(Optional.of(part))
         );
         mtd.close();
         final Path repomd = temp.resolve("repomd.xml");
@@ -122,7 +225,7 @@ class ModifiableMetadataTest {
         );
     }
 
-    private PrecedingMetadata preceding(final Path part) {
+    private PrecedingMetadata preceding(final Optional<Path> part) {
         return new PrecedingMetadata() {
             @Override
             public boolean exists() {
@@ -131,7 +234,7 @@ class ModifiableMetadataTest {
 
             @Override
             public Optional<Path> findAndUnzip() {
-                return Optional.of(part);
+                return part;
             }
         };
     }

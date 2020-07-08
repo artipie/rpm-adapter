@@ -24,11 +24,14 @@
 package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
+import com.artipie.rpm.meta.PackagesCount;
 import com.artipie.rpm.meta.XmlAlter;
 import com.artipie.rpm.meta.XmlMetaJoin;
 import com.artipie.rpm.meta.XmlRepomd;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -67,11 +70,24 @@ public final class ModifiableMetadata implements Metadata {
 
     @Override
     public void brush(final List<String> pkgs) throws IOException {
-        final Optional<Path> old = this.preceding.findAndUnzip();
-        if (old.isPresent()) {
-            new XmlMetaJoin(this.origin.output().tag())
-                .merge(this.origin.output().file(), old.get());
-            this.cnt.set(this.origin.output().maid().clean(pkgs));
+        final Optional<Path> existed = this.preceding.findAndUnzip();
+        if (existed.isPresent()) {
+            final Path previous = existed.get();
+            if (this.cnt.get() > 0) {
+                new XmlMetaJoin(this.origin.output().tag())
+                    .merge(this.origin.output().file(), previous);
+            } else {
+                Files.copy(
+                    previous, this.origin.output().file(), StandardCopyOption.REPLACE_EXISTING
+                );
+            }
+            final long count;
+            if (pkgs.isEmpty()) {
+                count = this.cnt.get() + new PackagesCount(previous).value();
+            } else {
+                count = this.origin.output().maid().clean(pkgs);
+            }
+            this.cnt.set(count);
         }
         new XmlAlter(this.origin.output().file()).pkgAttr(
             this.origin.output().tag(), String.valueOf(this.cnt)
