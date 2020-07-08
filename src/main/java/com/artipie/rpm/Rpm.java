@@ -27,17 +27,15 @@ import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.asto.rx.RxStorageWrapper;
-import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryChecksums;
-import com.artipie.rpm.misc.FileInDir;
-import com.artipie.rpm.misc.UncheckedConsumer;
 import com.artipie.rpm.misc.UncheckedFunc;
 import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.InvalidPackageException;
 import com.artipie.rpm.pkg.MetadataFile;
 import com.artipie.rpm.pkg.ModifiableMetadata;
 import com.artipie.rpm.pkg.Package;
+import com.artipie.rpm.pkg.PrecedingMetadata;
 import com.artipie.rpm.pkg.Repodata;
 import com.jcabi.log.Logger;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
@@ -51,9 +49,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -380,28 +377,17 @@ public final class Rpm {
      * @param dir Temp directory
      * @return Repository
      */
-    private ModifiableRepository mdfRepository(final Path dir) {
-        final Map<String, Path> data = new HashMap<>();
-        new XmlPackage.Stream(this.config.filelists()).get().map(XmlPackage::filename)
-            .forEach(
-                new UncheckedConsumer<>(
-                    name -> {
-                        final Path metaf = dir.resolve(String.format("%s.old.xml", name));
-                        new Gzip(
-                            new FileInDir(dir).find(String.format("%s.xml.gz", name))
-                        ).unpack(metaf);
-                        data.put(name, metaf);
-                    }
-                )
-        );
+    private ModifiableRepository mdfRepository(final Path dir) throws IOException {
         return new ModifiableRepository(
-            new XmlPrimaryChecksums(data.get(XmlPackage.PRIMARY.filename())).read(),
+            new PrecedingMetadata.FromDir(XmlPackage.PRIMARY, dir).findAndUnzip().map(
+                new UncheckedFunc<>(file -> new XmlPrimaryChecksums(file).read())
+            ).orElse(Collections.emptyList()),
             new XmlPackage.Stream(this.config.filelists()).get().map(
                 new UncheckedFunc<>(
                     item ->
                         new ModifiableMetadata(
                             new MetadataFile(item, item.output().start()),
-                            data.get(item.filename())
+                            new PrecedingMetadata.FromDir(item, dir)
                         )
                 )
             ).collect(Collectors.toList()),

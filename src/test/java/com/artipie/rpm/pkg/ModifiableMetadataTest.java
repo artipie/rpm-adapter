@@ -38,7 +38,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import javax.xml.stream.XMLStreamException;
+import java.util.Optional;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -61,7 +61,7 @@ class ModifiableMetadataTest {
         Files.copy(Paths.get("src/test/resources-binary/repodata/primary.xml.example"), part);
         final ModifiableMetadata mtd = new ModifiableMetadata(
             new MetadataFile(XmlPackage.PRIMARY, new PrimaryOutput(res).start()),
-            part
+            preceding(part)
         );
         final Path rpm = new TestRpm.Abc().path();
         mtd.accept(
@@ -96,14 +96,14 @@ class ModifiableMetadataTest {
     }
 
     @Test
-    void savesItselfToRepomd(@TempDir final Path temp) throws IOException, XMLStreamException {
+    void savesItselfToRepomd(@TempDir final Path temp) throws IOException {
         final Path filelists = temp.resolve("test.filelists.xml");
         final Path part = temp.resolve("part.filelists.xml");
         Files.copy(Paths.get("src/test/resources-binary/repodata/filelists.xml.example"), part);
         filelists.toFile().createNewFile();
         final ModifiableMetadata mtd = new ModifiableMetadata(
             new MetadataFile(XmlPackage.FILELISTS, new FilelistsOutput(filelists).start()),
-            part
+            preceding(part)
         );
         mtd.close();
         final Path repomd = temp.resolve("repomd.xml");
@@ -120,5 +120,20 @@ class ModifiableMetadataTest {
                 "/*[name()='repomd']/*[name()='data' and @type='filelists']"
             )
         );
+    }
+
+    private PrecedingMetadata preceding(Path part) {
+
+        return new PrecedingMetadata() {
+            @Override
+            public boolean exists() {
+                return true;
+            }
+
+            @Override
+            public Optional<Path> findAndUnzip() {
+                return Optional.of(part);
+            }
+        };
     }
 }

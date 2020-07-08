@@ -28,6 +28,7 @@ import com.artipie.asto.Storage;
 import com.artipie.asto.SubStorage;
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.rpm.hm.StorageHasMetadata;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -99,6 +100,21 @@ final class RpmTest {
                     new StorageHasMetadata(2, filelists, RpmTest.tmp)
                 );
             }
+        );
+    }
+
+    @Test
+    void incrementalUpdateWorksOnNewRepo() throws IOException {
+        final Storage storage = new InMemoryStorage();
+        final boolean filelists = true;
+        new TestRpm.Multiple(
+            new TestRpm.Abc(), new TestRpm.Libdeflt(), new TestRpm.Time()
+        ).put(storage);
+        new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, filelists)
+            .batchUpdateIncrementally(Key.ROOT).blockingAwait();
+        MatcherAssert.assertThat(
+            storage,
+            new StorageHasMetadata(3, filelists, RpmTest.tmp)
         );
     }
 

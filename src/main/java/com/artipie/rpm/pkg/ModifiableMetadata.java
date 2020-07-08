@@ -31,6 +31,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Modifiable package.
@@ -46,32 +48,41 @@ public final class ModifiableMetadata implements Metadata {
     /**
      * Old metadata file from modifiable repository.
      */
-    private final Path old;
+    private final PrecedingMetadata preceding;
+
+    /**
+     * Packages count.
+     */
+    private final AtomicLong cnt;
 
     /**
      * Ctor.
      * @param origin Origin
-     * @param old Old metadata from existing repository
+     * @param preceding Old metadata from existing repository
      */
-    public ModifiableMetadata(final Metadata origin, final Path old) {
+    public ModifiableMetadata(final Metadata origin, final PrecedingMetadata preceding) {
         this.origin = origin;
-        this.old = old;
+        this.preceding = preceding;
+        this.cnt = new AtomicLong(0);
     }
 
     @Override
     public void brush(final List<String> pkgs) throws IOException {
-        new XmlMetaJoin(this.origin.output().tag())
-            .merge(this.origin.output().file(), this.old);
+        final Optional<Path> old = this.preceding.findAndUnzip();
+        if (old.isPresent()) {
+            new XmlMetaJoin(this.origin.output().tag())
+                .merge(this.origin.output().file(), old.get());
+            this.cnt.set(this.origin.output().maid().clean(pkgs));
+            Files.delete(old.get());
+        }
         new XmlAlter(this.origin.output().file()).pkgAttr(
-            this.origin.output().tag(), String.valueOf(this.origin.output().maid().clean(pkgs))
+            this.origin.output().tag(), String.valueOf(this.cnt)
         );
     }
 
     @Override
-    // @checkstyle ParameterNumberCheck (3 lines)
     public Path save(final Repodata repodata, final Digest digest,
         final XmlRepomd repomd) throws IOException {
-        Files.delete(this.old);
         return this.origin.save(repodata, digest, repomd);
     }
 
@@ -83,6 +94,7 @@ public final class ModifiableMetadata implements Metadata {
     @Override
     public void accept(final Package.Meta meta) throws IOException {
         this.origin.accept(meta);
+        cnt.incrementAndGet();
     }
 
     @Override
