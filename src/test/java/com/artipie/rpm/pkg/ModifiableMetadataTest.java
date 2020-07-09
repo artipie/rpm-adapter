@@ -25,6 +25,7 @@ package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.StandardNamingPolicy;
+import com.artipie.rpm.TestResource;
 import com.artipie.rpm.TestRpm;
 import com.artipie.rpm.hm.NodeHasPkgCount;
 import com.artipie.rpm.meta.XmlPackage;
@@ -37,7 +38,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Optional;
 import org.cactoos.list.ListOf;
@@ -62,7 +62,7 @@ class ModifiableMetadataTest {
         final Path res = temp.resolve("primary.xml");
         res.toFile().createNewFile();
         final Path part = temp.resolve("part.primary.xml");
-        Files.copy(Paths.get("src/test/resources-binary/repodata/primary.xml.example"), part);
+        Files.copy(new TestResource("repodata/primary.xml.example").file(), part);
         final ModifiableMetadata mtd = new ModifiableMetadata(
             new MetadataFile(XmlPackage.PRIMARY, new PrimaryOutput(res).start()),
             this.preceding(Optional.of(part))
@@ -104,7 +104,7 @@ class ModifiableMetadataTest {
         final Path res = temp.resolve("other.xml");
         res.toFile().createNewFile();
         final Path part = temp.resolve("part.other.xml");
-        Files.copy(Paths.get("src/test/resources-binary/repodata/other.xml.example"), part);
+        Files.copy(new TestResource("repodata/other.xml.example").file(), part);
         final ModifiableMetadata mtd = new ModifiableMetadata(
             new MetadataFile(XmlPackage.OTHER, new OthersOutput(res).start()),
             this.preceding(Optional.of(part))
@@ -139,7 +139,7 @@ class ModifiableMetadataTest {
         final Path res = temp.resolve("filelists.xml");
         res.toFile().createNewFile();
         final Path part = temp.resolve("part.filelists.xml");
-        Files.copy(Paths.get("src/test/resources-binary/repodata/filelists.xml.example"), part);
+        Files.copy(new TestResource("repodata/filelists.xml.example").file(), part);
         final ModifiableMetadata mtd = new ModifiableMetadata(
             new MetadataFile(XmlPackage.FILELISTS, new FilelistsOutput(res).start()),
             this.preceding(Optional.of(part))
@@ -202,7 +202,7 @@ class ModifiableMetadataTest {
     void savesItselfToRepomd(@TempDir final Path temp) throws IOException {
         final Path filelists = temp.resolve("test.filelists.xml");
         final Path part = temp.resolve("part.filelists.xml");
-        Files.copy(Paths.get("src/test/resources-binary/repodata/filelists.xml.example"), part);
+        Files.copy(new TestResource("repodata/filelists.xml.example").file(), part);
         filelists.toFile().createNewFile();
         final ModifiableMetadata mtd = new ModifiableMetadata(
             new MetadataFile(XmlPackage.FILELISTS, new FilelistsOutput(filelists).start()),

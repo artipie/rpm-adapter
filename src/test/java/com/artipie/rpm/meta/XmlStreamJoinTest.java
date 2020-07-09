@@ -23,11 +23,11 @@
  */
 package com.artipie.rpm.meta;
 
+import com.artipie.rpm.TestResource;
 import com.artipie.rpm.hm.IsXmlEqual;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -39,23 +39,18 @@ import org.junit.jupiter.api.io.TempDir;
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class XmlStreamJoinTest {
 
-    /**
-     * Test repo path.
-     */
-    private static final String REPO = "src/test/resources-binary/repodata";
-
     @Test
     void joinsTwoMetaXmlFiles(@TempDir final Path temp) throws IOException {
         final Path file = Files.copy(
-            Paths.get(XmlStreamJoinTest.REPO, "primary.xml.example.first"),
+            new TestResource("repodata/primary.xml.example.first").file(),
             temp.resolve("target.xml")
         );
         new XmlStreamJoin("metadata").merge(
-            file, Paths.get(XmlStreamJoinTest.REPO, "primary.xml.example.second")
+            file, new TestResource("repodata/primary.xml.example.second").file()
         );
         MatcherAssert.assertThat(
             file,
-            new IsXmlEqual(Paths.get(XmlStreamJoinTest.REPO, "primary.xml.example"))
+            new IsXmlEqual(new TestResource("repodata/primary.xml.example").file())
         );
     }
 

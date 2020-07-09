@@ -23,11 +23,11 @@
  */
 package com.artipie.rpm.meta;
 
+import com.artipie.rpm.TestResource;
 import com.artipie.rpm.hm.IsXmlEqual;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
@@ -43,7 +43,7 @@ class XmlPrimaryMaidTest {
     @Test
     void clearsFirstItem(@TempDir final Path temp) throws IOException {
         final Path file = Files.copy(
-            Paths.get("src/test/resources-binary/repodata", "primary.xml.example"),
+            new TestResource("repodata/primary.xml.example").file(),
             temp.resolve("primary1.xml")
         );
         new XmlPrimaryMaid(file).clean(
@@ -51,16 +51,14 @@ class XmlPrimaryMaidTest {
         );
         MatcherAssert.assertThat(
             file,
-            new IsXmlEqual(
-                Paths.get("src/test/resources-binary/repodata", "primary.xml.example.second")
-            )
+            new IsXmlEqual(new TestResource("repodata/primary.xml.example.second").file())
         );
     }
 
     @Test
     void clearsLastItem(@TempDir final Path temp) throws IOException {
         final Path file = Files.copy(
-            Paths.get("src/test/resources-binary/repodata", "primary.xml.example"),
+            new TestResource("repodata/primary.xml.example").file(),
             temp.resolve("primary2.xml")
         );
         new XmlPrimaryMaid(file).clean(
@@ -68,9 +66,7 @@ class XmlPrimaryMaidTest {
         );
         MatcherAssert.assertThat(
             file,
-            new IsXmlEqual(
-                Paths.get("src/test/resources-binary/repodata", "primary.xml.example.first")
-            )
+            new IsXmlEqual(new TestResource("repodata/primary.xml.example.first").file())
         );
     }
 

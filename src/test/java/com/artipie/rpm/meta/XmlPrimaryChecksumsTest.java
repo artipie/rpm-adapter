@@ -23,7 +23,7 @@
  */
 package com.artipie.rpm.meta;
 
-import java.nio.file.Paths;
+import com.artipie.rpm.TestResource;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.collection.IsIterableContainingInAnyOrder;
@@ -39,9 +39,7 @@ public class XmlPrimaryChecksumsTest {
     @Test
     void readsChecksums() {
         MatcherAssert.assertThat(
-            new XmlPrimaryChecksums(
-                Paths.get("src/test/resources-binary/repodata", "primary.xml.example")
-            ).read(),
+            new XmlPrimaryChecksums(new TestResource("repodata/primary.xml.example").file()).read(),
             new IsIterableContainingInAnyOrder<>(
                 new ListOf<org.hamcrest.Matcher<? super String>>(
                     new IsEqual<>(
