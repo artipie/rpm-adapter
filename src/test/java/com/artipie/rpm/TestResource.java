@@ -53,8 +53,7 @@ public final class TestResource {
     public Path file() {
         try {
             return Paths.get(
-                Thread.currentThread().getContextClassLoader()
-                    .getResource(this.name).toURI()
+                Thread.currentThread().getContextClassLoader().getResource(this.name).toURI()
             );
         } catch (final URISyntaxException ex) {
             throw new IllegalStateException("Failed to load test recourses", ex);
