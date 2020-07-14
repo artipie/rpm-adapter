@@ -39,7 +39,10 @@ import org.hamcrest.core.AllOf;
 import org.llorllale.cactoos.matchers.MatcherOf;
 
 /**
- * Storage has metadata matcher.
+ * Storage has metadata matcher checks that metadata files primary.xml, other.xml and
+ * filelists.xml (optional) are present in the storage and have information about expected
+ * amount of rpm packages (see {@link NodeHasPkgCount}). Storage should contain gzipped metadata
+ * files by {@code repodata} key, each metadata file should be met only once.
  * @since 0.11
  * @todo #311:30min Create proper unit test for this class (use metadata examples from test
  *  resources), do not forget to test mismatches descriptions.
