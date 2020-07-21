@@ -94,7 +94,7 @@ final class RpmSliceDownloadITCase {
         final TestRpm rpm = new TestRpm.Time();
         this.start(
             rpm,
-            (name, perm) -> john.equals(name) && "download".equals(perm),
+            new Permissions.Single(john, "download"),
             new BasicIdentities(
                 (name, pass) -> {
                     final Optional<String> res;
