@@ -32,11 +32,11 @@ import com.artipie.http.hm.RsHasStatus;
 import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.rpm.RepoConfig;
+import com.artipie.rpm.TestRpm;
 import io.reactivex.Flowable;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Map;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
@@ -55,9 +55,7 @@ public class RpmUploadTest {
     @Test
     void canUploadArtifact() throws Exception {
         final Storage storage = new InMemoryStorage();
-        final byte[] content = Files.readAllBytes(
-            Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm")
-        );
+        final byte[] content = Files.readAllBytes(new TestRpm.Abc().path());
         MatcherAssert.assertThat(
             "ACCEPTED 202 returned",
             new RpmUpload(storage, new RepoConfig.Simple()).response(
@@ -124,9 +122,7 @@ public class RpmUploadTest {
     @Test
     void skipsUpdate() throws Exception {
         final Storage storage = new InMemoryStorage();
-        final byte[] content = Files.readAllBytes(
-            Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm")
-        );
+        final byte[] content = Files.readAllBytes(new TestRpm.Abc().path());
         MatcherAssert.assertThat(
             "ACCEPTED 202 returned",
             new RpmUpload(storage, new RepoConfig.Simple()).response(

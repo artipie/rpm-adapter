@@ -23,13 +23,13 @@
  */
 package com.artipie.rpm;
 
-import com.artipie.rpm.meta.XmlRepomd;
 import com.artipie.rpm.misc.UncheckedConsumer;
 import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.InvalidPackageException;
 import com.artipie.rpm.pkg.Metadata;
 import com.artipie.rpm.pkg.Package;
 import com.artipie.rpm.pkg.PackageOutput;
+import com.artipie.rpm.pkg.Repodata;
 import com.jcabi.log.Logger;
 import java.io.Closeable;
 import java.io.IOException;
@@ -68,18 +68,15 @@ public final class ModifiableRepository implements PackageOutput {
     /**
      * Ctor.
      * @param existing Existing packages hexes list
-     * @param repomd Repomd
      * @param metadata Metadata files
      * @param digest Hashing algorithm
-     * @param tmp Temp dir to store metadata
-     * @checkstyle ParameterNumberCheck (3 lines)
      */
-    public ModifiableRepository(final List<String> existing, final XmlRepomd repomd,
-        final List<Metadata> metadata, final Digest digest, final Path tmp) {
+    public ModifiableRepository(final List<String> existing, final List<Metadata> metadata,
+        final Digest digest) {
         this.existing = existing;
         this.metadata = metadata;
         this.digest = digest;
-        this.origin = new Repository(repomd, metadata, digest, tmp);
+        this.origin = new Repository(metadata, digest);
     }
 
     /**
@@ -127,11 +124,11 @@ public final class ModifiableRepository implements PackageOutput {
 
     /**
      * Save metadata files and gzip.
-     * @param naming Naming policy
+     * @param repodata Repodata
      * @return All metadata files
      * @throws IOException On error
      */
-    public List<Path> save(final NamingPolicy naming) throws IOException {
-        return this.origin.save(naming);
+    public List<Path> save(final Repodata repodata) throws IOException {
+        return this.origin.save(repodata);
     }
 }

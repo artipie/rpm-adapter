@@ -27,7 +27,6 @@ import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.asto.rx.RxStorageWrapper;
-import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryChecksums;
 import com.artipie.rpm.meta.XmlRepomd;
@@ -40,7 +39,8 @@ import com.artipie.rpm.pkg.InvalidPackageException;
 import com.artipie.rpm.pkg.MetadataFile;
 import com.artipie.rpm.pkg.ModifiableMetadata;
 import com.artipie.rpm.pkg.Package;
-import com.jcabi.aspects.Tv;
+import com.artipie.rpm.pkg.PrecedingMetadata;
+import com.artipie.rpm.pkg.Repodata;
 import com.jcabi.log.Logger;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Completable;
@@ -52,14 +52,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.xml.stream.XMLStreamException;
 
 /**
  * The RPM front.
@@ -213,13 +210,18 @@ public final class Rpm {
                 }
             )
             .sequential().observeOn(Schedulers.io())
-            .reduceWith(() -> this.repository(metadir), Repository::update)
+            .reduceWith(this::repository, Repository::update)
             .doOnSuccess(rep -> Logger.info(this, "repository updated"))
             .doOnSuccess(Repository::close)
             .doOnSuccess(rep -> Logger.info(this, "repository closed"))
-            .flatMapObservable(repo -> Observable.fromIterable(repo.save(this.config.naming())))
-            .doOnNext(file -> Files.move(file, tmpdir.resolve(file.getFileName())))
-            .flatMapSingle(path -> this.moveRepodataToStorage(local, path, prefix))
+            .flatMapObservable(
+                rep -> Observable.fromIterable(
+                    rep.save(new Repodata.Temp(this.config.naming(), metadir))
+                )
+            )
+            .flatMapSingle(
+                path -> this.moveRepodataToStorage(new FileStorage(metadir), path, prefix)
+            )
             .map(path -> path.getFileName().toString())
             .toList().map(HashSet::new)
             .flatMapCompletable(preserve -> this.removeOldMetadata(preserve, prefix))
@@ -256,7 +258,7 @@ public final class Rpm {
                             content -> new RxStorageWrapper(local).save(new Key.From(file), content)
                         );
                 }
-            ).andThen(Single.fromCallable(() -> this.mdfRepository(tmpdir, metadir)))
+            ).andThen(Single.fromCallable(() -> this.mdfRepository(tmpdir)))
             .flatMap(
                 repo -> this.filePackageFromRpm(prefix, tmpdir, local)
                     .parallel().runOn(Schedulers.io())
@@ -268,13 +270,14 @@ public final class Rpm {
             .doOnSuccess(rep -> Logger.info(this, "repository closed"))
             .doOnSuccess(ModifiableRepository::clear)
             .doOnSuccess(rep -> Logger.info(this, "repository cleared"))
-            .flatMapObservable(rep -> Observable.fromIterable(rep.save(this.config.naming())))
-            .doOnNext(
-                file -> Files.move(
-                    file, tmpdir.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING
+            .flatMapObservable(
+                rep -> Observable.fromIterable(
+                    rep.save(new Repodata.Temp(this.config.naming(), metadir))
                 )
             )
-            .flatMapSingle(path -> this.moveRepodataToStorage(local, path, prefix))
+            .flatMapSingle(
+                path -> this.moveRepodataToStorage(new FileStorage(metadir), path, prefix)
+            )
             .map(path -> path.getFileName().toString())
             .toList().map(HashSet::new)
             .flatMapCompletable(preserve -> this.removeOldMetadata(preserve, prefix))
@@ -376,79 +379,41 @@ public final class Rpm {
 
     /**
      * Get repository for file updates.
-     * @param tmp Temp dir to store metadata
      * @return Repository
-     * @throws IOException If IO Exception occurs.
      */
-    private Repository repository(final Path tmp) throws IOException {
-        try {
-            return new Repository(
-                Rpm.xmlRepomd(),
-                new XmlPackage.Stream(this.config.filelists()).get().map(
-                    new UncheckedFunc<XmlPackage, MetadataFile, IOException>(
-                        item -> new MetadataFile(item, item.output().start())
-                    )
-                ).collect(Collectors.toList()),
-                this.config.digest(),
-                tmp
-            );
-        } catch (final XMLStreamException ex) {
-            throw new IOException(ex);
-        }
+    private Repository repository() {
+        return new Repository(
+            new XmlPackage.Stream(this.config.filelists()).get().map(
+                new UncheckedFunc<XmlPackage, MetadataFile, IOException>(
+                    item -> new MetadataFile(item, item.output().start())
+                )
+            ).collect(Collectors.toList()),
+            this.config.digest()
+        );
     }
 
     /**
      * Get modifiable repository for file updates.
      * @param dir Temp directory
-     * @param metadir Temp dir to store metadata
      * @return Repository
-     * @throws IOException If IO Exception occurs.
+     * @throws IOException On error
      */
-    private ModifiableRepository mdfRepository(final Path dir, final Path metadir)
-        throws IOException {
-        try {
-            final Map<String, Path> data = new HashMap<>();
-            new XmlPackage.Stream(this.config.filelists()).get().map(XmlPackage::filename)
-                .forEach(
-                    new UncheckedConsumer<>(
-                        name -> {
-                            final Path metaf = dir.resolve(String.format("%s.old.xml", name));
-                            new Gzip(
-                                new FileInDir(dir).find(String.format("%s.xml.gz", name))
-                            ).unpack(metaf);
-                            data.put(name, metaf);
-                        }
-                    )
-            );
-            return new ModifiableRepository(
-                new XmlPrimaryChecksums(data.get(XmlPackage.PRIMARY.filename())).read(),
-                Rpm.xmlRepomd(),
-                new XmlPackage.Stream(this.config.filelists()).get().map(
-                    new UncheckedFunc<>(
-                        item ->
-                            new ModifiableMetadata(
-                                new MetadataFile(item, item.output().start()),
-                                data.get(item.filename())
-                            )
-                    )
-                ).collect(Collectors.toList()),
-                this.config.digest(),
-                metadir
-            );
-        } catch (final XMLStreamException ex) {
-            throw new IOException(ex);
-        }
+    private ModifiableRepository mdfRepository(final Path dir) throws IOException {
+        return new ModifiableRepository(
+            new PrecedingMetadata.FromDir(XmlPackage.PRIMARY, dir).findAndUnzip().map(
+                new UncheckedFunc<>(file -> new XmlPrimaryChecksums(file).read())
+            ).orElse(Collections.emptyList()),
+            new XmlPackage.Stream(this.config.filelists()).get().map(
+                new UncheckedFunc<>(
+                    item ->
+                        new ModifiableMetadata(
+                            new MetadataFile(item, item.output().start()),
+                            new PrecedingMetadata.FromDir(item, dir)
+                        )
+                )
+            ).collect(Collectors.toList()),
+            this.config.digest()
+        );
     }
 
-    /**
-     * Returns opened repomd.
-     * @return XmlRepomd instance
-     * @throws IOException On error
-     * @throws XMLStreamException On error
-     */
-    private static XmlRepomd xmlRepomd() throws IOException, XMLStreamException {
-        final XmlRepomd repomd = new XmlRepomd(Files.createTempFile("repomd-", ".xml"));
-        repomd.begin(System.currentTimeMillis() / Tv.THOUSAND);
-        return repomd;
-    }
 }

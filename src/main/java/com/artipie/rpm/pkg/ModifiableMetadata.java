@@ -24,14 +24,16 @@
 package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
-import com.artipie.rpm.NamingPolicy;
+import com.artipie.rpm.meta.PackagesCount;
 import com.artipie.rpm.meta.XmlAlter;
 import com.artipie.rpm.meta.XmlMetaJoin;
 import com.artipie.rpm.meta.XmlRepomd;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Modifiable package.
@@ -47,33 +49,52 @@ public final class ModifiableMetadata implements Metadata {
     /**
      * Old metadata file from modifiable repository.
      */
-    private final Path old;
+    private final PrecedingMetadata preceding;
+
+    /**
+     * Packages count.
+     */
+    private long cnt;
 
     /**
      * Ctor.
      * @param origin Origin
-     * @param old Old metadata from existing repository
+     * @param preceding Old metadata from existing repository
      */
-    public ModifiableMetadata(final Metadata origin, final Path old) {
+    public ModifiableMetadata(final Metadata origin, final PrecedingMetadata preceding) {
         this.origin = origin;
-        this.old = old;
+        this.preceding = preceding;
+        this.cnt = 0L;
     }
 
     @Override
     public void brush(final List<String> pkgs) throws IOException {
-        new XmlMetaJoin(this.origin.output().tag())
-            .merge(this.origin.output().file(), this.old);
+        final Optional<Path> existed = this.preceding.findAndUnzip();
+        if (existed.isPresent()) {
+            final Path previous = existed.get();
+            if (this.cnt > 0) {
+                new XmlMetaJoin(this.origin.output().tag())
+                    .merge(this.origin.output().file(), previous);
+            } else {
+                Files.copy(
+                    previous, this.origin.output().file(), StandardCopyOption.REPLACE_EXISTING
+                );
+            }
+            if (pkgs.isEmpty()) {
+                this.cnt = this.cnt + new PackagesCount(previous).value();
+            } else {
+                this.cnt = this.origin.output().maid().clean(pkgs);
+            }
+        }
         new XmlAlter(this.origin.output().file()).pkgAttr(
-            this.origin.output().tag(), String.valueOf(this.origin.output().maid().clean(pkgs))
+            this.origin.output().tag(), String.valueOf(this.cnt)
         );
     }
 
     @Override
-    // @checkstyle ParameterNumberCheck (3 lines)
-    public Path save(final NamingPolicy naming, final Digest digest,
-        final XmlRepomd repomd, final Path tmp) throws IOException {
-        Files.delete(this.old);
-        return this.origin.save(naming, digest, repomd, tmp);
+    public Path save(final Repodata repodata, final Digest digest,
+        final XmlRepomd repomd) throws IOException {
+        return this.origin.save(repodata, digest, repomd);
     }
 
     @Override
@@ -84,6 +105,7 @@ public final class ModifiableMetadata implements Metadata {
     @Override
     public void accept(final Package.Meta meta) throws IOException {
         this.origin.accept(meta);
+        this.cnt = this.cnt + 1;
     }
 
     @Override

@@ -56,8 +56,8 @@ public final class MetadataFileTest {
             final String openhex = new FileChecksum(fake, Digest.SHA1).hex();
             final long size = Files.size(fake);
             final Path gzip = meta.save(
-                new NamingPolicy.HashPrefixed(Digest.SHA1), Digest.SHA1,
-                repomd, Files.createDirectory(tmp.resolve("meta"))
+                new Repodata.Temp(new NamingPolicy.HashPrefixed(Digest.SHA1), tmp),
+                Digest.SHA1, repomd
             );
             repomd.close();
             final String hex = new FileChecksum(gzip, Digest.SHA1).hex();

@@ -27,22 +27,22 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 /**
- * RPM files naming policy.
+ * RPM repository metadata files naming policy.
  * @since 0.3
  */
 public interface NamingPolicy {
 
     /**
      * Name for source with its content.
-     * @param source RPM file
-     * @param content RPM file content
+     * @param source Metadata file name
+     * @param content Metadata file content
      * @return File name
      * @throws IOException On error
      */
     String name(String source, Path content) throws IOException;
 
     /**
-     * Add hash prefix to names. Uses SHA256 by default
+     * Add hash prefix to names.
      * @since 0.3
      */
     final class HashPrefixed implements NamingPolicy {

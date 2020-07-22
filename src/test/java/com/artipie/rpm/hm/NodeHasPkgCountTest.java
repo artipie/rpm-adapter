@@ -23,21 +23,39 @@
  */
 package com.artipie.rpm.hm;
 
+import com.artipie.rpm.TestResource;
 import com.artipie.rpm.meta.XmlPackage;
 import com.jcabi.xml.XMLDocument;
 import java.io.FileNotFoundException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsNot;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.llorllale.cactoos.matchers.Matches;
+import org.llorllale.cactoos.matchers.Mismatches;
 
 /**
  * Test for {@link NodeHasPkgCount}.
  * @since 0.10
+ * @todo #307:30min Test methods for description verification fail on windows: figure out why,
+ *  fix it and remove disable annotation.
  * @checkstyle MagicNumberCheck (500 lines)
  */
 final class NodeHasPkgCountTest {
+
+    /**
+     * Wrong xml path.
+     */
+    private static final Path WRONG =
+        new TestResource("repodata/wrong-package.xml.example").file();
+
+    /**
+     * Primary xml example path.
+     */
+    private static final Path PRIMARY =
+        new TestResource("repodata/primary.xml.example").file();
 
     @Test
     void countsPackages() throws FileNotFoundException {
@@ -45,7 +63,7 @@ final class NodeHasPkgCountTest {
             new NodeHasPkgCount(2, XmlPackage.OTHER.tag()),
             new Matches<>(
                 new XMLDocument(
-                    Paths.get("src/test/resources-binary/repodata/other.xml.example")
+                    new TestResource("repodata/other.xml.example").file()
                 )
             )
         );
@@ -57,12 +75,47 @@ final class NodeHasPkgCountTest {
             new NodeHasPkgCount(10, XmlPackage.PRIMARY.tag()),
             new IsNot<>(
                 new Matches<>(
-                    new XMLDocument(
-                        Paths.get("src/test/resources-binary/repodata/primary.xml.example")
-                    )
+                    new XMLDocument(NodeHasPkgCountTest.PRIMARY)
                 )
             )
         );
     }
 
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    void describesCorrectlyWhenPackagesAmountDiffers() throws FileNotFoundException {
+        MatcherAssert.assertThat(
+            new NodeHasPkgCount(10, XmlPackage.PRIMARY.tag()),
+            new Mismatches<>(
+                new XMLDocument(NodeHasPkgCountTest.PRIMARY),
+                "10 packages expected",
+                "2 packages found, 'packages' attribute value is 2"
+            )
+        );
+    }
+
+    @Test
+    void doesNotMatchWhenPackageAttributeDiffers() throws FileNotFoundException {
+        MatcherAssert.assertThat(
+            new NodeHasPkgCount(2, XmlPackage.OTHER.tag()),
+            new IsNot<>(
+                new Matches<>(
+                    new XMLDocument(NodeHasPkgCountTest.WRONG)
+                )
+            )
+        );
+    }
+
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    void describesCorrectlyWhenPackageAttributeDiffers() throws FileNotFoundException {
+        MatcherAssert.assertThat(
+            new NodeHasPkgCount(2, XmlPackage.OTHER.tag()),
+            new Mismatches<>(
+                new XMLDocument(NodeHasPkgCountTest.WRONG),
+                "2 packages expected",
+                "2 packages found, 'packages' attribute value is 3"
+            )
+        );
+    }
 }

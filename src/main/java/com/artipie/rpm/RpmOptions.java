@@ -29,8 +29,6 @@ import org.apache.commons.cli.Option;
  * Rpm repository configuration options. These options are used in rpm-adapter CLI mode and
  * on Artipie storage configuration level.
  * @since 0.10
- * @todo #275:30min Add unit test for this class to make sure it builds correct instance of
- *  {@link Option}.
  */
 public enum RpmOptions {
 

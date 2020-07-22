@@ -24,48 +24,47 @@
 package com.artipie.rpm.meta;
 
 import com.artipie.rpm.TestResource;
-import com.artipie.rpm.hm.IsXmlEqual;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Test for {@link XmlMaid.ByPkgidAttr}.
- * @since 0.3
+ * Tests for {@link PackagesCount}.
+ *
+ * @since 0.11
  */
-public final class ByPkgidAttrTest {
+class PackagesCountTest {
 
     @Test
-    void clearsFirstItem(@TempDir final Path temp) throws IOException {
-        final Path file = Files.copy(
-            new TestResource("repodata/other.xml.example").file(),
-            temp.resolve("other.xml")
-        );
-        new XmlMaid.ByPkgidAttr(file).clean(
-            new ListOf<>("7eaefd1cb4f9740558da7f12f9cb5a6141a47f5d064a98d46c29959869af1a44")
-        );
+    void shouldReadValue() throws Exception {
         MatcherAssert.assertThat(
-            file,
-            new IsXmlEqual(new TestResource("repodata/other.xml.example.second").file())
+            new PackagesCount(
+                new TestResource("repodata/primary.xml.example").file()
+            ).value(),
+            new IsEqual<>(2)
         );
     }
 
     @Test
-    void clearsLastItem(@TempDir final Path temp) throws IOException {
-        final Path file = Files.copy(
-            new TestResource("repodata/filelists.xml.example").file(),
-            temp.resolve("filelist.xml")
+    void shouldFailIfAttributeIsMissing(final @TempDir Path dir) throws Exception {
+        final PackagesCount count = new PackagesCount(
+            Files.write(dir.resolve("empty.xml"), "".getBytes())
         );
-        new XmlMaid.ByPkgidAttr(file).clean(
-            new ListOf<>("54f1d9a1114fa85cd748174c57986004857b800fe9545fbf23af53f4791b31e2")
+        Assertions.assertThrows(IllegalArgumentException.class, count::value);
+    }
+
+    @Test
+    void shouldFailIfAttributeIsTooFarFromStart(final @TempDir Path dir) throws Exception {
+        final PackagesCount count = new PackagesCount(
+            Files.write(
+                dir.resolve("big.xml"),
+                "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n<metadata packages=\"123\"/>".getBytes()
+            )
         );
-        MatcherAssert.assertThat(
-            file,
-            new IsXmlEqual(new TestResource("repodata/filelists.xml.example.first").file())
-        );
+        Assertions.assertThrows(IllegalArgumentException.class, count::value);
     }
 }

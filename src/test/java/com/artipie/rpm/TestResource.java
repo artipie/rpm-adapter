@@ -21,64 +21,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.artipie.rpm.pkg;
+package com.artipie.rpm;
 
-import com.artipie.rpm.Digest;
-import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
- * RPM checksum.
- * @since 0.6
+ * Get file by name from test resources.
+ * @since 0.11
  */
-public interface Checksum {
+public final class TestResource {
 
     /**
-     * Digest.
-     * @return Digest
+     * File name.
      */
-    Digest digest();
+    private final String name;
 
     /**
-     * Checksum hex string.
-     * @return Hex string
-     * @throws IOException On error
+     * Ctor.
+     * @param name File name
      */
-    String hex() throws IOException;
+    public TestResource(final String name) {
+        this.name = name;
+    }
 
     /**
-     * Simple {@link Checksum} implementation.
-     * @since 0.11
+     * Obtains resources from context loader.
+     * @return Path
      */
-    final class Simple implements Checksum {
-
-        /**
-         * Digest.
-         */
-        private final Digest dgst;
-
-        /**
-         * Checksum hex.
-         */
-        private final String sum;
-
-        /**
-         * Ctor.
-         * @param dgst Digest
-         * @param sum Checksum hex
-         */
-        public Simple(final Digest dgst, final String sum) {
-            this.dgst = dgst;
-            this.sum = sum;
-        }
-
-        @Override
-        public Digest digest() {
-            return this.dgst;
-        }
-
-        @Override
-        public String hex() throws IOException {
-            return this.sum;
+    public Path file() {
+        try {
+            return Paths.get(
+                Thread.currentThread().getContextClassLoader().getResource(this.name).toURI()
+            );
+        } catch (final URISyntaxException ex) {
+            throw new IllegalStateException("Failed to load test recourses", ex);
         }
     }
+
 }

@@ -23,10 +23,10 @@
  */
 package com.artipie.rpm.files;
 
+import com.artipie.rpm.TestResource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
@@ -41,7 +41,7 @@ class GzipTest {
 
     @Test
     void unpacks(final @TempDir Path tmp) throws IOException {
-        new Gzip(Paths.get("src/test/resources-binary/test.tar.gz")).unpackTar(tmp);
+        new Gzip(new TestResource("test.tar.gz").file()).unpackTar(tmp);
         MatcherAssert.assertThat(
             Files.readAllLines(tmp.resolve("test.txt")).iterator().next(),
             new IsEqual<>("hello world")
@@ -51,13 +51,12 @@ class GzipTest {
     @Test
     void unpacksGz(final @TempDir Path tmp) throws IOException {
         final Path res = tmp.resolve("res.xml");
-        new Gzip(Paths.get("src/test/resources-binary/repodata/primary.xml.example.gz"))
-            .unpack(res);
+        new Gzip(new TestResource("repodata/primary.xml.gz.example").file()).unpack(res);
         MatcherAssert.assertThat(
             Files.readAllLines(res).toArray(),
             Matchers.arrayContaining(
                 Files.readAllLines(
-                    Paths.get("src/test/resources-binary/repodata/primary.xml.example")
+                    new TestResource("repodata/primary.xml.example").file()
                 ).toArray()
             )
         );

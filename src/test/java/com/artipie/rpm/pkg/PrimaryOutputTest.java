@@ -24,11 +24,15 @@
 package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
+import com.artipie.rpm.TestRpm;
+import com.artipie.rpm.meta.XmlPackage;
+import com.artipie.rpm.meta.XmlPrimaryMaid;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.IsEqual;
+import org.hamcrest.core.IsInstanceOf;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.xmlunit.matchers.CompareMatcher;
@@ -36,9 +40,6 @@ import org.xmlunit.matchers.CompareMatcher;
 /**
  * Test for {@link PrimaryOutput}.
  * @since 0.10
- * @todo #241:30min Extend this test: add test methods to check `file()`, `maid()` and `tag()`
- *  methods of `PrimaryOutput` and add method to check generated primary.xml for libdeflt test
- *  rpm package.
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class PrimaryOutputTest {
@@ -48,8 +49,7 @@ class PrimaryOutputTest {
         final Path res = temp.resolve("primary.xml");
         try (PackageOutput.FileOutput primary = new PrimaryOutput(res)) {
             primary.start();
-            final Path rpm =
-                Paths.get("src/test/resources-binary/abc-1.01-26.git20200127.fc32.ppc64le.rpm");
+            final Path rpm = new TestRpm.Abc().path();
             primary.accept(
                 new FilePackage.Headers(new FilePackageHeader(rpm).header(), rpm, Digest.SHA256)
             );
@@ -57,9 +57,7 @@ class PrimaryOutputTest {
         MatcherAssert.assertThat(
             Files.readAllBytes(res),
             CompareMatcher.isIdenticalTo(
-                Files.readAllBytes(
-                    Paths.get("src/test/resources-binary/repodata/abc-primary.xml.example")
-                )
+                Files.readAllBytes(new TestRpm.Abc().metadata(XmlPackage.PRIMARY))
             ).ignoreWhitespace()
             .ignoreElementContentWhitespace()
             .normalizeWhitespace()
@@ -71,5 +69,67 @@ class PrimaryOutputTest {
                 attr -> !"file".equals(attr.getName()) && !"archive".equals(attr.getName())
             )
         );
+    }
+
+    @Test
+    void checkFile(@TempDir final Path temp) throws IOException {
+        final Path res = temp.resolve("primary.xml");
+        try (PackageOutput.FileOutput primary = new PrimaryOutput(res)) {
+            primary.start();
+            MatcherAssert.assertThat(
+                primary.file(),
+                new IsEqual<>(res)
+            );
+        }
+    }
+
+    @Test
+    void checkTag(@TempDir final Path temp) throws IOException {
+        final Path res = temp.resolve("primary.xml");
+        try (PackageOutput.FileOutput primary = new PrimaryOutput(res)) {
+            primary.start();
+            MatcherAssert.assertThat(
+                primary.tag(),
+                new IsEqual<>("metadata")
+            );
+        }
+    }
+
+    @Test
+    void createsPrimaryForLibdeflt(@TempDir final Path temp) throws IOException {
+        final Path res = temp.resolve("primary.xml");
+        try (PackageOutput.FileOutput primary = new PrimaryOutput(res)) {
+            primary.start();
+            final Path rpm = new TestRpm.Libdeflt().path();
+            primary.accept(
+                new FilePackage.Headers(new FilePackageHeader(rpm).header(), rpm, Digest.SHA256)
+            );
+        }
+        MatcherAssert.assertThat(
+            Files.readAllBytes(res),
+            CompareMatcher.isIdenticalTo(
+                Files.readAllBytes(new TestRpm.Libdeflt().metadata(XmlPackage.PRIMARY))
+            ).ignoreWhitespace()
+            .ignoreElementContentWhitespace()
+            .normalizeWhitespace()
+            .withNodeFilter(
+                node -> !"file".equals(node.getLocalName())
+                    && !"provides".equals(node.getLocalName())
+                    && !"requires".equals(node.getLocalName())
+            ).withAttributeFilter(
+                attr -> !"file".equals(attr.getName()) && !"archive".equals(attr.getName())
+            )
+        );
+    }
+
+    @Test
+    void createsCorrectMaidInstance(@TempDir final Path temp) throws IOException {
+        try (PrimaryOutput output = new PrimaryOutput(temp.resolve("fake.xml"))) {
+            output.start();
+            MatcherAssert.assertThat(
+                output.maid(),
+                new IsInstanceOf(XmlPrimaryMaid.class)
+            );
+        }
     }
 }

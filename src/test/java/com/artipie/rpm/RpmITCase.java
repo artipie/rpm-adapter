@@ -31,6 +31,7 @@ import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.files.TestBundle;
+import com.artipie.rpm.hm.StorageHasMetadata;
 import com.artipie.rpm.misc.UncheckedConsumer;
 import com.jcabi.matchers.XhtmlMatchers;
 import java.io.IOException;
@@ -53,12 +54,6 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Integration test for {@link Rpm}.
  * @since 0.6
- * @todo #85:30min Continue the automation of batchUpdate tests.
- *  We still need to check the files to check primary.xml, others.xml and
- *  filelists.xml. These files are stored in storage at path:
- *  `repomd/SHA1-TYPE.xml.gz`, where SHA1 is a HEX from SHA1 of file content
- *  and TYPE is a type of file (primary, others, filelists). Don't forget to
- *  uncompress it first.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle MagicNumberCheck (500 lines)
  */
@@ -112,17 +107,27 @@ final class RpmITCase {
 
     @Test
     void generatesMetadata() {
-        new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
+        final boolean filelist = true;
+        new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, filelist)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
+        MatcherAssert.assertThat(
+            this.storage,
+            new StorageHasMetadata(RpmITCase.SIZE.count(), filelist, RpmITCase.tmp)
+        );
     }
 
     @Test
-    void generatesMetadataIncrementally() throws IOException, InterruptedException {
+    void generatesMetadataIncrementally() throws Exception {
         this.modifyRepo();
-        new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
+        final boolean filelist = true;
+        new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, filelist)
             .batchUpdateIncrementally(Key.ROOT)
             .blockingAwait();
+        MatcherAssert.assertThat(
+            this.storage,
+            new StorageHasMetadata(RpmITCase.SIZE.count() - 4, filelist, RpmITCase.tmp)
+        );
     }
 
     @Test

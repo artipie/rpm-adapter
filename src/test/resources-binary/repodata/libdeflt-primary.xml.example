@@ -1,3 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata xmlns="http://linux.duke.edu/metadata/common"
+          xmlns:rpm="http://linux.duke.edu/metadata/rpm" packages="-1">
 <package type="rpm">
     <name>libdeflt1_0</name>
     <arch>armv7hl</arch>
@@ -39,3 +42,4 @@
         </rpm:requires>
     </format>
 </package>
+</metadata>
