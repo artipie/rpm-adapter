@@ -59,7 +59,7 @@ public class RpmUploadTest {
         MatcherAssert.assertThat(
             "ACCEPTED 202 returned",
             new RpmUpload(storage, new RepoConfig.Simple()).response(
-                new RequestLine("PUT", "/uploaded.rpm", "HTTP/1.1").toString(),
+                new RequestLine("PUT", "/uploaded.rpm").toString(),
                 new ListOf<Map.Entry<String, String>>(),
                 Flowable.fromArray(ByteBuffer.wrap(content))
             ),
@@ -86,7 +86,7 @@ public class RpmUploadTest {
         new BlockingStorage(storage).save(key, "uploaded package".getBytes());
         MatcherAssert.assertThat(
             new RpmUpload(storage, new RepoConfig.Simple()).response(
-                new RequestLine("PUT", "/replaced.rpm?override=true", "HTTP/1.1").toString(),
+                new RequestLine("PUT", "/replaced.rpm?override=true").toString(),
                 Headers.EMPTY,
                 Flowable.fromArray(ByteBuffer.wrap(content))
             ),
@@ -107,7 +107,7 @@ public class RpmUploadTest {
         new BlockingStorage(storage).save(key, content);
         MatcherAssert.assertThat(
             new RpmUpload(storage, new RepoConfig.Simple()).response(
-                new RequestLine("PUT", "/not-replaced.rpm", "HTTP/1.1").toString(),
+                new RequestLine("PUT", "/not-replaced.rpm").toString(),
                 Headers.EMPTY,
                 Flowable.fromArray(ByteBuffer.wrap("second package content".getBytes()))
             ),
@@ -126,7 +126,7 @@ public class RpmUploadTest {
         MatcherAssert.assertThat(
             "ACCEPTED 202 returned",
             new RpmUpload(storage, new RepoConfig.Simple()).response(
-                new RequestLine("PUT", "/my-package.rpm?skip_update=true", "HTTP/1.1").toString(),
+                new RequestLine("PUT", "/my-package.rpm?skip_update=true").toString(),
                 Headers.EMPTY,
                 Flowable.fromArray(ByteBuffer.wrap(content))
             ),

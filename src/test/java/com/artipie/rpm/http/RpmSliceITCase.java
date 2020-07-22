@@ -100,7 +100,7 @@ public final class RpmSliceITCase {
         final String mark = "mark";
         final String pswd = "abc";
         this.start(
-            (name, perm) -> mark.equals(name) && "download".equals(perm),
+            new Permissions.Single(mark, "download"),
             this.auth(mark, pswd),
             String.format("%s:%s@", mark, pswd),
             "centos:centos8"
@@ -137,7 +137,7 @@ public final class RpmSliceITCase {
         final String john = "john";
         final String pswd = "123";
         this.start(
-            (name, perm) -> john.equals(name) && "download".equals(perm),
+            new Permissions.Single(john, "download"),
             this.auth(john, pswd),
             String.format("%s:%s@", john, pswd),
             "fedora:32"

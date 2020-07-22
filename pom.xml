@@ -27,7 +27,7 @@ SOFTWARE.
   <parent>
     <groupId>com.artipie</groupId>
     <artifactId>ppom</artifactId>
-    <version>0.3.3</version>
+    <version>0.3.6</version>
   </parent>
   <artifactId>rpm-adapter</artifactId>
   <version>1.0-SNAPSHOT</version>
@@ -83,7 +83,7 @@ SOFTWARE.
     <dependency>
       <groupId>com.artipie</groupId>
       <artifactId>http</artifactId>
-      <version>0.9.7</version>
+      <version>0.15.1</version>
     </dependency>
     <dependency>
       <groupId>javax.xml.bind</groupId>
@@ -93,7 +93,7 @@ SOFTWARE.
     <dependency>
       <groupId>com.artipie</groupId>
       <artifactId>asto</artifactId>
-      <version>0.22</version>
+      <version>0.23.2</version>
     </dependency>
     <dependency>
       <groupId>commons-cli</groupId>

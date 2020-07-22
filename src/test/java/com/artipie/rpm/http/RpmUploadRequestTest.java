@@ -41,7 +41,7 @@ public final class RpmUploadRequestTest {
     void returnsFileNameKey() {
         MatcherAssert.assertThat(
             new RpmUpload.Request(
-                new RequestLine("PUT", "/file.rpm", "HTTP/1.1").toString()
+                new RequestLine("PUT", "/file.rpm").toString()
             ).file().string(),
             new IsEqual<>("file.rpm")
         );
@@ -62,7 +62,7 @@ public final class RpmUploadRequestTest {
     void readsOverrideFlag(final String uri, final boolean expected) {
         MatcherAssert.assertThat(
             new RpmUpload.Request(
-                new RequestLine("PUT", uri, "HTTP/1.1").toString()
+                new RequestLine("PUT", uri).toString()
             ).override(),
             new IsEqual<>(expected)
         );
@@ -83,7 +83,7 @@ public final class RpmUploadRequestTest {
     void readsSkipUpdateFlag(final String uri, final boolean expected) {
         MatcherAssert.assertThat(
             new RpmUpload.Request(
-                new RequestLine("PUT", uri, "HTTP/1.1").toString()
+                new RequestLine("PUT", uri).toString()
             ).skipUpdate(),
             new IsEqual<>(expected)
         );
