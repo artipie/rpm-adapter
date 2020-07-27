@@ -102,26 +102,38 @@ public final class RpmByDigestCopy {
             .filter(item -> item.string().endsWith(".rpm"))
             .flatMapCompletable(
                 rpm -> Completable.fromFuture(
-                    this.from.value(rpm).thenCompose(
-                        content -> RpmByDigestCopy.bytes(content).thenCompose(
-                            source -> new ContentDigest(new Content.From(source), this.algorithm)
-                                .hex().thenCompose(
-                                    hex -> {
-                                        final String file = Paths.get(rpm.string()).getFileName()
-                                            .toString();
-                                        final CompletableFuture<Void> res;
-                                        if (this.digests.contains(hex)) {
-                                            res = CompletableFuture.allOf();
-                                        } else {
-                                            res = dest.save(
-                                                new Key.From(file), new Content.From(source)
-                                            );
-                                        }
-                                        return res;
-                                    }
-                                )
-                            )
-                    )
+                    this.from.value(rpm).thenCompose(content -> this.handleRpm(dest, rpm, content))
+                )
+            );
+    }
+
+    /**
+     * Handle rpm: calc its digest and check whether it's present in digests list, save if to
+     * storage if necessary.
+     * @param dest Where to copy
+     * @param rpm Rpm file key
+     * @param content Rpm content
+     * @return CompletionStage action
+     */
+    private CompletionStage<Void> handleRpm(
+        final Storage dest, final Key rpm, final Content content
+    ) {
+        return RpmByDigestCopy.bytes(content).thenCompose(
+            source -> new ContentDigest(new Content.From(source), this.algorithm)
+                .hex().thenCompose(
+                    hex -> {
+                        final String file = Paths.get(rpm.string()).getFileName()
+                            .toString();
+                        final CompletableFuture<Void> res;
+                        if (this.digests.contains(hex)) {
+                            res = CompletableFuture.allOf();
+                        } else {
+                            res = dest.save(
+                                new Key.From(file), new Content.From(source)
+                            );
+                        }
+                        return res;
+                    }
                 )
             );
     }

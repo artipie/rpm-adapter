@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.util.Collections;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
-import org.hamcrest.core.IsEqual;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Test;
  * @since 0.11
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
+@SuppressWarnings("unchecked")
 class RpmByDigestCopyTest {
 
     /**
@@ -69,9 +70,10 @@ class RpmByDigestCopyTest {
             new ListOf<String>("47bbb8b2401e8853812e6340f4197252b92463c132f64a257e18c0c8c83ae462")
         ).copy(this.dest).blockingAwait();
         MatcherAssert.assertThat(
-            this.dest.list(Key.ROOT).join().size() == 1
-                && this.dest.exists(new Key.From(rpm.path().getFileName().toString())).join(),
-            new IsEqual<>(true)
+            this.dest.list(Key.ROOT).join(),
+            Matchers.containsInAnyOrder(
+                new Key.From(rpm.path().getFileName().toString())
+            )
         );
     }
 
@@ -83,9 +85,10 @@ class RpmByDigestCopyTest {
         new RpmByDigestCopy(this.from, Key.ROOT, Collections.emptyList())
             .copy(this.dest).blockingAwait();
         MatcherAssert.assertThat(
-            this.dest.list(Key.ROOT).join().size() == 1
-                && this.dest.exists(new Key.From(rpm.path().getFileName().toString())).join(),
-            new IsEqual<>(true)
+            this.dest.list(Key.ROOT).join(),
+            Matchers.containsInAnyOrder(
+                new Key.From(rpm.path().getFileName().toString())
+            )
         );
     }
 
@@ -95,11 +98,11 @@ class RpmByDigestCopyTest {
         new RpmByDigestCopy(this.from, Key.ROOT, Collections.emptyList())
             .copy(this.dest).blockingAwait();
         MatcherAssert.assertThat(
-            this.dest.exists(new Key.From(new TestRpm.Abc().path().getFileName().toString())).join()
-                && this.dest.exists(
-                    new Key.From(new TestRpm.Libdeflt().path().getFileName().toString())
-                ).join(),
-            new IsEqual<>(true)
+            this.dest.list(Key.ROOT).join(),
+            Matchers.containsInAnyOrder(
+                new Key.From(new TestRpm.Abc().path().getFileName().toString()),
+                new Key.From(new TestRpm.Libdeflt().path().getFileName().toString())
+            )
         );
     }
 
