@@ -23,11 +23,10 @@
  */
 package com.artipie.rpm;
 
-import com.artipie.asto.Concatenation;
 import com.artipie.asto.Key;
-import com.artipie.asto.Remaining;
 import com.artipie.asto.Storage;
 import com.artipie.asto.blocking.BlockingStorage;
+import com.artipie.asto.ext.PublisherAs;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.files.TestBundle;
@@ -39,7 +38,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
-import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.FileUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -185,7 +183,7 @@ final class RpmITCase {
     }
 
     @Test
-    void generatesRepomdMetadata() throws Exception {
+    void generatesRepomdMetadata() {
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
@@ -215,19 +213,11 @@ final class RpmITCase {
 
     /**
      * Assertion for repomd.
-     * @throws InterruptedException On error
-     * @throws ExecutionException On error
      */
-    private void assertion() throws InterruptedException, ExecutionException {
+    private void assertion() {
         MatcherAssert.assertThat(
-            new String(
-                new Concatenation(this.storage.value(new Key.From("repodata/repomd.xml")).get())
-                    .single()
-                    .map(buf -> new Remaining(buf, true))
-                    .map(Remaining::bytes)
-                    .blockingGet(),
-                Charset.defaultCharset()
-            ),
+            new PublisherAs(this.storage.value(new Key.From("repodata/repomd.xml")).join())
+                .string(Charset.defaultCharset()).toCompletableFuture().join(),
             XhtmlMatchers.hasXPaths(
                 //@checkstyle LineLengthCheck (1 line)
                 "/*[namespace-uri()='http://linux.duke.edu/metadata/repo' and local-name()='repomd']",

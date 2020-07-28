@@ -23,16 +23,15 @@
  */
 package com.artipie.rpm.misc;
 
-import com.artipie.asto.Concatenation;
 import com.artipie.asto.Content;
 import com.artipie.asto.Key;
-import com.artipie.asto.Remaining;
 import com.artipie.asto.Storage;
 import com.artipie.asto.ext.ContentDigest;
+import com.artipie.asto.ext.KeyLastPart;
+import com.artipie.asto.ext.PublisherAs;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -118,36 +117,21 @@ public final class RpmByDigestCopy {
     private CompletionStage<Void> handleRpm(
         final Storage dest, final Key rpm, final Content content
     ) {
-        return RpmByDigestCopy.bytes(content).thenCompose(
+        return new PublisherAs(content).bytes().thenCompose(
             source -> new ContentDigest(new Content.From(source), this.algorithm)
                 .hex().thenCompose(
                     hex -> {
-                        final String file = Paths.get(rpm.string()).getFileName()
-                            .toString();
                         final CompletableFuture<Void> res;
                         if (this.digests.contains(hex)) {
                             res = CompletableFuture.allOf();
                         } else {
                             res = dest.save(
-                                new Key.From(file), new Content.From(source)
+                                new Key.From(new KeyLastPart(rpm).get()), new Content.From(source)
                             );
                         }
                         return res;
                     }
                 )
             );
-    }
-
-    /**
-     * Bytes from content.
-     * @param content Content
-     * @return Bytes
-     */
-    private static CompletionStage<byte[]> bytes(final Content content) {
-        return new Concatenation(content)
-            .single()
-            .map(buf -> new Remaining(buf, true))
-            .map(Remaining::bytes)
-            .to(SingleInterop.get());
     }
 }

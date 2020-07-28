@@ -25,6 +25,7 @@ package com.artipie.rpm;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.asto.ext.KeyLastPart;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.rpm.meta.XmlPackage;
@@ -243,14 +244,12 @@ public final class Rpm {
             .flatMapPublisher(Flowable::fromIterable)
             .filter(key -> key.string().endsWith("xml.gz"))
             .flatMapCompletable(
-                key -> {
-                    final String file = Paths.get(key.string()).getFileName().toString();
-                    return new RxStorageWrapper(this.storage)
-                        .value(key)
-                        .flatMapCompletable(
-                            content -> new RxStorageWrapper(local).save(new Key.From(file), content)
-                        );
-                }
+                key -> new RxStorageWrapper(this.storage)
+                    .value(key)
+                    .flatMapCompletable(
+                        content -> new RxStorageWrapper(local)
+                            .save(new Key.From(new KeyLastPart(key).get()), content)
+                    )
             ).andThen(Single.fromCallable(() -> this.mdfRepository(tmpdir)))
             .flatMap(
                 repo -> this.filePackageFromRpm(prefix, tmpdir, local)
@@ -335,7 +334,7 @@ public final class Rpm {
             .filter(key -> key.string().endsWith(".rpm"))
             .flatMapSingle(
                 key -> {
-                    final String file = Paths.get(key.string()).getFileName().toString();
+                    final String file = new KeyLastPart(key).get();
                     return new RxStorageWrapper(this.storage)
                         .value(key)
                         .flatMapCompletable(
