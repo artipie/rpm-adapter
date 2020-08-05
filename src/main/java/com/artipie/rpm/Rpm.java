@@ -25,6 +25,7 @@ package com.artipie.rpm;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.asto.SubStorage;
 import com.artipie.asto.ext.KeyLastPart;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.asto.rx.RxStorageWrapper;
@@ -298,24 +299,16 @@ public final class Rpm {
      * @param local Local storage
      * @param path Metadata to move
      * @param prefix Repo prefix
-     * @return Metadata
-     * @todo #240:30min After https://github.com/artipie/asto/issues/201 is fixed, use SubStorage in
-     *  this method and get gid of if-else statement inside flatMapCompletable.
+     * @return Metadata path
      */
     private Single<Path> moveRepodataToStorage(final Storage local, final Path path,
         final Key prefix) {
         return new RxStorageWrapper(local)
             .value(new Key.From(path.getFileName().toString()))
             .flatMapCompletable(
-                content -> {
-                    final Key key;
-                    if (prefix.string().isEmpty()) {
-                        key = new Key.From("repodata", path.getFileName().toString());
-                    } else {
-                        key = new Key.From(prefix, "repodata", path.getFileName().toString());
-                    }
-                    return new RxStorageWrapper(this.storage).save(key, content);
-                }
+                content -> new RxStorageWrapper(new SubStorage(prefix, this.storage)).save(
+                    new Key.From("repodata", path.getFileName().toString()), content
+                )
             ).toSingleDefault(path);
     }
 
