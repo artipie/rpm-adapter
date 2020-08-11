@@ -26,23 +26,22 @@ package com.artipie.rpm.pkg;
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.TestRpm;
 import com.artipie.rpm.meta.XmlPackage;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.xmlunit.matchers.CompareMatcher;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 /**
  * Test for {@link FilelistsOutput}.
  *
  * @since 0.11
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class FilelistsOutputTest {
-
     @Test
     void createsFileslistsForAbc(@TempDir final Path temp) throws IOException {
         final Path res = temp.resolve("filelists.xml");
@@ -50,23 +49,23 @@ class FilelistsOutputTest {
             fileslists.start();
             final Path rpm = new TestRpm.Abc().path();
             fileslists.accept(
-                    new FilePackage.Headers(new FilePackageHeader(rpm).header(), rpm, Digest.SHA256)
+                new FilePackage.Headers(new FilePackageHeader(rpm).header(), rpm, Digest.SHA256)
             );
         }
         MatcherAssert.assertThat(
-                Files.readAllBytes(res),
-                CompareMatcher.isIdenticalTo(
-                        Files.readAllBytes(new TestRpm.Abc().metadata(XmlPackage.FILELISTS))
-                ).ignoreWhitespace()
-                        .ignoreElementContentWhitespace()
-                        .normalizeWhitespace()
-                        .withNodeFilter(
-                                node -> !"file".equals(node.getLocalName())
-                                        && !"provides".equals(node.getLocalName())
-                                        && !"requires".equals(node.getLocalName())
-                        ).withAttributeFilter(
-                        attr -> !"file".equals(attr.getName()) && !"archive".equals(attr.getName())
-                )
+            Files.readAllBytes(res),
+            CompareMatcher.isIdenticalTo(
+                Files.readAllBytes(new TestRpm.Abc().metadata(XmlPackage.FILELISTS))
+            ).ignoreWhitespace()
+                .ignoreElementContentWhitespace()
+                .normalizeWhitespace()
+                .withNodeFilter(
+                    node -> !"file".equals(node.getLocalName())
+                        && !"provides".equals(node.getLocalName())
+                        && !"requires".equals(node.getLocalName())
+                ).withAttributeFilter(
+                    attr -> !"file".equals(attr.getName()) && !"archive".equals(attr.getName())
+            )
         );
     }
 
@@ -76,8 +75,8 @@ class FilelistsOutputTest {
         try (PackageOutput.FileOutput fileslists = new FilelistsOutput(res)) {
             fileslists.start();
             MatcherAssert.assertThat(
-                    fileslists.file(),
-                    new IsEqual<>(res)
+                fileslists.file(),
+                new IsEqual<>(res)
             );
         }
     }
@@ -87,10 +86,9 @@ class FilelistsOutputTest {
         final Path res = temp.resolve("fileslists.xml");
         try (PackageOutput.FileOutput fileslists = new FilelistsOutput(res)) {
             fileslists.start();
-            System.out.println(fileslists.tag());
             MatcherAssert.assertThat(
-                    fileslists.tag(),
-                    new IsEqual<>("filelists")
+                fileslists.tag(),
+                new IsEqual<>("filelists")
             );
         }
     }
@@ -102,23 +100,23 @@ class FilelistsOutputTest {
             fileslists.start();
             final Path rpm = new TestRpm.Libdeflt().path();
             fileslists.accept(
-                    new FilePackage.Headers(new FilePackageHeader(rpm).header(), rpm, Digest.SHA256)
+                new FilePackage.Headers(new FilePackageHeader(rpm).header(), rpm, Digest.SHA256)
             );
         }
         MatcherAssert.assertThat(
-                Files.readAllBytes(res),
-                CompareMatcher.isIdenticalTo(
-                        Files.readAllBytes(new TestRpm.Libdeflt().metadata(XmlPackage.FILELISTS))
-                ).ignoreWhitespace()
-                        .ignoreElementContentWhitespace()
-                        .normalizeWhitespace()
-                        .withNodeFilter(
-                                node -> !"file".equals(node.getLocalName())
-                                        && !"provides".equals(node.getLocalName())
-                                        && !"requires".equals(node.getLocalName())
-                        ).withAttributeFilter(
-                        attr -> !"file".equals(attr.getName()) && !"archive".equals(attr.getName())
-                )
+            Files.readAllBytes(res),
+            CompareMatcher.isIdenticalTo(
+                Files.readAllBytes(new TestRpm.Libdeflt().metadata(XmlPackage.FILELISTS))
+            ).ignoreWhitespace()
+                .ignoreElementContentWhitespace()
+                .normalizeWhitespace()
+                .withNodeFilter(
+                    node -> !"file".equals(node.getLocalName())
+                        && !"provides".equals(node.getLocalName())
+                        && !"requires".equals(node.getLocalName())
+                ).withAttributeFilter(
+                    attr -> !"file".equals(attr.getName()) && !"archive".equals(attr.getName())
+            )
         );
     }
 }
