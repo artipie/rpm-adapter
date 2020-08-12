@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<filelists xmlns="http://linux.duke.edu/metadata/filelists" packages="-1">
 <package pkgid="b9d10ae3485a5c5f71f0afb1eaf682bfbea4ea667cc3c3975057d6e3d8f2e905" name="abc" arch="ppc64le">
     <version epoch="0" ver="1.01" rel="26.git20200127.fc32"/>
     <file>/usr/bin/abc</file>
@@ -9,3 +11,4 @@
     <file type="dir">/usr/lib/.build-id/cb</file>
     <file type="dir">/usr/share/doc/abc</file>
 </package>
+</filelists>
