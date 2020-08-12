@@ -33,6 +33,8 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.xmlunit.diff.DefaultNodeMatcher;
+import org.xmlunit.diff.ElementSelectors;
 import org.xmlunit.matchers.CompareMatcher;
 
 /**
@@ -45,27 +47,23 @@ class FilelistsOutputTest {
     @Test
     void createsFileslistsForAbc(@TempDir final Path temp) throws IOException {
         final Path res = temp.resolve("filelists.xml");
+        final TestRpm.Abc abc = new TestRpm.Abc();
         try (PackageOutput.FileOutput fileslists = new FilelistsOutput(res)) {
             fileslists.start();
-            final Path rpm = new TestRpm.Abc().path();
+            final Path rpm = abc.path();
             fileslists.accept(
                 new FilePackage.Headers(new FilePackageHeader(rpm).header(), rpm, Digest.SHA256)
             );
         }
         MatcherAssert.assertThat(
             Files.readAllBytes(res),
-            CompareMatcher.isIdenticalTo(
-                Files.readAllBytes(new TestRpm.Abc().metadata(XmlPackage.FILELISTS))
-            ).ignoreWhitespace()
-                .ignoreElementContentWhitespace()
+            CompareMatcher.isSimilarTo(Files.readAllBytes(abc.metadata(XmlPackage.FILELISTS)))
+                .ignoreWhitespace()
                 .normalizeWhitespace()
                 .withNodeFilter(
-                    node -> !"file".equals(node.getLocalName())
-                        && !"provides".equals(node.getLocalName())
-                        && !"requires".equals(node.getLocalName())
-                ).withAttributeFilter(
-                    attr -> !"file".equals(attr.getName()) && !"archive".equals(attr.getName())
-            )
+                    node -> !("file".equals(node.getLocalName())
+                        && "/usr/lib/.build-id".equals(node.getTextContent()))
+                ).withNodeMatcher(new DefaultNodeMatcher(ElementSelectors.byNameAndText))
         );
     }
 
@@ -96,27 +94,20 @@ class FilelistsOutputTest {
     @Test
     void createsFilelistForLibdeflt(@TempDir final Path temp) throws IOException {
         final Path res = temp.resolve("fileslists.xml");
+        final TestRpm.Libdeflt libdeflt = new TestRpm.Libdeflt();
         try (PackageOutput.FileOutput fileslists = new FilelistsOutput(res)) {
             fileslists.start();
-            final Path rpm = new TestRpm.Libdeflt().path();
+            final Path rpm = libdeflt.path();
             fileslists.accept(
                 new FilePackage.Headers(new FilePackageHeader(rpm).header(), rpm, Digest.SHA256)
             );
         }
         MatcherAssert.assertThat(
             Files.readAllBytes(res),
-            CompareMatcher.isIdenticalTo(
-                Files.readAllBytes(new TestRpm.Libdeflt().metadata(XmlPackage.FILELISTS))
-            ).ignoreWhitespace()
-                .ignoreElementContentWhitespace()
+            CompareMatcher.isSimilarTo(Files.readAllBytes(libdeflt.metadata(XmlPackage.FILELISTS)))
+                .ignoreWhitespace()
                 .normalizeWhitespace()
-                .withNodeFilter(
-                    node -> !"file".equals(node.getLocalName())
-                        && !"provides".equals(node.getLocalName())
-                        && !"requires".equals(node.getLocalName())
-                ).withAttributeFilter(
-                    attr -> !"file".equals(attr.getName()) && !"archive".equals(attr.getName())
-            )
+                .withNodeMatcher(new DefaultNodeMatcher(ElementSelectors.byNameAndText))
         );
     }
 }
