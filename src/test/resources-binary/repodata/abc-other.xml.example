@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<otherdata xmlns="http://linux.duke.edu/metadata/other" packages="-1">
 <package pkgid="b9d10ae3485a5c5f71f0afb1eaf682bfbea4ea667cc3c3975057d6e3d8f2e905" name="abc" arch="ppc64le">
     <version epoch="0" ver="1.01" rel="26.git20200127.fc32"/>
     <changelog author="Jerry James &lt;loganjerry@gmail.com&gt; - 1.01-17.git20180708" date="1531224000">- Update to latest git snapshot</changelog>
@@ -15,3 +17,4 @@
     <changelog author="Fedora Release Engineering &lt;releng@fedoraproject.org&gt; - 1.01-25.git20191217" date="1580212800">- Rebuilt for https://fedoraproject.org/wiki/Fedora_32_Mass_Rebuild</changelog>
     <changelog author="Gabriel Somlo &lt;gsomlo@gmail.com&gt; - 1.01-26.git20200127" date="1580472000">- Update to latest git snapshot</changelog>
 </package>
+</otherdata>
