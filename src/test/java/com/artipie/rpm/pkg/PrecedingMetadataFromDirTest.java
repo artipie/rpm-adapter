@@ -23,7 +23,7 @@
  */
 package com.artipie.rpm.pkg;
 
-import com.artipie.rpm.TestResource;
+import com.artipie.asto.test.TestResource;
 import com.artipie.rpm.meta.XmlPackage;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -92,7 +92,7 @@ class PrecedingMetadataFromDirTest {
 
     private void copyExampleToTemp(final Path temp, final XmlPackage pckg) throws IOException {
         Files.copy(
-            new TestResource("repodata/primary.xml.gz.example").file(),
+            new TestResource("repodata/primary.xml.gz.example").asPath(),
             temp.resolve(String.format("%s.xml.gz", pckg.filename()))
         );
     }

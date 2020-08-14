@@ -27,6 +27,7 @@ import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.ext.ContentDigest;
+import com.artipie.asto.ext.Digests;
 import com.artipie.asto.ext.KeyLastPart;
 import com.artipie.asto.ext.PublisherAs;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
@@ -60,7 +61,7 @@ public final class RpmByDigestCopy {
     /**
      * Digest algorithm.
      */
-    private final ContentDigest.Digests algorithm;
+    private final Digests algorithm;
 
     /**
      * Ctor.
@@ -72,7 +73,7 @@ public final class RpmByDigestCopy {
      */
     public RpmByDigestCopy(
         final Storage from, final Key key, final List<String> digests,
-        final ContentDigest.Digests algorithm
+        final Digests algorithm
     ) {
         this.from = from;
         this.digests = digests;
@@ -87,7 +88,7 @@ public final class RpmByDigestCopy {
      * @param digests Content digests to exclude
      */
     public RpmByDigestCopy(final Storage from, final Key key, final List<String> digests) {
-        this(from, key, digests, ContentDigest.Digests.SHA256);
+        this(from, key, digests, Digests.SHA256);
     }
 
     /**

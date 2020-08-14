@@ -23,7 +23,7 @@
  */
 package com.artipie.rpm.meta;
 
-import com.artipie.rpm.TestResource;
+import com.artipie.asto.test.TestResource;
 import com.artipie.rpm.hm.IsXmlEqual;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -42,15 +42,15 @@ class XmlMetaJoinTest {
     @Test
     void joinsTwoMetaXmlFiles(@TempDir final Path temp) throws IOException {
         final Path file = Files.copy(
-            new TestResource("repodata/primary.xml.example.first").file(),
+            new TestResource("repodata/primary.xml.example.first").asPath(),
             temp.resolve("target.xml")
         );
         new XmlMetaJoin("metadata").merge(
-            file, new TestResource("repodata/primary.xml.example.second").file()
+            file, new TestResource("repodata/primary.xml.example.second").asPath()
         );
         MatcherAssert.assertThat(
             file,
-            new IsXmlEqual(new TestResource("repodata/primary.xml.example").file())
+            new IsXmlEqual(new TestResource("repodata/primary.xml.example").asPath())
         );
     }
 

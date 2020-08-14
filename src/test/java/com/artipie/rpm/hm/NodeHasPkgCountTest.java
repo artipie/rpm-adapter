@@ -23,7 +23,7 @@
  */
 package com.artipie.rpm.hm;
 
-import com.artipie.rpm.TestResource;
+import com.artipie.asto.test.TestResource;
 import com.artipie.rpm.meta.XmlPackage;
 import com.jcabi.xml.XMLDocument;
 import java.io.FileNotFoundException;
@@ -49,13 +49,13 @@ final class NodeHasPkgCountTest {
      * Wrong xml path.
      */
     private static final Path WRONG =
-        new TestResource("repodata/wrong-package.xml.example").file();
+        new TestResource("repodata/wrong-package.xml.example").asPath();
 
     /**
      * Primary xml example path.
      */
     private static final Path PRIMARY =
-        new TestResource("repodata/primary.xml.example").file();
+        new TestResource("repodata/primary.xml.example").asPath();
 
     @Test
     void countsPackages() throws FileNotFoundException {
@@ -63,7 +63,7 @@ final class NodeHasPkgCountTest {
             new NodeHasPkgCount(2, XmlPackage.OTHER.tag()),
             new Matches<>(
                 new XMLDocument(
-                    new TestResource("repodata/other.xml.example").file()
+                    new TestResource("repodata/other.xml.example").asPath()
                 )
             )
         );
