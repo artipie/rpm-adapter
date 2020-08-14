@@ -26,6 +26,7 @@ package com.artipie.rpm;
 import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.asto.test.TestResource;
 import com.artipie.rpm.meta.XmlPackage;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -93,7 +94,7 @@ public interface TestRpm {
         public Path metadata(final XmlPackage type) {
             return new TestResource(
                 String.format("repodata/abc-%s.xml.example", type.filename())
-            ).file();
+            ).asPath();
         }
     }
 
@@ -119,7 +120,7 @@ public interface TestRpm {
         public Path metadata(final XmlPackage type) {
             return new TestResource(
                 String.format("repodata/libdeflt-%s.xml.example", type.filename())
-            ).file();
+            ).asPath();
         }
     }
 
@@ -139,7 +140,7 @@ public interface TestRpm {
          * @param file Rpm file name
          */
         protected FromPath(final String file) {
-            this(new TestResource(file).file());
+            this(new TestResource(file).asPath());
         }
 
         /**

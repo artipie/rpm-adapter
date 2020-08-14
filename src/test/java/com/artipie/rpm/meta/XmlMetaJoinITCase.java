@@ -23,7 +23,7 @@
  */
 package com.artipie.rpm.meta;
 
-import com.artipie.rpm.TestResource;
+import com.artipie.asto.test.TestResource;
 import com.artipie.rpm.TimingExtension;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.files.TestBundle;
@@ -72,7 +72,7 @@ class XmlMetaJoinITCase {
      * Resources dir.
      */
     private static final Path FILELISTS =
-        new TestResource("repodata/filelists.xml.example").file();
+        new TestResource("repodata/filelists.xml.example").asPath();
 
     @BeforeAll
     static void setUpClass() throws Exception {

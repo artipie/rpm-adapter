@@ -23,7 +23,7 @@
  */
 package com.artipie.rpm.files;
 
-import com.artipie.rpm.TestResource;
+import com.artipie.asto.test.TestResource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,7 +41,7 @@ class GzipTest {
 
     @Test
     void unpacks(final @TempDir Path tmp) throws IOException {
-        new Gzip(new TestResource("test.tar.gz").file()).unpackTar(tmp);
+        new Gzip(new TestResource("test.tar.gz").asPath()).unpackTar(tmp);
         MatcherAssert.assertThat(
             Files.readAllLines(tmp.resolve("test.txt")).iterator().next(),
             new IsEqual<>("hello world")
@@ -51,12 +51,12 @@ class GzipTest {
     @Test
     void unpacksGz(final @TempDir Path tmp) throws IOException {
         final Path res = tmp.resolve("res.xml");
-        new Gzip(new TestResource("repodata/primary.xml.gz.example").file()).unpack(res);
+        new Gzip(new TestResource("repodata/primary.xml.gz.example").asPath()).unpack(res);
         MatcherAssert.assertThat(
             Files.readAllLines(res).toArray(),
             Matchers.arrayContaining(
                 Files.readAllLines(
-                    new TestResource("repodata/primary.xml.example").file()
+                    new TestResource("repodata/primary.xml.example").asPath()
                 ).toArray()
             )
         );
