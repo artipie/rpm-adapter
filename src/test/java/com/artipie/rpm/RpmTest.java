@@ -30,7 +30,10 @@ import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.rpm.hm.StorageHasMetadata;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import org.cactoos.Scalar;
 import org.cactoos.list.ListOf;
@@ -41,8 +44,10 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.llorllale.cactoos.matchers.IsTrue;
 
 /**
  * Unit tests for {@link Rpm}.
@@ -56,7 +61,9 @@ import org.junit.jupiter.api.io.TempDir;
  *  and then enable the test.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle MagicNumberCheck (500 lines)
+ * @checkstyle IllegalCatchCheck (500 lines)
  */
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 final class RpmTest {
 
     /**
@@ -166,6 +173,53 @@ final class RpmTest {
             IllegalArgumentException.class,
             () -> repo.batchUpdate(Key.ROOT).blockingAwait(),
             "Reading of RPM package \"brokentwo.rpm\" failed, data corrupt or malformed."
+        );
+    }
+
+    @RepeatedTest(10)
+    void throwsExceptionWhenRepositoryIsUpdatedSimultaneously() throws Exception {
+        final Storage storage = new InMemoryStorage();
+        final Rpm repo =  new Rpm(
+            storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
+        );
+        final List<Key> keys = Collections.nCopies(3, Key.ROOT);
+        final CountDownLatch latch = new CountDownLatch(keys.size());
+        new TestRpm.Multiple(
+            new TestRpm.Abc(),
+            new TestRpm.Libdeflt()
+        ).put(storage);
+        final List<CompletableFuture<Void>> tasks = new ArrayList<>(keys.size());
+        for (final Key key : keys) {
+            final CompletableFuture<Void> future = new CompletableFuture<>();
+            tasks.add(future);
+            new Thread(
+                () -> {
+                    try {
+                        latch.countDown();
+                        latch.await();
+                        repo.batchUpdate(key).blockingAwait();
+                        future.complete(null);
+                    } catch (final Exception exception) {
+                        future.completeExceptionally(exception);
+                    }
+                }
+            ).start();
+        }
+        for (final CompletableFuture<Void> task : tasks) {
+            try {
+                task.join();
+            } catch (final Exception ignored) {
+            }
+        }
+        MatcherAssert.assertThat(
+            "Some updates failed",
+            tasks.stream().anyMatch(CompletableFuture::isCompletedExceptionally),
+            new IsTrue()
+        );
+        MatcherAssert.assertThat(
+            "Storage has no locks",
+            storage.list(Key.ROOT).join().stream().noneMatch(key -> key.string().contains("lock")),
+            new IsEqual<>(true)
         );
     }
 
