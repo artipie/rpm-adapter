@@ -28,6 +28,8 @@ import com.artipie.asto.Storage;
 import com.artipie.asto.SubStorage;
 import com.artipie.asto.ext.KeyLastPart;
 import com.artipie.asto.fs.FileStorage;
+import com.artipie.asto.lock.Lock;
+import com.artipie.asto.lock.storage.StorageLock;
 import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryChecksums;
@@ -40,6 +42,7 @@ import com.artipie.rpm.pkg.Package;
 import com.artipie.rpm.pkg.PrecedingMetadata;
 import com.artipie.rpm.pkg.Repodata;
 import com.jcabi.log.Logger;
+import hu.akarnokd.rxjava2.interop.CompletableInterop;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
@@ -50,10 +53,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -188,42 +194,47 @@ public final class Rpm {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
         final Storage local = new FileStorage(tmpdir);
-        return this.filePackageFromRpm(prefix, tmpdir, local)
-            .parallel().runOn(Schedulers.io())
-            .flatMap(
-                file -> {
-                    Flowable<Package> parsed;
-                    try {
-                        parsed = Flowable.just(file.parsed());
-                    } catch (final InvalidPackageException ex) {
-                        Logger.warn(this, "Failed parsing '%s': %[exception]s", file.path(), ex);
-                        parsed = Flowable.empty();
+        return this.doWithLock(
+            prefix,
+            () -> this.filePackageFromRpm(prefix, tmpdir, local)
+                .parallel().runOn(Schedulers.io())
+                .flatMap(
+                    file -> {
+                        Flowable<Package> parsed;
+                        try {
+                            parsed = Flowable.just(file.parsed());
+                        } catch (final InvalidPackageException ex) {
+                            Logger.warn(
+                                this, "Failed parsing '%s': %[exception]s", file.path(), ex
+                            );
+                            parsed = Flowable.empty();
+                        }
+                        return parsed;
                     }
-                    return parsed;
-                }
-            )
-            .sequential().observeOn(Schedulers.io())
-            .reduceWith(this::repository, Repository::update)
-            .doOnSuccess(rep -> Logger.info(this, "repository updated"))
-            .doOnSuccess(Repository::close)
-            .doOnSuccess(rep -> Logger.info(this, "repository closed"))
-            .flatMapObservable(
-                rep -> Observable.fromIterable(
-                    rep.save(new Repodata.Temp(this.config.naming(), metadir))
                 )
-            )
-            .flatMapSingle(
-                path -> this.moveRepodataToStorage(new FileStorage(metadir), path, prefix)
-            )
-            .map(path -> path.getFileName().toString())
-            .toList().map(HashSet::new)
-            .flatMapCompletable(preserve -> this.removeOldMetadata(preserve, prefix))
-            .doOnTerminate(
-                () -> {
-                    Rpm.cleanup(tmpdir);
-                    Rpm.cleanup(metadir);
-                }
-            );
+                .sequential().observeOn(Schedulers.io())
+                .reduceWith(this::repository, Repository::update)
+                .doOnSuccess(rep -> Logger.info(this, "repository updated"))
+                .doOnSuccess(Repository::close)
+                .doOnSuccess(rep -> Logger.info(this, "repository closed"))
+                .flatMapObservable(
+                    rep -> Observable.fromIterable(
+                        rep.save(new Repodata.Temp(this.config.naming(), metadir))
+                    )
+                )
+                .flatMapSingle(
+                    path -> this.moveRepodataToStorage(new FileStorage(metadir), path, prefix)
+                )
+                .map(path -> path.getFileName().toString())
+                .toList().map(HashSet::new)
+                .flatMapCompletable(preserve -> this.removeOldMetadata(preserve, prefix))
+                .doOnTerminate(
+                    () -> {
+                        Rpm.cleanup(tmpdir);
+                        Rpm.cleanup(metadir);
+                    }
+                )
+        );
     }
 
     /**
@@ -388,4 +399,24 @@ public final class Rpm {
         );
     }
 
+    /**
+     * Performs operation under root lock with one hour expiration time.
+     *
+     * @param target Lock target key.
+     * @param operation Operation.
+     * @return Completion of operation and lock.
+     */
+    private Completable doWithLock(final Key target, final Supplier<Completable> operation) {
+        final Lock lock = new StorageLock(
+            this.storage,
+            target,
+            Instant.now().plus(Duration.ofHours(1))
+        );
+        return Completable.fromFuture(
+            lock.acquire()
+                .thenCompose(nothing -> operation.get().to(CompletableInterop.await()))
+                .thenCompose(nothing -> lock.release())
+                .toCompletableFuture()
+        );
+    }
 }
