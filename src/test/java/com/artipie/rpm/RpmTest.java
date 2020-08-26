@@ -28,6 +28,7 @@ import com.artipie.asto.Storage;
 import com.artipie.asto.SubStorage;
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.rpm.hm.StorageHasMetadata;
+import io.reactivex.Completable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.BiFunction;
 import org.cactoos.Scalar;
 import org.cactoos.list.ListOf;
 import org.cactoos.list.Mapped;
@@ -177,7 +179,18 @@ final class RpmTest {
     }
 
     @RepeatedTest(10)
-    void throwsExceptionWhenRepositoryIsUpdatedSimultaneously() throws Exception {
+    void throwsExceptionWhenFullUpdatesDoneSimultaneously() throws Exception {
+        this.testSimultaneousActions(Rpm::batchUpdate);
+    }
+
+    @RepeatedTest(10)
+    void throwsExceptionWhenIncrementalUpdatesDoneSimultaneously() throws Exception {
+        this.testSimultaneousActions(Rpm::batchUpdateIncrementally);
+    }
+
+    private void testSimultaneousActions(
+        final BiFunction<Rpm, Key, Completable> action
+    ) throws IOException {
         final Storage storage = new InMemoryStorage();
         final Rpm repo =  new Rpm(
             storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
@@ -197,7 +210,7 @@ final class RpmTest {
                     try {
                         latch.countDown();
                         latch.await();
-                        repo.batchUpdate(key).blockingAwait();
+                        action.apply(repo, key).blockingAwait();
                         future.complete(null);
                     } catch (final Exception exception) {
                         future.completeExceptionally(exception);
