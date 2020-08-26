@@ -252,41 +252,44 @@ public final class Rpm {
             throw new IllegalStateException("Failed to create temp dir", err);
         }
         final Storage local = new FileStorage(tmpdir);
-        return SingleInterop.fromFuture(this.storage.list(prefix))
-            .flatMapPublisher(Flowable::fromIterable)
-            .filter(key -> key.string().endsWith("xml.gz"))
-            .flatMapCompletable(
-                key -> new RxStorageWrapper(this.storage)
-                    .value(key)
-                    .flatMapCompletable(
-                        content -> new RxStorageWrapper(local)
-                            .save(new Key.From(new KeyLastPart(key).get()), content)
-                    )
-            ).andThen(Single.fromCallable(() -> this.mdfRepository(tmpdir)))
-            .flatMap(
-                repo -> this.filePackageFromRpm(prefix, tmpdir, local)
-                    .parallel().runOn(Schedulers.io())
-                    .sequential().observeOn(Schedulers.io())
-                    .reduce(repo, (ignored, pkg) -> repo.update(pkg))
-            )
-            .doOnSuccess(rep -> Logger.info(this, "repository updated"))
-            .doOnSuccess(ModifiableRepository::close)
-            .doOnSuccess(rep -> Logger.info(this, "repository closed"))
-            .doOnSuccess(ModifiableRepository::clear)
-            .doOnSuccess(rep -> Logger.info(this, "repository cleared"))
-            .flatMapObservable(
-                rep -> Observable.fromIterable(
-                    rep.save(new Repodata.Temp(this.config.naming(), metadir))
+        return this.doWithLock(
+            prefix,
+            () -> SingleInterop.fromFuture(this.storage.list(prefix))
+                .flatMapPublisher(Flowable::fromIterable)
+                .filter(key -> key.string().endsWith("xml.gz"))
+                .flatMapCompletable(
+                    key -> new RxStorageWrapper(this.storage)
+                        .value(key)
+                        .flatMapCompletable(
+                            content -> new RxStorageWrapper(local)
+                                .save(new Key.From(new KeyLastPart(key).get()), content)
+                        )
+                ).andThen(Single.fromCallable(() -> this.mdfRepository(tmpdir)))
+                .flatMap(
+                    repo -> this.filePackageFromRpm(prefix, tmpdir, local)
+                        .parallel().runOn(Schedulers.io())
+                        .sequential().observeOn(Schedulers.io())
+                        .reduce(repo, (ignored, pkg) -> repo.update(pkg))
                 )
-            )
-            .flatMapSingle(
-                path -> this.moveRepodataToStorage(new FileStorage(metadir), path, prefix)
-            )
-            .map(path -> path.getFileName().toString())
-            .toList().map(HashSet::new)
-            .flatMapCompletable(preserve -> this.removeOldMetadata(preserve, prefix))
-            .doOnTerminate(
-                () -> Rpm.cleanup(tmpdir)
+                .doOnSuccess(rep -> Logger.info(this, "repository updated"))
+                .doOnSuccess(ModifiableRepository::close)
+                .doOnSuccess(rep -> Logger.info(this, "repository closed"))
+                .doOnSuccess(ModifiableRepository::clear)
+                .doOnSuccess(rep -> Logger.info(this, "repository cleared"))
+                .flatMapObservable(
+                    rep -> Observable.fromIterable(
+                        rep.save(new Repodata.Temp(this.config.naming(), metadir))
+                    )
+                )
+                .flatMapSingle(
+                    path -> this.moveRepodataToStorage(new FileStorage(metadir), path, prefix)
+                )
+                .map(path -> path.getFileName().toString())
+                .toList().map(HashSet::new)
+                .flatMapCompletable(preserve -> this.removeOldMetadata(preserve, prefix))
+                .doOnTerminate(
+                    () -> Rpm.cleanup(tmpdir)
+                )
             );
     }
 
