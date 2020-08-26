@@ -46,9 +46,6 @@ import org.llorllale.cactoos.matchers.MatcherOf;
  * @since 0.11
  * @todo #311:30min Create proper unit test for this class (use metadata examples from test
  *  resources), do not forget to test mismatches descriptions.
- * @todo #311:30min Add one more check (here or create another matcher) for repomd.xml: we need to
- *  verify that exactly one repomd is present in storage and has info about metadatas, as example
- *  check RpmITCase#assertion(). Repomd should be verified at least in RpmTest and RpmITCase.
  *  @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class StorageHasMetadata extends AllOf<Storage> {
