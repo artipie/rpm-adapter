@@ -93,7 +93,7 @@ SOFTWARE.
     <dependency>
       <groupId>com.artipie</groupId>
       <artifactId>asto</artifactId>
-      <version>0.25</version>
+      <version>0.26</version>
     </dependency>
     <dependency>
       <groupId>commons-cli</groupId>
