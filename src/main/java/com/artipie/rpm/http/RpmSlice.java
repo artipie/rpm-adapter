@@ -32,7 +32,7 @@ import com.artipie.http.auth.Permission;
 import com.artipie.http.auth.Permissions;
 import com.artipie.http.auth.SliceAuth;
 import com.artipie.http.rq.RqMethod;
-import com.artipie.http.rt.RtRule;
+import com.artipie.http.rt.ByMethodsRule;
 import com.artipie.http.rt.RtRulePath;
 import com.artipie.http.rt.SliceRoute;
 import com.artipie.http.slice.SliceDownload;
@@ -80,7 +80,7 @@ public final class RpmSlice extends Slice.Wrap {
         super(
             new SliceRoute(
                 new RtRulePath(
-                    new RtRule.ByMethod(RqMethod.GET),
+                    new ByMethodsRule(RqMethod.GET),
                     new SliceAuth(
                         new SliceDownload(storage),
                         new Permission.ByName("download", perms),
@@ -88,7 +88,7 @@ public final class RpmSlice extends Slice.Wrap {
                     )
                 ),
                 new RtRulePath(
-                    new RtRule.ByMethod(RqMethod.PUT),
+                    new ByMethodsRule(RqMethod.PUT),
                     new SliceAuth(
                         new RpmUpload(storage, config),
                         new Permission.ByName("upload", perms),
