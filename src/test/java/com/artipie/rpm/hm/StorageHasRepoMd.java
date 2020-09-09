@@ -29,14 +29,11 @@ import org.llorllale.cactoos.matchers.MatcherEnvelope;
 /**
  * Matcher for checking rempomd.xml file presence and information in the storage.
  *
- * @since 0.10
- * @todo #317:30min Implement StorageHasRepoMd matcher. StorageHasRepoMd should
- *  check if storage contains a valid repomd.xml file for the repository. Checks
- *  that this matcher must perform, at least:
- *  - presence of repomd.xml file
- *  - presence of primary.xml file
- *  - presence of other.xml file
- *  After implementing this, enable tests in StorageHasRepoMdTest.
+ * @since 1.1
+ * @todo #317:30min Implement StorageHasRepoMd matcher. StorageHasRepoMd
+ *  should verify that repomd.xml has valid information about primary,
+ *  filelists and other metadata files. After implementing this, enable tests
+ *  in StorageHasRepoMdTest.
  */
 public final class StorageHasRepoMd extends MatcherEnvelope<Storage> {
 

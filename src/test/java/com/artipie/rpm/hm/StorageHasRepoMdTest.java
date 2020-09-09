@@ -23,12 +23,10 @@
  */
 package com.artipie.rpm.hm;
 
-import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.memory.InMemoryStorage;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import com.artipie.asto.test.TestResource;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.llorllale.cactoos.matchers.Assertion;
@@ -37,7 +35,7 @@ import org.llorllale.cactoos.matchers.Mismatches;
 /**
  * Tests for {@link StorageHasRepoMd} matcher.
  *
- * @since 0.11
+ * @since 1.1
  */
 public class StorageHasRepoMdTest {
 
@@ -45,44 +43,15 @@ public class StorageHasRepoMdTest {
     @Disabled
     public void matchPositive() throws Exception {
         final Storage storage = new InMemoryStorage();
-        storage.save(
-            new Key.From("repomd.xml"),
-            new Content.From(
-                Files.readAllBytes(
-                    Paths.get("src/test/resources-binary/repodata/StorageHasRepoMdTest/repomd.xml")
-                )
-            )
-        );
-        storage.save(
-            new Key.From("filelists.xml.gz"),
-            new Content.From(
-                Files.readAllBytes(
-                    Paths.get(
-                        "src/test/resources-binary/repodata/StorageHasRepoMdTest/filelists.xml.gz"
-                    )
-                )
-            )
-        );
-        storage.save(
-            new Key.From("primary.xml.gz"),
-            new Content.From(
-                Files.readAllBytes(
-                    Paths.get(
-                        "src/test/resources-binary/repodata/StorageHasRepoMdTest/primary.xml.gz"
-                    )
-                )
-            )
-        );
-        storage.save(
-            new Key.From("other.xml.gz"),
-            new Content.From(
-                Files.readAllBytes(
-                    Paths.get(
-                        "src/test/resources-binary/repodata/StorageHasRepoMdTest/other.xml.gz"
-                    )
-                )
-            )
-        );
+        new TestResource(
+            "src/test/resources-binary/repodata/StorageHasRepoMdTest/repomd.xml"
+        ).saveTo(storage, new Key.From("repomd.xml"));
+        new TestResource(
+            "src/test/resources-binary/repodata/StorageHasRepoMdTest/primary.xml.gz"
+        ).saveTo(storage, new Key.From("primary.xml.gz"));
+        new TestResource(
+            "src/test/resources-binary/repodata/StorageHasRepoMdTest/other.xml.gz"
+        ).saveTo(storage, new Key.From("other.xml.gz"));
         new Assertion<>(
             "The matcher gives positive result for a valid repommd.xml configuration",
             storage,
