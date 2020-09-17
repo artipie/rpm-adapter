@@ -25,6 +25,7 @@ package com.artipie.rpm.http;
 
 import com.artipie.asto.Storage;
 import com.artipie.http.Slice;
+import com.artipie.http.auth.Action;
 import com.artipie.http.auth.Authentication;
 import com.artipie.http.auth.BasicIdentities;
 import com.artipie.http.auth.Identities;
@@ -83,7 +84,7 @@ public final class RpmSlice extends Slice.Wrap {
                     new ByMethodsRule(RqMethod.GET),
                     new SliceAuth(
                         new SliceDownload(storage),
-                        new Permission.ByName("download", perms),
+                        new Permission.ByName(perms, Action.Standard.READ),
                         users
                     )
                 ),
@@ -91,7 +92,7 @@ public final class RpmSlice extends Slice.Wrap {
                     new ByMethodsRule(RqMethod.PUT),
                     new SliceAuth(
                         new RpmUpload(storage, config),
-                        new Permission.ByName("upload", perms),
+                        new Permission.ByName(perms, Action.Standard.WRITE),
                         users
                     )
                 )
