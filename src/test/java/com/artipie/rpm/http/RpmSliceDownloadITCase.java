@@ -25,6 +25,7 @@ package com.artipie.rpm.http;
 
 import com.artipie.asto.Storage;
 import com.artipie.asto.memory.InMemoryStorage;
+import com.artipie.http.auth.Authentication;
 import com.artipie.http.auth.BasicIdentities;
 import com.artipie.http.auth.Identities;
 import com.artipie.http.auth.Permissions;
@@ -97,9 +98,9 @@ final class RpmSliceDownloadITCase {
             new Permissions.Single(john, "download"),
             new BasicIdentities(
                 (name, pass) -> {
-                    final Optional<String> res;
+                    final Optional<Authentication.User> res;
                     if (john.equals(name) && pswd.equals(pass)) {
-                        res = Optional.of(name);
+                        res = Optional.of(new Authentication.User(name));
                     } else {
                         res = Optional.empty();
                     }
