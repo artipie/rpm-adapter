@@ -432,10 +432,10 @@ public final class XmlPrimary implements Closeable {
          * @todo #220:30min We need to experimentally check that names and versions do not
          *  mix up in `provides`: download oxygen-gtk2-1.3.4-3.el7.x86_64.rpm from test bundle100
          *  (see TestBundle.class), add it to resources folder and create xml primary from it.
-         *  This rpm has not full `provides` information:
-         *  <rpm:entry name="liboxygen-gtk.so()(64bit)"/>
-         *  <rpm:entry name="oxygen-gtk2" flags="EQ" epoch="0" ver="1.3.4" rel="3.el7"/>
-         *  <rpm:entry name="oxygen-gtk2(x86-64)" flags="EQ" epoch="0" ver="1.3.4" rel="3.el7"/>
+         *  This rpm has not full `provides` information, entry tags are:
+         *  - rpm:entry name="liboxygen-gtk.so()(64bit)"
+         *  - rpm:entry name="oxygen-gtk2" flags="EQ" epoch="0" ver="1.3.4" rel="3.el7"
+         *  - rpm:entry name="oxygen-gtk2(x86-64)" flags="EQ" epoch="0" ver="1.3.4" rel="3.el7"
          *  Make sure we write it the same way.
          * @todo #220:30min Provides entry also can have `flags`, `epoch` and `rel` attributes.
          *  Find a way to obtain this information from rpm and add it here. Do not forget about
