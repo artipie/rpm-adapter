@@ -101,7 +101,6 @@ public final class ModifiableRepository implements PackageOutput {
      * Clears records about packages that does not present in the repository any more
      * from metadata files.
      * @return Itself
-     * @throws IOException On error
      */
     public ModifiableRepository clear() {
         this.metadata.stream().parallel().forEach(
