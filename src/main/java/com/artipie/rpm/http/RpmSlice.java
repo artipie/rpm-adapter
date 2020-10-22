@@ -27,11 +27,9 @@ import com.artipie.asto.Storage;
 import com.artipie.http.Slice;
 import com.artipie.http.auth.Action;
 import com.artipie.http.auth.Authentication;
-import com.artipie.http.auth.BasicIdentities;
-import com.artipie.http.auth.Identities;
+import com.artipie.http.auth.BasicAuthSlice;
 import com.artipie.http.auth.Permission;
 import com.artipie.http.auth.Permissions;
-import com.artipie.http.auth.SliceAuth;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rt.ByMethodsRule;
 import com.artipie.http.rt.RtRulePath;
@@ -51,49 +49,39 @@ public final class RpmSlice extends Slice.Wrap {
      * @param storage The storage.
      */
     public RpmSlice(final Storage storage) {
-        this(storage, Permissions.FREE, Identities.ANONYMOUS, new RepoConfig.Simple());
-    }
-
-    /**
-     * Ctor.
-     * @param storage The storage.
-     * @param perms Access permissions.
-     * @param auth Auth details.
-     */
-    public RpmSlice(final Storage storage, final Permissions perms, final Authentication auth) {
-        this(storage, perms, new BasicIdentities(auth), new RepoConfig.Simple());
+        this(storage, Permissions.FREE, Authentication.ANONYMOUS, new RepoConfig.Simple());
     }
 
     /**
      * Ctor.
      * @param storage Storage
      * @param perms Access permissions.
-     * @param users Concrete identities.
+     * @param auth Auth details.
      * @param config Repository configuration.
      * @checkstyle ParameterNumberCheck (10 lines)
      */
     public RpmSlice(
         final Storage storage,
         final Permissions perms,
-        final Identities users,
+        final Authentication auth,
         final RepoConfig config
     ) {
         super(
             new SliceRoute(
                 new RtRulePath(
                     new ByMethodsRule(RqMethod.GET),
-                    new SliceAuth(
+                    new BasicAuthSlice(
                         new SliceDownload(storage),
-                        new Permission.ByName(perms, Action.Standard.READ),
-                        users
+                        auth,
+                        new Permission.ByName(perms, Action.Standard.READ)
                     )
                 ),
                 new RtRulePath(
                     new ByMethodsRule(RqMethod.PUT),
-                    new SliceAuth(
+                    new BasicAuthSlice(
                         new RpmUpload(storage, config),
-                        new Permission.ByName(perms, Action.Standard.WRITE),
-                        users
+                        auth,
+                        new Permission.ByName(perms, Action.Standard.WRITE)
                     )
                 )
             )
