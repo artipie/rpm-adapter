@@ -26,8 +26,6 @@ package com.artipie.rpm.http;
 import com.artipie.asto.Storage;
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.auth.Authentication;
-import com.artipie.http.auth.BasicIdentities;
-import com.artipie.http.auth.Identities;
 import com.artipie.http.auth.Permissions;
 import com.artipie.http.slice.LoggingSlice;
 import com.artipie.rpm.RepoConfig;
@@ -35,7 +33,6 @@ import com.artipie.rpm.TestRpm;
 import com.artipie.vertx.VertxSliceServer;
 import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
-import java.util.Optional;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.text.StringContainsInOrder;
@@ -76,7 +73,7 @@ final class RpmSliceDownloadITCase {
     @Test
     void installs() throws Exception {
         final TestRpm rpm = new TestRpm.Time();
-        this.start(rpm, Permissions.FREE, Identities.ANONYMOUS);
+        this.start(rpm, Permissions.FREE, Authentication.ANONYMOUS);
         MatcherAssert.assertThat(
             this.yumInstall(
                 String.format(
@@ -96,17 +93,7 @@ final class RpmSliceDownloadITCase {
         this.start(
             rpm,
             new Permissions.Single(john, "download"),
-            new BasicIdentities(
-                (name, pass) -> {
-                    final Optional<Authentication.User> res;
-                    if (john.equals(name) && pswd.equals(pass)) {
-                        res = Optional.of(new Authentication.User(name));
-                    } else {
-                        res = Optional.empty();
-                    }
-                    return res;
-                }
-            )
+            new Authentication.Single(john, pswd)
         );
         MatcherAssert.assertThat(
             this.yumInstall(
@@ -137,7 +124,7 @@ final class RpmSliceDownloadITCase {
     }
 
     private void start(
-        final TestRpm rpm, final Permissions perms, final Identities auth
+        final TestRpm rpm, final Permissions perms, final Authentication auth
     ) throws Exception {
         final Storage storage = new InMemoryStorage();
         rpm.put(storage);

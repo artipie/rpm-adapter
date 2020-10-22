@@ -27,8 +27,6 @@ import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.auth.Authentication;
-import com.artipie.http.auth.BasicIdentities;
-import com.artipie.http.auth.Identities;
 import com.artipie.http.auth.Permissions;
 import com.artipie.http.slice.LoggingSlice;
 import com.artipie.rpm.Digest;
@@ -40,7 +38,6 @@ import com.artipie.vertx.VertxSliceServer;
 import io.vertx.reactivex.core.Vertx;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Optional;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.text.StringContainsInOrder;
@@ -83,7 +80,7 @@ public final class RpmSliceITCase {
 
     @Test
     void yumCanListAndInstallFromArtipieRepo() throws Exception {
-        this.start(Permissions.FREE, Identities.ANONYMOUS, "", "centos:centos8");
+        this.start(Permissions.FREE, Authentication.ANONYMOUS, "", "centos:centos8");
         MatcherAssert.assertThat(
             "Lists 'time' package",
             this.yumExec("list"),
@@ -102,7 +99,7 @@ public final class RpmSliceITCase {
         final String pswd = "abc";
         this.start(
             new Permissions.Single(mark, "download"),
-            this.auth(mark, pswd),
+            new Authentication.Single(mark, pswd),
             String.format("%s:%s@", mark, pswd),
             "centos:centos8"
         );
@@ -120,7 +117,7 @@ public final class RpmSliceITCase {
 
     @Test
     void dnfCanListAndInstallFromArtipieRepo() throws Exception {
-        this.start(Permissions.FREE, Identities.ANONYMOUS, "", "fedora:32");
+        this.start(Permissions.FREE, Authentication.ANONYMOUS, "", "fedora:32");
         MatcherAssert.assertThat(
             "Lists 'time' package",
             this.dnfExec("list"),
@@ -139,7 +136,7 @@ public final class RpmSliceITCase {
         final String pswd = "123";
         this.start(
             new Permissions.Single(john, "download"),
-            this.auth(john, pswd),
+            new Authentication.Single(john, pswd),
             String.format("%s:%s@", john, pswd),
             "fedora:32"
         );
@@ -164,26 +161,6 @@ public final class RpmSliceITCase {
     @AfterAll
     static void close() {
         RpmSliceITCase.VERTX.close();
-    }
-
-    /**
-     * Basic identities.
-     * @param user User name
-     * @param pswd Password
-     * @return Identities
-     */
-    private Identities auth(final String user, final String pswd) {
-        return new BasicIdentities(
-            (name, pass) -> {
-                final Optional<Authentication.User> res;
-                if (user.equals(name) && pswd.equals(pass)) {
-                    res = Optional.of(new Authentication.User(name));
-                } else {
-                    res = Optional.empty();
-                }
-                return res;
-            }
-        );
     }
 
     /**
@@ -213,13 +190,13 @@ public final class RpmSliceITCase {
     /**
      * Starts VertxSliceServer and docker container.
      * @param perms Permissions
-     * @param auth Identities
+     * @param auth Authentication
      * @param cred String with user name and password to add in url, uname:pswd@
      * @param linux Linux distribution name and version
      * @throws Exception On error
      * @checkstyle ParameterNumberCheck (10 lines)
      */
-    private void start(final Permissions perms, final Identities auth, final String cred,
+    private void start(final Permissions perms, final Authentication auth, final String cred,
         final String linux) throws Exception {
         final Storage storage = new InMemoryStorage();
         new TestRpm.Time().put(storage);
