@@ -26,15 +26,13 @@ package com.artipie.rpm;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.blocking.BlockingStorage;
-import com.artipie.asto.ext.PublisherAs;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.files.TestBundle;
 import com.artipie.rpm.hm.StorageHasMetadata;
+import com.artipie.rpm.hm.StorageHasRepoMd;
 import com.artipie.rpm.misc.UncheckedConsumer;
-import com.jcabi.matchers.XhtmlMatchers;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
@@ -184,19 +182,29 @@ final class RpmITCase {
 
     @Test
     void generatesRepomdMetadata() {
-        new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
+        final RepoConfig config =
+            new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.SHA1, true);
+        new Rpm(this.storage, config)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
-        this.assertion();
+        MatcherAssert.assertThat(
+            this.storage,
+            new StorageHasRepoMd(config)
+        );
     }
 
     @Test
     void generatesRepomdIncrementallyMetadata() throws Exception {
         this.modifyRepo();
-        new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
+        final RepoConfig config =
+            new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.SHA1, true);
+        new Rpm(this.storage, config)
             .batchUpdateIncrementally(Key.ROOT)
             .blockingAwait();
-        this.assertion();
+        MatcherAssert.assertThat(
+            this.storage,
+            new StorageHasRepoMd(config)
+        );
     }
 
     /**
@@ -209,23 +217,5 @@ final class RpmITCase {
             .filter(name -> name.string().contains("oxygen"))
             .forEach(new UncheckedConsumer<>(item -> bsto.delete(new Key.From(item))));
         new TestRpm.Multiple(new TestRpm.Abc(), new TestRpm.Libdeflt()).put(this.storage);
-    }
-
-    /**
-     * Assertion for repomd.
-     */
-    private void assertion() {
-        MatcherAssert.assertThat(
-            new PublisherAs(this.storage.value(new Key.From("repodata/repomd.xml")).join())
-                .string(Charset.defaultCharset()).toCompletableFuture().join(),
-            XhtmlMatchers.hasXPaths(
-                //@checkstyle LineLengthCheck (1 line)
-                "/*[namespace-uri()='http://linux.duke.edu/metadata/repo' and local-name()='repomd']",
-                "/*[name()='repomd']/*[name()='revision']",
-                "/*[name()='repomd']/*[name()='data' and @type='primary']",
-                "/*[name()='repomd']/*[name()='data' and @type='other']",
-                "/*[name()='repomd']/*[name()='data' and @type='filelists']"
-            )
-        );
     }
 }
