@@ -27,6 +27,9 @@ import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.asto.test.TestResource;
+import com.artipie.rpm.Digest;
+import com.artipie.rpm.RepoConfig;
+import com.artipie.rpm.StandardNamingPolicy;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.llorllale.cactoos.matchers.Assertion;
@@ -40,22 +43,26 @@ import org.llorllale.cactoos.matchers.Mismatches;
 public class StorageHasRepoMdTest {
 
     @Test
-    @Disabled
-    public void matchPositive() throws Exception {
+    public void matchPositive() {
         final Storage storage = new InMemoryStorage();
         new TestResource(
-            "src/test/resources-binary/repodata/StorageHasRepoMdTest/repomd.xml"
-        ).saveTo(storage, new Key.From("repomd.xml"));
+            "repodata/StorageHasRepoMdTest/repomd.xml"
+        ).saveTo(storage, new Key.From("repodata/repomd.xml"));
         new TestResource(
-            "src/test/resources-binary/repodata/StorageHasRepoMdTest/primary.xml.gz"
-        ).saveTo(storage, new Key.From("primary.xml.gz"));
+            "repodata/StorageHasRepoMdTest/primary.xml.gz"
+        ).saveTo(storage, new Key.From("repodata/primary.xml.gz"));
         new TestResource(
-            "src/test/resources-binary/repodata/StorageHasRepoMdTest/other.xml.gz"
-        ).saveTo(storage, new Key.From("other.xml.gz"));
+            "repodata/StorageHasRepoMdTest/other.xml.gz"
+        ).saveTo(storage, new Key.From("repodata/other.xml.gz"));
+        new TestResource(
+            "repodata/StorageHasRepoMdTest/filelists.xml.gz"
+        ).saveTo(storage, new Key.From("repodata/filelists.xml.gz"));
         new Assertion<>(
-            "The matcher gives positive result for a valid repommd.xml configuration",
+            "The matcher gives positive result for a valid repomd.xml configuration",
             storage,
-            new StorageHasRepoMd()
+            new StorageHasRepoMd(
+                new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.PLAIN, true)
+            )
         ).affirm();
     }
 
@@ -64,7 +71,7 @@ public class StorageHasRepoMdTest {
     public void doNotMatchesWhenRepomdAbsent() throws Exception {
         new Assertion<>(
             "The matcher gives a negative result when storage does not have repomd.xml",
-            new StorageHasRepoMd(),
+            new StorageHasRepoMd(new RepoConfig.Simple()),
             new Mismatches<>(
                 new InMemoryStorage(),
                 "repomd.xml file expected",
