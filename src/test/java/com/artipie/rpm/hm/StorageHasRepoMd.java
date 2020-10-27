@@ -45,10 +45,6 @@ import org.llorllale.cactoos.matchers.MatcherOf;
  * Matcher for checking rempomd.xml file presence and information in the storage.
  *
  * @since 1.1
- * @todo #317:30min Implement StorageHasRepoMd matcher. StorageHasRepoMd
- *  should verify that repomd.xml has valid information about primary,
- *  filelists and other metadata files. After implementing this, enable tests
- *  in StorageHasRepoMdTest.
  */
 public final class StorageHasRepoMd extends AllOf<Storage> {
 
