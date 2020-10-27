@@ -24,7 +24,6 @@
 package com.artipie.rpm.meta;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import javax.xml.stream.XMLStreamException;
@@ -75,13 +74,13 @@ public final class XmlPackagesFile implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         try {
             this.xml.writeEndElement();
             this.xml.writeEndDocument();
             this.xml.close();
         } catch (final XMLStreamException err) {
-            throw new IOException("Failed to close", err);
+            throw new XmlException("Failed to close", err);
         }
     }
 }

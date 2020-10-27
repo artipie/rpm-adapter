@@ -102,7 +102,7 @@ final class XmlFile extends XmlWriterWrap {
                 StandardCharsets.UTF_8.name()
             );
         } catch (final XMLStreamException err) {
-            throw new IllegalStateException("Failed to create XML stream", err);
+            throw new XmlException("Failed to create XML stream", err);
         }
     }
 }
