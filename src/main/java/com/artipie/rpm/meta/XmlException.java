@@ -27,6 +27,7 @@ package com.artipie.rpm.meta;
  * Various error/problems with xml parsing/reading/writing.
  * @since 1.3
  */
+@SuppressWarnings("serial")
 public final class XmlException extends RuntimeException {
 
     /**
