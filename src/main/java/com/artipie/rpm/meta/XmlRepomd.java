@@ -72,9 +72,8 @@ public final class XmlRepomd implements Closeable {
     /**
      * Begin repomd.
      * @param timestamp Current timestamp in seconds unix time.
-     * @throws IOException On error
      */
-    public void begin(final long timestamp) throws IOException {
+    public void begin(final long timestamp) {
         try {
             this.xml.writeStartDocument(StandardCharsets.UTF_8.name(), "1.0");
             this.xml.writeStartElement("repomd");
@@ -83,7 +82,7 @@ public final class XmlRepomd implements Closeable {
             this.xml.writeCharacters(String.valueOf(timestamp));
             this.xml.writeEndElement();
         } catch (final XMLStreamException ex) {
-            throw new IOException("Failed to start repomd", ex);
+            throw new XmlException("Failed to start repomd", ex);
         }
     }
 
@@ -108,12 +107,12 @@ public final class XmlRepomd implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         try {
             this.xml.writeEndElement();
             this.xml.close();
         } catch (final XMLStreamException err) {
-            throw new IOException("Failed to close", err);
+            throw new XmlException("Failed to close", err);
         }
     }
 
@@ -206,11 +205,11 @@ public final class XmlRepomd implements Closeable {
         }
 
         @Override
-        public void close() throws IOException {
+        public void close() {
             try {
                 this.xml.writeEndElement();
             } catch (final XMLStreamException err) {
-                throw new IOException("Failed to close", err);
+                throw new XmlException("Failed to close", err);
             }
         }
     }

@@ -68,7 +68,7 @@ public final class XmlPrimaryChecksums {
                 res.add(pkgs.item(idx).getTextContent());
             }
         } catch (final ParserConfigurationException | SAXException | IOException ex) {
-            throw new IllegalStateException("Invalid primary file", ex);
+            throw new XmlException("Invalid primary file", ex);
         }
         return res;
     }

@@ -88,7 +88,7 @@ public final class XmlAlter {
             reader.close();
             writer.close();
         } catch (final XMLStreamException err) {
-            throw new IOException("Failed to alter file", err);
+            throw new XmlException("Failed to alter file", err);
         }
         Files.move(trf, this.file, StandardCopyOption.REPLACE_EXISTING);
     }

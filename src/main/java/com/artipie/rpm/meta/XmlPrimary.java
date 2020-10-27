@@ -24,7 +24,6 @@
 package com.artipie.rpm.meta;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -98,7 +97,7 @@ public final class XmlPrimary implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         this.packages.close();
     }
 
