@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm.pkg;
 
+import com.artipie.rpm.meta.XmlException;
 import com.artipie.rpm.meta.XmlFilelists;
 import com.artipie.rpm.meta.XmlMaid;
 import com.artipie.rpm.meta.XmlPackage;
@@ -70,11 +71,11 @@ public final class FilelistsOutput implements PackageOutput.FileOutput {
      * @return Self
      * @throws IOException On failure
      */
-    public FilelistsOutput start() throws IOException {
+    public FilelistsOutput start() {
         try {
             this.xml.startPackages();
         } catch (final XMLStreamException err) {
-            throw new IOException("Failed to start packages", err);
+            throw new XmlException("Failed to start packages", err);
         }
         return this;
     }
@@ -92,7 +93,7 @@ public final class FilelistsOutput implements PackageOutput.FileOutput {
                     tags.dirIndexes()
                 ).close();
         } catch (final XMLStreamException err) {
-            throw new IOException("Failed to add package", err);
+            throw new XmlException("Failed to add package", err);
         }
     }
 

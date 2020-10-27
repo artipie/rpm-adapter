@@ -23,6 +23,7 @@
  */
 package com.artipie.rpm.pkg;
 
+import com.artipie.rpm.meta.XmlException;
 import com.artipie.rpm.meta.XmlMaid;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimary;
@@ -69,13 +70,12 @@ public final class PrimaryOutput implements PackageOutput.FileOutput {
     /**
      * Starts processing of RPMs.
      * @return Self
-     * @throws IOException On errors
      */
-    public PrimaryOutput start() throws IOException {
+    public PrimaryOutput start() {
         try {
             this.xml.startPackages();
         } catch (final XMLStreamException err) {
-            throw new IOException("Failed to start packages", err);
+            throw new XmlException("Failed to start packages", err);
         }
         return this;
     }
@@ -114,7 +114,7 @@ public final class PrimaryOutput implements PackageOutput.FileOutput {
                     tags.dirIndexes()
                 ).close();
         } catch (final XMLStreamException err) {
-            throw new IOException("Failed to update XML", err);
+            throw new XmlException("Failed to update XML", err);
         }
     }
 

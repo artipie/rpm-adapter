@@ -26,6 +26,7 @@ package com.artipie.rpm.pkg;
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.FileChecksum;
 import com.artipie.rpm.meta.XmlAlter;
+import com.artipie.rpm.meta.XmlException;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlRepomd;
 import com.jcabi.log.Logger;
@@ -107,7 +108,7 @@ public final class MetadataFile implements Metadata {
             data.gzipSize(Files.size(gzip));
             data.openSize(Files.size(open));
         } catch (final XMLStreamException err) {
-            throw new IOException("Failed to update repomd.xml", err);
+            throw new XmlException("Failed to update repomd.xml", err);
         }
         Files.delete(open);
         return gzip;

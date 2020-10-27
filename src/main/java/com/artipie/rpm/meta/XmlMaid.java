@@ -95,7 +95,7 @@ public interface XmlMaid {
                     reader.close();
                 }
             } catch (final XMLStreamException ex) {
-                throw new IOException(ex);
+                throw new XmlException(ex);
             }
             Files.move(tmp, this.file, StandardCopyOption.REPLACE_EXISTING);
             return res;
