@@ -51,7 +51,7 @@ public final class XmlException extends RuntimeException {
      * @param message Message
      * @param cause Error cause
      */
-    XmlException(final String message, final Throwable cause) {
+    public XmlException(final String message, final Throwable cause) {
         super(message, cause);
     }
 

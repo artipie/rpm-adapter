@@ -74,7 +74,7 @@ public final class XmlStreamJoin {
             writer.close();
         } catch (final XMLStreamException ex) {
             Files.delete(res);
-            throw new IOException(ex);
+            throw new XmlException(ex);
         }
         Files.move(res, target, StandardCopyOption.REPLACE_EXISTING);
     }
