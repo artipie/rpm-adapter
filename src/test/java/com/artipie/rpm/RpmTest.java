@@ -155,7 +155,7 @@ final class RpmTest {
     @ParameterizedTest
     @EnumSource(UpdateType.class)
     void doesNotTouchMetadataIfInvalidRpmIsSent(final UpdateType update) throws Exception {
-        final Rpm repo = new Rpm(this.storage, this.config);
+        final Rpm repo = new Rpm(this.storage, StandardNamingPolicy.PLAIN, Digest.SHA256, true);
         new TestRpm.Multiple(new TestRpm.Abc(), new TestRpm.Libdeflt()).put(this.storage);
         update.action.apply(repo, Key.ROOT).blockingAwait();
         final Storage stash = new InMemoryStorage();
