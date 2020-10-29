@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import org.cactoos.Scalar;
 import org.cactoos.list.ListOf;
 import org.cactoos.list.Mapped;
@@ -155,7 +156,9 @@ final class RpmTest {
     @ParameterizedTest
     @EnumSource(UpdateType.class)
     void doesNotTouchMetadataIfInvalidRpmIsSent(final UpdateType update) throws Exception {
-        final Rpm repo = new Rpm(this.storage, StandardNamingPolicy.PLAIN, Digest.SHA256, true);
+        final RepoConfig cnfg =
+            new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.PLAIN, true);
+        final Rpm repo = new Rpm(this.storage, cnfg);
         new TestRpm.Multiple(new TestRpm.Abc(), new TestRpm.Libdeflt()).put(this.storage);
         update.action.apply(repo, Key.ROOT).blockingAwait();
         final Storage stash = new InMemoryStorage();
@@ -163,31 +166,34 @@ final class RpmTest {
             .copy(stash).join();
         new TestRpm.Invalid().put(this.storage);
         update.action.apply(repo, Key.ROOT).blockingAwait();
-        for (final Key key : stash.list(Key.ROOT).join()) {
+        for (
+            final Key key : stash.list(Key.ROOT).join().stream()
+            .filter(key -> key.string().endsWith("gz")).collect(Collectors.toList())
+        ) {
             final Path first = Files.createTempFile(
                 RpmTest.tmp, new KeyLastPart(key).get(), ".first"
             );
             final Path second = Files.createTempFile(
                 RpmTest.tmp, new KeyLastPart(key).get(), ".second"
             );
-            if (key.string().endsWith("gz")) {
-                final Path gzip = Files.createTempFile(
-                    RpmTest.tmp, new KeyLastPart(key).get(), ".gzip"
-                );
-                Files.write(gzip, new BlockingStorage(this.storage).value(key));
-                new Gzip(gzip).unpack(first);
-                Files.write(gzip, new BlockingStorage(stash).value(key));
-                new Gzip(gzip).unpack(second);
-            } else {
-                Files.write(first, new BlockingStorage(this.storage).value(key));
-                Files.write(second, new BlockingStorage(stash).value(key));
-            }
+            final Path gzip = Files.createTempFile(
+                RpmTest.tmp, new KeyLastPart(key).get(), ".gzip"
+            );
+            Files.write(gzip, new BlockingStorage(this.storage).value(key));
+            new Gzip(gzip).unpack(first);
+            Files.write(gzip, new BlockingStorage(stash).value(key));
+            new Gzip(gzip).unpack(second);
             MatcherAssert.assertThat(
                 String.format("%s xmls are equal", key.string()),
                 first,
                 new IsXmlEqual(second)
             );
         }
+        MatcherAssert.assertThat(
+            "Repomd is valid",
+            this.storage,
+            new StorageHasRepoMd(cnfg)
+        );
     }
 
     @ParameterizedTest
