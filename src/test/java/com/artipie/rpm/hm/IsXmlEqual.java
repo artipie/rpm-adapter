@@ -81,7 +81,7 @@ public final class IsXmlEqual extends TypeSafeMatcher<Path> {
     }
 
     @Override
-    protected void describeMismatchSafely(final Path item, final Description mismatch) {
+    public void describeMismatchSafely(final Path item, final Description mismatch) {
         mismatch.appendText(
             new Unchecked<>(
                 () -> new String(Files.readAllBytes(item), StandardCharsets.US_ASCII)
