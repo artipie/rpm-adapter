@@ -31,7 +31,6 @@ import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.ext.KeyLastPart;
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.rpm.files.Gzip;
-import com.artipie.rpm.hm.IsXmlEqual;
 import com.artipie.rpm.hm.StorageHasMetadata;
 import com.artipie.rpm.hm.StorageHasRepoMd;
 import io.reactivex.Completable;
@@ -61,6 +60,9 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.llorllale.cactoos.matchers.IsTrue;
+import org.xmlunit.diff.DefaultNodeMatcher;
+import org.xmlunit.diff.ElementSelectors;
+import org.xmlunit.matchers.CompareMatcher;
 
 /**
  * Unit tests for {@link Rpm}.
@@ -185,8 +187,10 @@ final class RpmTest {
             new Gzip(gzip).unpack(second);
             MatcherAssert.assertThat(
                 String.format("%s xmls are equal", key.string()),
-                first,
-                new IsXmlEqual(second)
+                Files.readAllBytes(first),
+                CompareMatcher.isIdenticalTo(second.toFile())
+                    .withNodeMatcher(new DefaultNodeMatcher(ElementSelectors.byNameAndText))
+                    .ignoreWhitespace().normalizeWhitespace()
             );
         }
         MatcherAssert.assertThat(
