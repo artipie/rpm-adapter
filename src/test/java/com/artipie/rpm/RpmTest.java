@@ -146,7 +146,7 @@ final class RpmTest {
         MatcherAssert.assertThat(
             this.storage,
             Matchers.allOf(
-                new StorageHasMetadata(2, this.config.filelists(), RpmTest.tmp),
+                new StorageHasMetadata(3, this.config.filelists(), RpmTest.tmp),
                 new StorageHasRepoMd(this.config)
             )
         );
