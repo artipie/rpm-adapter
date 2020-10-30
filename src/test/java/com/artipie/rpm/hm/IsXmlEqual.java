@@ -79,4 +79,13 @@ public final class IsXmlEqual extends TypeSafeMatcher<Path> {
     public void describeTo(final Description description) {
         description.appendText(new String(this.xml, StandardCharsets.US_ASCII));
     }
+
+    @Override
+    public void describeMismatchSafely(final Path item, final Description mismatch) {
+        mismatch.appendText(
+            new Unchecked<>(
+                () -> new String(Files.readAllBytes(item), StandardCharsets.US_ASCII)
+            ).value()
+        );
+    }
 }

@@ -23,9 +23,11 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.asto.Copy;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.SubStorage;
+import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.rpm.hm.StorageHasMetadata;
 import com.artipie.rpm.hm.StorageHasRepoMd;
@@ -47,10 +49,12 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.llorllale.cactoos.matchers.IsTrue;
 
 /**
@@ -78,13 +82,26 @@ final class RpmTest {
     @TempDir
     static Path tmp;
 
-    @Test
-    void updatesDifferentReposSimultaneouslyTwice() throws Exception {
-        final Storage storage = new InMemoryStorage();
-        final RepoConfig config = new RepoConfig.Simple(
-            Digest.SHA256, StandardNamingPolicy.SHA1, true
-        );
-        final Rpm repo =  new Rpm(storage, config);
+    /**
+     * Test storage.
+     */
+    private Storage storage;
+
+    /**
+     * Test config.
+     */
+    private RepoConfig config;
+
+    @BeforeEach
+    void init() {
+        this.storage = new InMemoryStorage();
+        this.config = new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.SHA1, true);
+    }
+
+    @ParameterizedTest
+    @EnumSource(UpdateType.class)
+    void updatesDifferentReposSimultaneouslyTwice(final UpdateType update) throws Exception {
+        final Rpm repo =  new Rpm(this.storage, this.config);
         final List<String> keys = new ListOf<>("one", "two", "three");
         final CountDownLatch latch = new CountDownLatch(keys.size());
         final List<Scalar<Boolean>> tasks = new Mapped<>(
@@ -93,10 +110,10 @@ final class RpmTest {
                     new TestRpm.Multiple(
                         new TestRpm.Abc(),
                         new TestRpm.Libdeflt()
-                    ).put(new SubStorage(new Key.From(key), storage));
+                    ).put(new SubStorage(new Key.From(key), this.storage));
                     latch.countDown();
                     latch.await();
-                    repo.batchUpdate(new Key.From(key)).blockingAwait();
+                    update.action.apply(repo, new Key.From(key)).blockingAwait();
                     return true;
                 }
             ),
@@ -106,73 +123,81 @@ final class RpmTest {
         new AndInThreads(tasks).value();
         keys.forEach(
             key -> MatcherAssert.assertThat(
-                new SubStorage(new Key.From(key), storage),
+                new SubStorage(new Key.From(key), this.storage),
                 Matchers.allOf(
-                    new StorageHasRepoMd(config),
-                    new StorageHasMetadata(2, config.filelists(), RpmTest.tmp)
+                    new StorageHasRepoMd(this.config),
+                    new StorageHasMetadata(2, this.config.filelists(), RpmTest.tmp)
                 )
             )
         );
     }
 
-    @Test
-    void incrementalUpdateWorksOnNewRepo() throws IOException {
-        final Storage storage = new InMemoryStorage();
-        final boolean filelists = true;
+    @ParameterizedTest
+    @EnumSource(UpdateType.class)
+    void updateWorksOnNewRepo(final UpdateType update) throws IOException {
         new TestRpm.Multiple(
             new TestRpm.Abc(), new TestRpm.Libdeflt(), new TestRpm.Time()
-        ).put(storage);
-        new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, filelists)
-            .batchUpdateIncrementally(Key.ROOT).blockingAwait();
+        ).put(this.storage);
+        update.action.apply(new Rpm(this.storage, this.config), Key.ROOT).blockingAwait();
         MatcherAssert.assertThat(
-            storage,
-            new StorageHasMetadata(3, filelists, RpmTest.tmp)
+            this.storage,
+            Matchers.allOf(
+                new StorageHasMetadata(3, this.config.filelists(), RpmTest.tmp),
+                new StorageHasRepoMd(this.config)
+            )
         );
     }
 
     @Test
-    void doesntBrakeMetadataWhenInvalidPackageSent() throws Exception {
-        final Storage storage = new InMemoryStorage();
-        final boolean filelists = true;
-        final Rpm repo =  new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, filelists);
-        new TestRpm.Abc().put(storage);
-        repo.batchUpdate(Key.ROOT).blockingAwait();
-        new TestRpm.Multiple(new TestRpm.Invalid(), new TestRpm.Libdeflt()).put(storage);
-        repo.batchUpdate(Key.ROOT).blockingAwait();
-        MatcherAssert.assertThat(
-            storage,
-            new StorageHasMetadata(2, filelists, RpmTest.tmp)
-        );
-    }
-
-    @Test
-    void doesntBrakeMetadataWhenInvalidPackageSentOnIncrementalUpdate() throws Exception {
-        final Storage storage = new InMemoryStorage();
-        final boolean filelists = true;
-        final Rpm repo =  new Rpm(storage, StandardNamingPolicy.SHA1, Digest.SHA256, filelists);
-        new TestRpm.Libdeflt().put(storage);
-        repo.batchUpdate(Key.ROOT).blockingAwait();
-        new TestRpm.Multiple(new TestRpm.Abc(), new TestRpm.Invalid()).put(storage);
+    void doesNotTouchMetadataIfInvalidRpmIsSent() throws Exception {
+        final RepoConfig cnfg =
+            new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.PLAIN, true);
+        final Rpm repo = new Rpm(this.storage, cnfg);
+        new TestRpm.Multiple(new TestRpm.Abc(), new TestRpm.Libdeflt()).put(this.storage);
         repo.batchUpdateIncrementally(Key.ROOT).blockingAwait();
+        final Storage stash = new InMemoryStorage();
+        new Copy(this.storage, new ListOf<>(this.storage.list(new Key.From("repodata")).join()))
+            .copy(stash).join();
+        new TestRpm.Invalid().put(this.storage);
+        repo.batchUpdateIncrementally(Key.ROOT).blockingAwait();
+        for (final Key key : stash.list(Key.ROOT).join()) {
+            MatcherAssert.assertThat(
+                String.format("%s xmls are equal", key.string()),
+                new BlockingStorage(stash).value(key),
+                new IsEqual<>(new BlockingStorage(this.storage).value(key))
+            );
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(UpdateType.class)
+    void skipsInvalidPackageOnUpdate(final UpdateType update) throws Exception {
+        final Rpm repo =  new Rpm(this.storage, this.config);
+        new TestRpm.Abc().put(this.storage);
+        update.action.apply(repo, Key.ROOT).blockingAwait();
+        new TestRpm.Multiple(new TestRpm.Invalid(), new TestRpm.Libdeflt()).put(this.storage);
+        update.action.apply(repo, Key.ROOT).blockingAwait();
         MatcherAssert.assertThat(
-            storage,
-            new StorageHasMetadata(2, filelists, RpmTest.tmp)
+            this.storage,
+            Matchers.allOf(
+                new StorageHasMetadata(2, true, RpmTest.tmp),
+                new StorageHasRepoMd(this.config)
+            )
         );
     }
 
     @Test
     @Disabled
     void showMeaningfulErrorWhenInvalidPackageSent() throws Exception {
-        final Storage storage = new InMemoryStorage();
-        final Rpm repo =  new Rpm(
-            storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
+        final Rpm repo = new Rpm(
+            this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
         );
         new TestRpm.Multiple(
             new TestRpm.Abc(),
             new TestRpm.Libdeflt()
-        ).put(storage);
+        ).put(this.storage);
         repo.batchUpdate(Key.ROOT).blockingAwait();
-        new TestRpm.Invalid().put(storage);
+        new TestRpm.Invalid().put(this.storage);
         Assertions.assertThrows(
             IllegalArgumentException.class,
             () -> repo.batchUpdate(Key.ROOT).blockingAwait(),
@@ -180,29 +205,19 @@ final class RpmTest {
         );
     }
 
-    @RepeatedTest(10)
-    void throwsExceptionWhenFullUpdatesDoneSimultaneously() throws Exception {
-        this.testSimultaneousActions(Rpm::batchUpdate);
-    }
-
-    @RepeatedTest(10)
-    void throwsExceptionWhenIncrementalUpdatesDoneSimultaneously() throws Exception {
-        this.testSimultaneousActions(Rpm::batchUpdateIncrementally);
-    }
-
-    private void testSimultaneousActions(
-        final BiFunction<Rpm, Key, Completable> action
-    ) throws IOException {
-        final Storage storage = new InMemoryStorage();
+    @ParameterizedTest
+    @EnumSource(UpdateType.class)
+    void throwsExceptionWhenFullUpdatesDoneSimultaneously(final UpdateType type)
+        throws IOException {
         final Rpm repo =  new Rpm(
-            storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
+            this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
         );
         final List<Key> keys = Collections.nCopies(3, Key.ROOT);
         final CountDownLatch latch = new CountDownLatch(keys.size());
         new TestRpm.Multiple(
             new TestRpm.Abc(),
             new TestRpm.Libdeflt()
-        ).put(storage);
+        ).put(this.storage);
         final List<CompletableFuture<Void>> tasks = new ArrayList<>(keys.size());
         for (final Key key : keys) {
             final CompletableFuture<Void> future = new CompletableFuture<>();
@@ -212,7 +227,7 @@ final class RpmTest {
                     try {
                         latch.countDown();
                         latch.await();
-                        action.apply(repo, key).blockingAwait();
+                        type.action.apply(repo, key).blockingAwait();
                         future.complete(null);
                     } catch (final Exception exception) {
                         future.completeExceptionally(exception);
@@ -233,8 +248,39 @@ final class RpmTest {
         );
         MatcherAssert.assertThat(
             "Storage has no locks",
-            storage.list(Key.ROOT).join().stream().noneMatch(key -> key.string().contains("lock")),
+            this.storage.list(Key.ROOT).join().stream()
+                .noneMatch(key -> key.string().contains("lock")),
             new IsEqual<>(true)
         );
+    }
+
+    /**
+     * Update types.
+     * @since 1.3
+     */
+    enum UpdateType {
+
+        /**
+         * Incremental update.
+         */
+        INCREMENTAL(Rpm::batchUpdateIncrementally),
+
+        /**
+         * Non incremental update.
+         */
+        NON_INCREMENTAL(Rpm::batchUpdate);
+
+        /**
+         * Update action.
+         */
+        private final BiFunction<Rpm, Key, Completable> action;
+
+        /**
+         * Ctor.
+         * @param action Action
+         */
+        UpdateType(final BiFunction<Rpm, Key, Completable> action) {
+            this.action = action;
+        }
     }
 }
