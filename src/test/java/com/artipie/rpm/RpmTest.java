@@ -54,10 +54,7 @@ import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -79,7 +76,6 @@ import org.llorllale.cactoos.matchers.IsTrue;
  * @checkstyle ClassFanOutComplexityCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 final class RpmTest {
 
     /**
@@ -137,29 +133,7 @@ final class RpmTest {
                 )
             )
         );
-    }
-
-    @ParameterizedTest
-    @EnumSource(UpdateType.class)
-    @Order(Integer.MAX_VALUE)
-    void tempDirIsCleanedUp(final UpdateType update) throws IOException {
-        new TestRpm.Multiple(
-            new TestRpm.Abc(), new TestRpm.Libdeflt(), new TestRpm.Time()
-        ).put(this.storage);
-        update.action.apply(new Rpm(this.storage, this.config), Key.ROOT).blockingAwait();
-        final Path systemtemp = Paths.get(System.getProperty("java.io.tmpdir"));
-        MatcherAssert.assertThat(
-            "Temp dir for rpms removed",
-            Files.list(systemtemp)
-                .noneMatch(path -> path.getFileName().toString().startsWith("repo")),
-            new IsEqual<>(true)
-        );
-        MatcherAssert.assertThat(
-            "Temp dir for metadata removed",
-            Files.list(systemtemp)
-                .noneMatch(path -> path.getFileName().toString().startsWith("meta")),
-            new IsEqual<>(true)
-        );
+        this.verifyThatTempDirIsCleanedUp();
     }
 
     @ParameterizedTest
@@ -176,6 +150,7 @@ final class RpmTest {
                 new StorageHasRepoMd(this.config)
             )
         );
+        this.verifyThatTempDirIsCleanedUp();
     }
 
     @Test
@@ -200,6 +175,7 @@ final class RpmTest {
                 new IsEqual<>(new BlockingStorage(this.storage).value(key))
             );
         }
+        this.verifyThatTempDirIsCleanedUp();
     }
 
     @ParameterizedTest
@@ -217,6 +193,7 @@ final class RpmTest {
                 new StorageHasRepoMd(this.config)
             )
         );
+        this.verifyThatTempDirIsCleanedUp();
     }
 
     @Test
@@ -283,6 +260,23 @@ final class RpmTest {
             "Storage has no locks",
             this.storage.list(Key.ROOT).join().stream()
                 .noneMatch(key -> key.string().contains("lock")),
+            new IsEqual<>(true)
+        );
+        this.verifyThatTempDirIsCleanedUp();
+    }
+
+    private void verifyThatTempDirIsCleanedUp() throws IOException {
+        final Path systemtemp = Paths.get(System.getProperty("java.io.tmpdir"));
+        MatcherAssert.assertThat(
+            "Temp dir for rpms removed",
+            Files.list(systemtemp)
+                .noneMatch(path -> path.getFileName().toString().startsWith("repo")),
+            new IsEqual<>(true)
+        );
+        MatcherAssert.assertThat(
+            "Temp dir for metadata removed",
+            Files.list(systemtemp)
+                .noneMatch(path -> path.getFileName().toString().startsWith("meta")),
             new IsEqual<>(true)
         );
     }
