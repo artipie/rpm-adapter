@@ -28,14 +28,11 @@ import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.SubStorage;
 import com.artipie.asto.blocking.BlockingStorage;
-import com.artipie.asto.ext.KeyLastPart;
 import com.artipie.asto.memory.InMemoryStorage;
-import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.hm.StorageHasMetadata;
 import com.artipie.rpm.hm.StorageHasRepoMd;
 import io.reactivex.Completable;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,7 +40,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 import org.cactoos.Scalar;
 import org.cactoos.list.ListOf;
 import org.cactoos.list.Mapped;
@@ -60,9 +56,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.llorllale.cactoos.matchers.IsTrue;
-import org.xmlunit.diff.DefaultNodeMatcher;
-import org.xmlunit.diff.ElementSelectors;
-import org.xmlunit.matchers.CompareMatcher;
 
 /**
  * Unit tests for {@link Rpm}.
@@ -155,49 +148,25 @@ final class RpmTest {
         );
     }
 
-    @ParameterizedTest
-    @EnumSource(UpdateType.class)
-    void doesNotTouchMetadataIfInvalidRpmIsSent(final UpdateType update) throws Exception {
+    @Test
+    void doesNotTouchMetadataIfInvalidRpmIsSent() throws Exception {
         final RepoConfig cnfg =
             new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.PLAIN, true);
         final Rpm repo = new Rpm(this.storage, cnfg);
         new TestRpm.Multiple(new TestRpm.Abc(), new TestRpm.Libdeflt()).put(this.storage);
-        update.action.apply(repo, Key.ROOT).blockingAwait();
+        repo.batchUpdateIncrementally(Key.ROOT).blockingAwait();
         final Storage stash = new InMemoryStorage();
         new Copy(this.storage, new ListOf<>(this.storage.list(new Key.From("repodata")).join()))
             .copy(stash).join();
         new TestRpm.Invalid().put(this.storage);
-        update.action.apply(repo, Key.ROOT).blockingAwait();
-        for (
-            final Key key : stash.list(Key.ROOT).join().stream()
-            .filter(key -> key.string().endsWith("gz")).collect(Collectors.toList())
-        ) {
-            final Path first = Files.createTempFile(
-                RpmTest.tmp, new KeyLastPart(key).get(), ".first"
-            );
-            final Path second = Files.createTempFile(
-                RpmTest.tmp, new KeyLastPart(key).get(), ".second"
-            );
-            final Path gzip = Files.createTempFile(
-                RpmTest.tmp, new KeyLastPart(key).get(), ".gzip"
-            );
-            Files.write(gzip, new BlockingStorage(this.storage).value(key));
-            new Gzip(gzip).unpack(first);
-            Files.write(gzip, new BlockingStorage(stash).value(key));
-            new Gzip(gzip).unpack(second);
+        repo.batchUpdateIncrementally(Key.ROOT).blockingAwait();
+        for (final Key key : stash.list(Key.ROOT).join()) {
             MatcherAssert.assertThat(
                 String.format("%s xmls are equal", key.string()),
-                Files.readAllBytes(first),
-                CompareMatcher.isSimilarTo(second.toFile())
-                    .withNodeMatcher(new DefaultNodeMatcher(ElementSelectors.byNameAndText))
-                    .ignoreWhitespace().normalizeWhitespace()
+                new BlockingStorage(stash).value(key),
+                new IsEqual<>(new BlockingStorage(this.storage).value(key))
             );
         }
-        MatcherAssert.assertThat(
-            "Repomd is valid",
-            this.storage,
-            new StorageHasRepoMd(cnfg)
-        );
     }
 
     @ParameterizedTest
