@@ -33,13 +33,16 @@ import com.artipie.rpm.hm.StorageHasMetadata;
 import com.artipie.rpm.hm.StorageHasRepoMd;
 import io.reactivex.Completable;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import org.cactoos.Scalar;
 import org.cactoos.list.ListOf;
 import org.cactoos.list.Mapped;
@@ -130,6 +133,7 @@ final class RpmTest {
                 )
             )
         );
+        this.verifyThatTempDirIsCleanedUp();
     }
 
     @ParameterizedTest
@@ -146,6 +150,7 @@ final class RpmTest {
                 new StorageHasRepoMd(this.config)
             )
         );
+        this.verifyThatTempDirIsCleanedUp();
     }
 
     @Test
@@ -156,8 +161,11 @@ final class RpmTest {
         new TestRpm.Multiple(new TestRpm.Abc(), new TestRpm.Libdeflt()).put(this.storage);
         repo.batchUpdateIncrementally(Key.ROOT).blockingAwait();
         final Storage stash = new InMemoryStorage();
-        new Copy(this.storage, new ListOf<>(this.storage.list(new Key.From("repodata")).join()))
-            .copy(stash).join();
+        new Copy(
+            this.storage,
+            this.storage.list(new Key.From("repodata")).join().stream()
+                .filter(item -> item.string().endsWith("gz")).collect(Collectors.toList())
+        ).copy(stash).join();
         new TestRpm.Invalid().put(this.storage);
         repo.batchUpdateIncrementally(Key.ROOT).blockingAwait();
         for (final Key key : stash.list(Key.ROOT).join()) {
@@ -167,6 +175,7 @@ final class RpmTest {
                 new IsEqual<>(new BlockingStorage(this.storage).value(key))
             );
         }
+        this.verifyThatTempDirIsCleanedUp();
     }
 
     @ParameterizedTest
@@ -184,6 +193,7 @@ final class RpmTest {
                 new StorageHasRepoMd(this.config)
             )
         );
+        this.verifyThatTempDirIsCleanedUp();
     }
 
     @Test
@@ -250,6 +260,23 @@ final class RpmTest {
             "Storage has no locks",
             this.storage.list(Key.ROOT).join().stream()
                 .noneMatch(key -> key.string().contains("lock")),
+            new IsEqual<>(true)
+        );
+        this.verifyThatTempDirIsCleanedUp();
+    }
+
+    private void verifyThatTempDirIsCleanedUp() throws IOException {
+        final Path systemtemp = Paths.get(System.getProperty("java.io.tmpdir"));
+        MatcherAssert.assertThat(
+            "Temp dir for rpms removed",
+            Files.list(systemtemp)
+                .noneMatch(path -> path.getFileName().toString().startsWith("repo")),
+            new IsEqual<>(true)
+        );
+        MatcherAssert.assertThat(
+            "Temp dir for metadata removed",
+            Files.list(systemtemp)
+                .noneMatch(path -> path.getFileName().toString().startsWith("meta")),
             new IsEqual<>(true)
         );
     }
