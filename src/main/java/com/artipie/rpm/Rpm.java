@@ -61,6 +61,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.commons.io.FileUtils;
 
 /**
  * The RPM front.
@@ -358,10 +359,7 @@ public final class Rpm {
      * @throws IOException On error
      */
     private static void cleanup(final Path dir) throws IOException {
-        for (final Path item : Files.list(dir).collect(Collectors.toList())) {
-            Files.delete(item);
-        }
-        Files.delete(dir);
+        FileUtils.deleteDirectory(dir.toFile());
     }
 
     /**
