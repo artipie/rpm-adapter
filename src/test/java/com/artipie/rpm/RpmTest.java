@@ -159,7 +159,6 @@ final class RpmTest {
 
     @ParameterizedTest
     @EnumSource(UpdateType.class)
-    @DisabledOnOs(OS.WINDOWS)
     void doesNotTouchMetadataIfInvalidRpmIsSent(final UpdateType update) throws Exception {
         final RepoConfig cnfg =
             new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.PLAIN, true);
@@ -191,7 +190,7 @@ final class RpmTest {
             MatcherAssert.assertThat(
                 String.format("%s xmls are equal", key.string()),
                 Files.readAllBytes(first),
-                CompareMatcher.isIdenticalTo(second.toFile())
+                CompareMatcher.isSimilarTo(second.toFile())
                     .withNodeMatcher(new DefaultNodeMatcher(ElementSelectors.byNameAndText))
                     .ignoreWhitespace().normalizeWhitespace()
             );
