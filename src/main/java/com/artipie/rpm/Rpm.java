@@ -228,13 +228,12 @@ public final class Rpm {
                 .map(path -> path.getFileName().toString())
                 .toList().map(HashSet::new)
                 .flatMapCompletable(preserve -> this.removeOldMetadata(preserve, prefix))
-                .doOnTerminate(
-                    () -> {
-                        Rpm.cleanup(tmpdir);
-                        Rpm.cleanup(metadir);
-                    }
-                )
-        );
+            ).doOnTerminate(
+                () -> {
+                    Rpm.cleanup(tmpdir);
+                    Rpm.cleanup(metadir);
+                }
+            );
     }
 
     /**
@@ -287,9 +286,11 @@ public final class Rpm {
                 .map(path -> path.getFileName().toString())
                 .toList().map(HashSet::new)
                 .flatMapCompletable(preserve -> this.removeOldMetadata(preserve, prefix))
-                .doOnTerminate(
-                    () -> Rpm.cleanup(tmpdir)
-                )
+            ).doOnTerminate(
+                () -> {
+                    Rpm.cleanup(tmpdir);
+                    Rpm.cleanup(metadir);
+                }
             );
     }
 

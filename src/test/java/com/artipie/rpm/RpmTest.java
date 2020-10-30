@@ -33,13 +33,16 @@ import com.artipie.rpm.hm.StorageHasMetadata;
 import com.artipie.rpm.hm.StorageHasRepoMd;
 import io.reactivex.Completable;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import org.cactoos.Scalar;
 import org.cactoos.list.ListOf;
 import org.cactoos.list.Mapped;
@@ -51,7 +54,10 @@ import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -73,6 +79,7 @@ import org.llorllale.cactoos.matchers.IsTrue;
  * @checkstyle ClassFanOutComplexityCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 final class RpmTest {
 
     /**
@@ -134,6 +141,29 @@ final class RpmTest {
 
     @ParameterizedTest
     @EnumSource(UpdateType.class)
+    @Order(Integer.MAX_VALUE)
+    void tempDirIsCleanedUp(final UpdateType update) throws IOException {
+        new TestRpm.Multiple(
+            new TestRpm.Abc(), new TestRpm.Libdeflt(), new TestRpm.Time()
+        ).put(this.storage);
+        update.action.apply(new Rpm(this.storage, this.config), Key.ROOT).blockingAwait();
+        final Path systemtemp = Paths.get(System.getProperty("java.io.tmpdir"));
+        MatcherAssert.assertThat(
+            "Temp dir for rpms removed",
+            Files.list(systemtemp)
+                .noneMatch(path -> path.getFileName().toString().startsWith("repo")),
+            new IsEqual<>(true)
+        );
+        MatcherAssert.assertThat(
+            "Temp dir for metadata removed",
+            Files.list(systemtemp)
+                .noneMatch(path -> path.getFileName().toString().startsWith("meta")),
+            new IsEqual<>(true)
+        );
+    }
+
+    @ParameterizedTest
+    @EnumSource(UpdateType.class)
     void updateWorksOnNewRepo(final UpdateType update) throws IOException {
         new TestRpm.Multiple(
             new TestRpm.Abc(), new TestRpm.Libdeflt(), new TestRpm.Time()
@@ -156,8 +186,11 @@ final class RpmTest {
         new TestRpm.Multiple(new TestRpm.Abc(), new TestRpm.Libdeflt()).put(this.storage);
         repo.batchUpdateIncrementally(Key.ROOT).blockingAwait();
         final Storage stash = new InMemoryStorage();
-        new Copy(this.storage, new ListOf<>(this.storage.list(new Key.From("repodata")).join()))
-            .copy(stash).join();
+        new Copy(
+            this.storage,
+            this.storage.list(new Key.From("repodata")).join().stream()
+                .filter(item -> item.string().endsWith("gz")).collect(Collectors.toList())
+        ).copy(stash).join();
         new TestRpm.Invalid().put(this.storage);
         repo.batchUpdateIncrementally(Key.ROOT).blockingAwait();
         for (final Key key : stash.list(Key.ROOT).join()) {
