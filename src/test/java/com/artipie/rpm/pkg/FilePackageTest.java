@@ -46,15 +46,16 @@ class FilePackageTest {
     void returnsPath() {
         final Path path = Paths.get("some/path/package.rpm");
         MatcherAssert.assertThat(
-            new FilePackage(path).path(),
+            new FilePackage(path, path.getFileName().toString()).path(),
             new IsEqual<>(path)
         );
     }
 
     @Test
     void returnsParsedFile() throws IOException {
+        final Path path = new TestRpm.Abc().path();
         MatcherAssert.assertThat(
-            new FilePackage(new TestRpm.Abc().path()).parsed(),
+            new FilePackage(path, path.getFileName().toString()).parsed(),
             new IsInstanceOf(ParsedFilePackage.class)
         );
     }
@@ -63,7 +64,7 @@ class FilePackageTest {
     void throwsExceptionIfFileDoesNotExists() {
         Assertions.assertThrows(
             IOException.class,
-            () -> new FilePackage(Paths.get("some/file")).parsed()
+            () -> new FilePackage(Paths.get("some/file"), "file").parsed()
         );
     }
 
@@ -73,7 +74,7 @@ class FilePackageTest {
         Files.write(rpm, new TestRpm.Invalid().bytes());
         Assertions.assertThrows(
             InvalidPackageException.class,
-            () -> new FilePackage(rpm).parsed()
+            () -> new FilePackage(rpm, rpm.getFileName().toString()).parsed()
         );
     }
 
@@ -81,7 +82,7 @@ class FilePackageTest {
     void canPresentItselfAsString() {
         final String name = "package.rpm";
         MatcherAssert.assertThat(
-            new FilePackage(Paths.get("urs/some_dir/", name)).toString(),
+            new FilePackage(Paths.get("urs/some_dir/", name), name).toString(),
             new IsEqual<>(String.format("FilePackage[%s]", name))
         );
     }
@@ -92,7 +93,7 @@ class FilePackageTest {
         Files.copy(new TestRpm.Libdeflt().path(), rpm);
         final PackageOutput.FileOutput.Fake out =
             new PackageOutput.FileOutput.Fake(temp.resolve("any"));
-        new FilePackage(rpm).save(out, Digest.SHA256);
+        new FilePackage(rpm, rpm.getFileName().toString()).save(out, Digest.SHA256);
         MatcherAssert.assertThat(
             "PackageOutput was accepted",
             out.isAccepted(),

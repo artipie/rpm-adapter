@@ -51,7 +51,10 @@ class PrimaryOutputTest {
             primary.start();
             final Path rpm = new TestRpm.Abc().path();
             primary.accept(
-                new FilePackage.Headers(new FilePackageHeader(rpm).header(), rpm, Digest.SHA256)
+                new FilePackage.Headers(
+                    new FilePackageHeader(rpm).header(), rpm,
+                    Digest.SHA256, rpm.getFileName().toString()
+                )
             );
         }
         MatcherAssert.assertThat(
@@ -102,7 +105,10 @@ class PrimaryOutputTest {
             primary.start();
             final Path rpm = new TestRpm.Libdeflt().path();
             primary.accept(
-                new FilePackage.Headers(new FilePackageHeader(rpm).header(), rpm, Digest.SHA256)
+                new FilePackage.Headers(
+                    new FilePackageHeader(rpm).header(), rpm,
+                    Digest.SHA256, rpm.getFileName().toString()
+                )
             );
         }
         MatcherAssert.assertThat(

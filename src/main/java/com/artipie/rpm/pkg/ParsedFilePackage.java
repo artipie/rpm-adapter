@@ -46,18 +46,25 @@ final class ParsedFilePackage implements Package {
     private final Path file;
 
     /**
+     * The RPM file location relatively to the updated repository.
+     */
+    private final String location;
+
+    /**
      * Ctor.
      * @param meta Package metadata
      * @param file File path
+     * @param location File relative location
      */
-    ParsedFilePackage(final Header meta, final Path file) {
+    ParsedFilePackage(final Header meta, final Path file, final String location) {
         this.header = meta;
         this.file = file;
+        this.location = location;
     }
 
     @Override
     public void save(final PackageOutput out, final Digest digest) throws IOException {
         Logger.debug(this, "accepting %s", this.file.getFileName());
-        out.accept(new FilePackage.Headers(this.header, this.file, digest));
+        out.accept(new FilePackage.Headers(this.header, this.file, digest, this.location));
     }
 }

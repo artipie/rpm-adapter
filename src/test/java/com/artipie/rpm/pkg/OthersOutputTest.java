@@ -50,7 +50,10 @@ class OthersOutputTest {
             others.start();
             final Path rpm = abc.path();
             others.accept(
-                new FilePackage.Headers(new FilePackageHeader(rpm).header(), rpm, Digest.SHA256)
+                new FilePackage.Headers(
+                    new FilePackageHeader(rpm).header(), rpm,
+                    Digest.SHA256, rpm.getFileName().toString()
+                )
             );
         }
         MatcherAssert.assertThat(
@@ -96,7 +99,10 @@ class OthersOutputTest {
             others.start();
             final Path rpm = libdeflt.path();
             others.accept(
-                new FilePackage.Headers(new FilePackageHeader(rpm).header(), rpm, Digest.SHA256)
+                new FilePackage.Headers(
+                    new FilePackageHeader(rpm).header(), rpm,
+                    Digest.SHA256, rpm.getFileName().toString()
+                )
             );
         }
         MatcherAssert.assertThat(
