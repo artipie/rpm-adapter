@@ -29,8 +29,12 @@ import com.artipie.asto.Storage;
 import com.artipie.asto.SubStorage;
 import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.memory.InMemoryStorage;
+import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.hm.StorageHasMetadata;
 import com.artipie.rpm.hm.StorageHasRepoMd;
+import com.artipie.rpm.meta.XmlPackage;
+import com.jcabi.matchers.XhtmlMatchers;
+import com.jcabi.xml.XMLDocument;
 import io.reactivex.Completable;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -70,6 +74,9 @@ import org.llorllale.cactoos.matchers.IsTrue;
  *  "Reading of RPM package 'package' failed, data corrupt or malformed.",
  *  like described in showMeaningfulErrorWhenInvalidPackageSent. Implement it
  *  and then enable the test.
+ * @todo #376:30min Extract primary.xml `location` tag check from `writesSubdirsToLocation()` test
+ *  method into separate matcher and add this matcher to `StorageHasMetadata` checks: we should
+ *  always verify that `location` is specified correctly.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle MagicNumberCheck (500 lines)
  * @checkstyle IllegalCatchCheck (500 lines)
@@ -261,6 +268,30 @@ final class RpmTest {
             this.storage.list(Key.ROOT).join().stream()
                 .noneMatch(key -> key.string().contains("lock")),
             new IsEqual<>(true)
+        );
+        this.verifyThatTempDirIsCleanedUp();
+    }
+
+    @ParameterizedTest
+    @EnumSource(UpdateType.class)
+    void writesSubdirsToLocation(final UpdateType type) throws IOException {
+        final Rpm repo =  new Rpm(this.storage, StandardNamingPolicy.PLAIN, Digest.SHA256, true);
+        new TestRpm.Abc().put(new SubStorage(new Key.From("subdir"), this.storage));
+        new TestRpm.Libdeflt().put(this.storage);
+        type.action.apply(repo, Key.ROOT).blockingAwait();
+        final Path gzip = Files.createTempFile(RpmTest.tmp, XmlPackage.PRIMARY.name(), "xml.gz");
+        Files.write(
+            gzip, new BlockingStorage(this.storage).value(new Key.From("repodata/primary.xml.gz"))
+        );
+        final Path xml = Files.createTempFile(RpmTest.tmp, XmlPackage.PRIMARY.name(), "xml");
+        new Gzip(gzip).unpack(xml);
+        MatcherAssert.assertThat(
+            new XMLDocument(xml),
+            XhtmlMatchers.hasXPath(
+                //@checkstyle LineLengthCheck (3 lines)
+                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='location' and @href='libdeflt1_0-2020.03.27-25.1.armv7hl.rpm']",
+                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='location' and @href='subdir/abc-1.01-26.git20200127.fc32.ppc64le.rpm']"
+            )
         );
         this.verifyThatTempDirIsCleanedUp();
     }

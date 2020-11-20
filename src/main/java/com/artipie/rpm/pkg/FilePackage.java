@@ -48,11 +48,18 @@ public final class FilePackage implements Package {
     private final Path file;
 
     /**
+     * The RPM file location relatively to the updated repository.
+     */
+    private final String location;
+
+    /**
      * Ctor.
      * @param path The path
+     * @param location File relative location
      */
-    public FilePackage(final Path path) {
+    public FilePackage(final Path path, final String location) {
         this.file = path;
+        this.location = location;
     }
 
     /**
@@ -66,7 +73,9 @@ public final class FilePackage implements Package {
     @Override
     public void save(final PackageOutput out, final Digest digest) throws IOException {
         out.accept(
-            new FilePackage.Headers(new FilePackageHeader(this.file).header(), this.file, digest)
+            new FilePackage.Headers(
+                new FilePackageHeader(this.file).header(), this.file, digest, this.location
+            )
         );
         Files.delete(this.file);
     }
@@ -83,7 +92,9 @@ public final class FilePackage implements Package {
      * @throws IOException On error
      */
     public Package parsed() throws InvalidPackageException, IOException {
-        return new ParsedFilePackage(new FilePackageHeader(this.file).header(), this.file);
+        return new ParsedFilePackage(
+            new FilePackageHeader(this.file).header(), this.file, this.location
+        );
     }
 
     /**
@@ -108,15 +119,33 @@ public final class FilePackage implements Package {
         private final Digest digest;
 
         /**
+         * The RPM file location relatively to the updated repository.
+         */
+        private final String location;
+
+        /**
          * Ctor.
+         * @param hdr Native headers
+         * @param file File path
+         * @param digest Digest
+         * @param location File relative location
+         * @checkstyle ParameterNumberCheck (10 lines)
+         */
+        Headers(final Header hdr, final Path file, final Digest digest, final String location) {
+            this.hdr = hdr;
+            this.file = file;
+            this.digest = digest;
+            this.location = location;
+        }
+
+        /**
+         * Ctor for tests.
          * @param hdr Native headers
          * @param file File path
          * @param digest Digest
          */
         Headers(final Header hdr, final Path file, final Digest digest) {
-            this.hdr = hdr;
-            this.file = file;
-            this.digest = digest;
+            this(hdr, file, digest, file.getFileName().toString());
         }
 
         @Override
@@ -136,7 +165,7 @@ public final class FilePackage implements Package {
 
         @Override
         public String href() {
-            return this.file.getFileName().toString();
+            return this.location;
         }
 
         @Override

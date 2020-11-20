@@ -27,6 +27,7 @@ import com.artipie.rpm.Digest;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
@@ -40,6 +41,7 @@ import org.redline_rpm.header.Header;
  *
  * @since 0.6.3
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class FilePackageHeadersTest {
 
     @Test
@@ -50,7 +52,7 @@ public final class FilePackageHeadersTest {
         header.createEntry(tag, expected);
         MatcherAssert.assertThat(
             new FilePackage.Headers(
-                header, unused, Digest.SHA256
+                header, unused, Digest.SHA256, "unused"
             ).header(tag).asString("default value"),
             new IsEqual<>(expected)
         );
@@ -64,7 +66,7 @@ public final class FilePackageHeadersTest {
         header.createEntry(tag, expected);
         MatcherAssert.assertThat(
             new FilePackage.Headers(
-                header, unused, Digest.SHA256
+                header, unused, Digest.SHA256, "unused"
             ).header(tag).asStrings(),
             new IsEqual<>(Arrays.asList(expected))
         );
@@ -78,7 +80,7 @@ public final class FilePackageHeadersTest {
         header.createEntry(tag, expected);
         MatcherAssert.assertThat(
             new FilePackage.Headers(
-                header, unused, Digest.SHA256
+                header, unused, Digest.SHA256, "unused"
             ).header(tag).asInt(0),
             new IsEqual<>(expected)
         );
@@ -92,7 +94,7 @@ public final class FilePackageHeadersTest {
         header.createEntry(tag, expected);
         MatcherAssert.assertThat(
             new FilePackage.Headers(
-                header, unused, Digest.SHA256
+                header, unused, Digest.SHA256, "unused"
             ).header(tag).asInts(),
             new IsEqual<>(expected)
         );
@@ -103,7 +105,7 @@ public final class FilePackageHeadersTest {
         final String expected = "default string value";
         MatcherAssert.assertThat(
             new FilePackage.Headers(
-                new Header(), unused, Digest.SHA256
+                new Header(), unused, Digest.SHA256, "unused"
             ).header(Header.HeaderTag.NAME).asString(expected),
             new IsEqual<>(expected)
         );
@@ -114,7 +116,7 @@ public final class FilePackageHeadersTest {
         final int expected = 0;
         MatcherAssert.assertThat(
             new FilePackage.Headers(
-                new Header(), unused, Digest.SHA256
+                new Header(), unused, Digest.SHA256, "unused"
             ).header(Header.HeaderTag.EPOCH).asInt(expected),
             new IsEqual<>(expected)
         );
@@ -124,13 +126,25 @@ public final class FilePackageHeadersTest {
     public void failParseInvalidPackageFile(@TempDir final Path tmp) throws Exception {
         final Path invalid = tmp.resolve("invalid.rpm");
         Files.write(invalid, "invalid".getBytes());
-        final FilePackage pack = new FilePackage(invalid);
+        final FilePackage pack = new FilePackage(invalid, "invalid");
         Assertions.assertThrows(InvalidPackageException.class, pack::parsed);
     }
 
     @Test
     public void failParseNotExistingPackageFile(@TempDir final Path tmp) {
-        final FilePackage pack = new FilePackage(tmp.resolve("not-exists.rpm"));
+        final String fake = "not-exists.rpm";
+        final FilePackage pack = new FilePackage(tmp.resolve(fake), fake);
         Assertions.assertThrows(IOException.class, pack::parsed);
+    }
+
+    @Test
+    public void returnsProvidedLocation() {
+        final String location = "subdir/some.rpm";
+        MatcherAssert.assertThat(
+            new FilePackage.Headers(
+                new Header(), Paths.get("unused"), Digest.SHA256, location
+            ).href(),
+            new IsEqual<>(location)
+        );
     }
 }
