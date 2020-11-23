@@ -25,6 +25,7 @@ package com.artipie.rpm.http;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.asto.SubStorage;
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.auth.Authentication;
 import com.artipie.http.auth.Permissions;
@@ -43,8 +44,9 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.text.StringContainsInOrder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 
@@ -60,6 +62,21 @@ public final class RpmSliceITCase {
      * Vertx instance.
      */
     private static final Vertx VERTX = Vertx.vertx();
+
+    /**
+     * Installed packages verifier.
+     */
+    private static final ListOf<String> INSTALLED = new ListOf<>(
+        "Installed", "aspell-12:0.60.6.1-9.el7.x86_64",
+        "time-1.7-45.el7.x86_64", "Complete!"
+    );
+
+    /**
+     * Packaged list verifier.
+     */
+    private static final ListOf<String> LIST = new ListOf<>(
+        "Available Packages", "aspell.x86_64", "12:0.60.6.1-9.el7", "time.x86_64", "1.7-45.el7"
+    );
 
     /**
      * Temporary directory for all tests.
@@ -78,77 +95,50 @@ public final class RpmSliceITCase {
      */
     private GenericContainer<?> cntn;
 
-    @Test
-    void yumCanListAndInstallFromArtipieRepo() throws Exception {
-        this.start(Permissions.FREE, Authentication.ANONYMOUS, "", "centos:centos8");
+    @ParameterizedTest
+    @CsvSource({
+        "centos:centos8,yum,repo-pkgs",
+        "fedora:32,dnf,repository-packages"
+    })
+    void canListAndInstallFromArtipieRepo(final String linux,
+        final String mngr, final String rey) throws Exception {
+        this.start(Permissions.FREE, Authentication.ANONYMOUS, "", linux);
         MatcherAssert.assertThat(
-            "Lists 'time' package",
-            this.yumExec("list"),
-            new StringContainsInOrder(new ListOf<>("time.x86_64", "1.7-45.el7"))
+            "Lists 'time' and 'aspell' packages",
+            this.exec(mngr, rey, "list"),
+            new StringContainsInOrder(RpmSliceITCase.LIST)
         );
         MatcherAssert.assertThat(
-            "Installs 'time' package",
-            this.yumExec("install"),
-            new StringContainsInOrder(new ListOf<>("time-1.7-45.el7.x86_64", "Complete!"))
+            "Installs 'time' and 'aspell' package",
+            this.exec(mngr, rey, "install"),
+            new StringContainsInOrder(RpmSliceITCase.INSTALLED)
         );
     }
 
-    @Test
-    void yumCanListAndInstallFromArtipieRepoWithAuth() throws Exception {
+    @ParameterizedTest
+    @CsvSource({
+        "centos:centos8,yum,repo-pkgs",
+        "fedora:32,dnf,repository-packages"
+    })
+    void canListAndInstallFromArtipieRepoWithAuth(final String linux,
+        final String mngr, final String key) throws Exception {
         final String mark = "mark";
         final String pswd = "abc";
         this.start(
             new Permissions.Single(mark, "download"),
             new Authentication.Single(mark, pswd),
             String.format("%s:%s@", mark, pswd),
-            "centos:centos8"
+            linux
         );
         MatcherAssert.assertThat(
             "Lists 'time' package",
-            this.yumExec("list"),
-            new StringContainsInOrder(new ListOf<>("time.x86_64", "1.7-45.el7"))
+            this.exec(mngr, key, "list"),
+            new StringContainsInOrder(RpmSliceITCase.LIST)
         );
         MatcherAssert.assertThat(
             "Installs 'time' package",
-            this.yumExec("install"),
-            new StringContainsInOrder(new ListOf<>("time-1.7-45.el7.x86_64", "Complete!"))
-        );
-    }
-
-    @Test
-    void dnfCanListAndInstallFromArtipieRepo() throws Exception {
-        this.start(Permissions.FREE, Authentication.ANONYMOUS, "", "fedora:32");
-        MatcherAssert.assertThat(
-            "Lists 'time' package",
-            this.dnfExec("list"),
-            new StringContainsInOrder(new ListOf<>("time.x86_64", "1.7-45.el7"))
-        );
-        MatcherAssert.assertThat(
-            "Installs 'time' package",
-            this.dnfExec("install"),
-            new StringContainsInOrder(new ListOf<>("time-1.7-45.el7.x86_64", "Complete!"))
-        );
-    }
-
-    @Test
-    void dnfCanListAndInstallFromArtipieRepoWithAuth() throws Exception {
-        final String john = "john";
-        final String pswd = "123";
-        this.start(
-            new Permissions.Single(john, "download"),
-            new Authentication.Single(john, pswd),
-            String.format("%s:%s@", john, pswd),
-            "fedora:32"
-        );
-        MatcherAssert.assertThat(
-            "Lists 'time' package",
-            this.dnfExec("list"),
-            new StringContainsInOrder(new ListOf<>("time.x86_64", "1.7-45.el7"))
-        );
-        MatcherAssert.assertThat(
-            "Installs time package",
-            this.dnfExec("install"),
-            new StringContainsInOrder(new ListOf<>("time-1.7-45.el7.x86_64", "Complete!"))
+            this.exec(mngr, key, "install"),
+            new StringContainsInOrder(RpmSliceITCase.INSTALLED)
         );
     }
 
@@ -165,25 +155,15 @@ public final class RpmSliceITCase {
 
     /**
      * Executes yum command in container.
+     * @param mngr Rpm manager
+     * @param key Key to specify repo
      * @param action What to do
      * @return String stdout
      * @throws Exception On error
      */
-    private String yumExec(final String action) throws Exception {
+    private String exec(final String mngr, final String key, final String action) throws Exception {
         return this.cntn.execInContainer(
-            "yum", "-y", "repo-pkgs", "example", action
-        ).getStdout();
-    }
-
-    /**
-     * Executes dnf command in container.
-     * @param action What to do
-     * @return String stdout
-     * @throws Exception On error
-     */
-    private String dnfExec(final String action) throws Exception {
-        return this.cntn.execInContainer(
-            "dnf", "-y", "repository-packages", "example", action
+            mngr, "-y", key, "example", action
         ).getStdout();
     }
 
@@ -200,6 +180,7 @@ public final class RpmSliceITCase {
         final String linux) throws Exception {
         final Storage storage = new InMemoryStorage();
         new TestRpm.Time().put(storage);
+        new TestRpm.Aspell().put(new SubStorage(new Key.From("spelling"), storage));
         final RepoConfig config = new RepoConfig.Simple(
             Digest.SHA256, new NamingPolicy.HashPrefixed(Digest.SHA1), true
         );
