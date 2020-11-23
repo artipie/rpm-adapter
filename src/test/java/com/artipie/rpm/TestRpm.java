@@ -59,6 +59,20 @@ public interface TestRpm {
     Path path();
 
     /**
+     * Spell checker sentos rpm.
+     * @since 1.4
+     */
+    final class Aspell extends FromPath {
+
+        /**
+         * Ctor.
+         */
+        public Aspell() {
+            super("aspell-0.60.6.1-9.el7.x86_64.rpm");
+        }
+    }
+
+    /**
      * Time sentos rpm.
      * @since 0.9
      */
