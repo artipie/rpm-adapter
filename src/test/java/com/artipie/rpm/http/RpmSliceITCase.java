@@ -74,7 +74,7 @@ public final class RpmSliceITCase {
     /**
      * Packaged list verifier.
      */
-    private static final ListOf<String> LIST = new ListOf<>(
+    private static final ListOf<String> AVAILABLE = new ListOf<>(
         "Available Packages", "aspell.x86_64", "12:0.60.6.1-9.el7", "time.x86_64", "1.7-45.el7"
     );
 
@@ -106,7 +106,7 @@ public final class RpmSliceITCase {
         MatcherAssert.assertThat(
             "Lists 'time' and 'aspell' packages",
             this.exec(mngr, rey, "list"),
-            new StringContainsInOrder(RpmSliceITCase.LIST)
+            new StringContainsInOrder(RpmSliceITCase.AVAILABLE)
         );
         MatcherAssert.assertThat(
             "Installs 'time' and 'aspell' package",
@@ -133,7 +133,7 @@ public final class RpmSliceITCase {
         MatcherAssert.assertThat(
             "Lists 'time' package",
             this.exec(mngr, key, "list"),
-            new StringContainsInOrder(RpmSliceITCase.LIST)
+            new StringContainsInOrder(RpmSliceITCase.AVAILABLE)
         );
         MatcherAssert.assertThat(
             "Installs 'time' package",
