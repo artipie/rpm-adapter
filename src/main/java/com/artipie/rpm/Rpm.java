@@ -343,14 +343,21 @@ public final class Rpm {
             .filter(key -> key.string().endsWith(".rpm"))
             .flatMapSingle(
                 key -> {
+                    final String filename;
+                    if (key.equals(prefix)) {
+                        filename = key.string();
+                    } else {
+                        filename = key.string().replaceFirst(prefix.string(), "")
+                            .replaceFirst("^/", "");
+                    }
                     return new RxStorageWrapper(this.storage)
                         .value(key)
                         .flatMapCompletable(
                             content -> new RxStorageWrapper(local)
-                                .save(new Key.From(key.string()), content)
+                                .save(new Key.From(filename), content)
                         ).andThen(
                             Single.fromCallable(
-                                () -> new FilePackage(tmpdir.resolve(key.string()), key.string())
+                                () -> new FilePackage(tmpdir.resolve(filename), filename)
                             )
                         );
                 }

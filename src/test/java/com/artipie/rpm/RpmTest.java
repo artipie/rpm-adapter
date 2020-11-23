@@ -61,6 +61,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.llorllale.cactoos.matchers.IsTrue;
 
@@ -273,15 +274,26 @@ final class RpmTest {
     }
 
     @ParameterizedTest
-    @EnumSource(UpdateType.class)
-    void writesSubdirsToLocation(final UpdateType type) throws IOException {
+    @CsvSource({
+        "'',INCREMENTAL",
+        "'',NON_INCREMENTAL",
+        "my_repo,INCREMENTAL",
+        "my_repo,NON_INCREMENTAL",
+        "one/two/three,INCREMENTAL",
+        "one/two/three,NON_INCREMENTAL",
+        "a/b/,INCREMENTAL",
+        "a/b/,NON_INCREMENTAL"
+    })
+    void writesSubdirsToLocation(final String str, final UpdateType type) throws IOException {
         final Rpm repo =  new Rpm(this.storage, StandardNamingPolicy.PLAIN, Digest.SHA256, true);
-        new TestRpm.Abc().put(new SubStorage(new Key.From("subdir"), this.storage));
-        new TestRpm.Libdeflt().put(this.storage);
-        type.action.apply(repo, Key.ROOT).blockingAwait();
+        final Key key = new Key.From(str);
+        final Storage substorage = new SubStorage(key, this.storage);
+        new TestRpm.Abc().put(new SubStorage(new Key.From("subdir"), substorage));
+        new TestRpm.Libdeflt().put(substorage);
+        type.action.apply(repo, key).blockingAwait();
         final Path gzip = Files.createTempFile(RpmTest.tmp, XmlPackage.PRIMARY.name(), "xml.gz");
         Files.write(
-            gzip, new BlockingStorage(this.storage).value(new Key.From("repodata/primary.xml.gz"))
+            gzip, new BlockingStorage(substorage).value(new Key.From("repodata/primary.xml.gz"))
         );
         final Path xml = Files.createTempFile(RpmTest.tmp, XmlPackage.PRIMARY.name(), "xml");
         new Gzip(gzip).unpack(xml);
