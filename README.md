@@ -122,3 +122,13 @@ $ mvn clean install -Pqulice
 ```
 
 To avoid build errors use Maven 3.2+.
+
+## Benchmarking
+
+To run benchmarks:
+ 1. Build `rpm-adapter` with `bench` Maven profile enabled: `mvn package -Pbench`
+ 2. Copy dependencies to `target/` dir: `mvn dependency:copy-dependencies`
+ 3. Create directory for tests and copy test resources to this directory; RPM bundles available:
+  - https://artipie.s3.amazonaws.com/rpm-test/bundle100.tar.gz
+  - https://artipie.s3.amazonaws.com/rpm-test/bundle1000.tar.gz
+ 4. Run benchmarks with `env BENCH_DIR=/tmp/rpm-test java -cp "target/benchmarks.jar:target/classes/*:target/dependency/*" org.openjdk.jmh.Main RpmBench`, where `/tmp/rpm-test` is a directory with RPM packages for tests.

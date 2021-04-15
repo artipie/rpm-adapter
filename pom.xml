@@ -35,6 +35,9 @@ SOFTWARE.
   <description>Turns your files/objects into RPM artifacts</description>
   <url>https://github.com/artipie/rpm-adapter</url>
   <inceptionYear>2019</inceptionYear>
+  <properties>
+    <jmh.version>1.29</jmh.version>
+  </properties>
   <licenses>
     <license>
       <name>MIT</name>
@@ -212,6 +215,16 @@ SOFTWARE.
       <version>1.7.30</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-core</artifactId>
+      <version>${jmh.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-generator-annprocess</artifactId>
+      <version>${jmh.version}</version>
+    </dependency>
   </dependencies>
   <build>
     <testResources>
@@ -320,6 +333,9 @@ SOFTWARE.
                   </limits>
                 </rule>
               </rules>
+              <excludes>
+                <exclude>com/artipie/rpm/benchmarks/**/*</exclude>
+              </excludes>
             </configuration>
           </execution>
           <execution>
@@ -383,6 +399,65 @@ SOFTWARE.
                 </goals>
               </execution>
             </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>bench</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-shade-plugin</artifactId>
+            <version>3.2.0</version>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>shade</goal>
+                </goals>
+                <configuration>
+                  <finalName>benchmarks</finalName>
+                  <transformers>
+                    <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                      <mainClass>org.openjdk.jmh.Main</mainClass>
+                    </transformer>
+                    <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                  </transformers>
+                  <filters>
+                    <filter>
+                      <!--
+                          Shading signed JARs will fail without this.
+                          http://stackoverflow.com/questions/999489/invalid-signature-file-when-attempting-to-run-a-jar
+                      -->
+                      <artifact>*:*</artifact>
+                      <excludes>
+                        <exclude>META-INF/*.SF</exclude>
+                        <exclude>META-INF/*.DSA</exclude>
+                        <exclude>META-INF/*.RSA</exclude>
+                      </excludes>
+                    </filter>
+                  </filters>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy-dependencies</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>copy-dependencies</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <includeScope>runtime</includeScope>
+            </configuration>
           </plugin>
         </plugins>
       </build>
