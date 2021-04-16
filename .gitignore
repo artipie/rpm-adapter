@@ -6,3 +6,4 @@ target/
 .classpath
 .project
 src/test/resources-binary/rpms/**
+.factorypath
