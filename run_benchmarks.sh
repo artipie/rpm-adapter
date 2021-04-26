@@ -1,28 +1,31 @@
-TMPDIR="${PWD}/bundles"
-if [ -d "$TMPDIR" ]; then
-  # Take action if $DIR exists. #
-  echo "removing ${TMPDIR} before running benchmarks"
-  rm -rf ${TMPDIR}
-fi
-mkdir ${TMPDIR}
+#!/bin/sh
+set -e
 
-DIR="rpm-adapter"
-if [ -d "$DIR" ]; then
-  # Take action if $DIR exists. #
-  echo "remove ${DIR} before running benchmarks"
-  exit 0
-fi
-echo "Currently TMP: ${TMPDIR}"
+BUNDLE="bundle100"
+while getopts b: flag
+do
+    case "${flag}" in
+        b) BUNDLE=${OPTARG};;
+    esac
+done
+
+TMPDIR=$(mktemp --directory)
+
+#echo "Currently TMP: ${TMPDIR}"
+#echo "Bundle: ${BUNDLE}"
 #cp /mnt/disk2/projects/rpmtests/bundle1000.tar.gz ${TMPDIR}
 #cp /mnt/disk2/projects/rpmtests/bundle100.tar.gz ${TMPDIR}
 
-git clone https://github.com/artipie/rpm-adapter.git
-cd rpm-adapter
-echo ${PWD}
+#git clone https://github.com/artipie/rpm-adapter.git
+#cd rpm-adapter
 mvn package -Pbench
-wget https://artipie.s3.amazonaws.com/rpm-test/bundle100.tar.gz
-tar -xvzf bundle100.tar.gz -C ${TMPDIR}
-wget https://artipie.s3.amazonaws.com/rpm-test/bundle1000.tar.gz
-tar -xvzf bundle1000.tar.gz -C ${TMPDIR}
+wget https://artipie.s3.amazonaws.com/rpm-test/${BUNDLE}.tar.gz
+tar -xvzf ${BUNDLE}.tar.gz -C ${TMPDIR}
 mvn dependency:copy-dependencies
-env BENCH_DIR=${TMPDIR}/bundle/100 java -cp "target/benchmarks.jar:target/classes/*:target/dependency/*" org.openjdk.jmh.Main RpmBench
+num=$(echo ${BUNDLE} | cut -c7-11)
+echo "num: ${num}"
+echo ${TMPDIR}/bundle/${num}
+env BENCH_DIR=${TMPDIR}/bundle/${num} java -cp "target/benchmarks.jar:target/classes/*:target/dependency/*" org.openjdk.jmh.Main RpmBench > ${TMPDIR}/out.txt
+#cat benchmark.txt > ${TMPDIR}/out.txt
+tail -2 ${TMPDIR}/out.txt
+rm -rf ${TMPDIR}
