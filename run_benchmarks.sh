@@ -13,15 +13,16 @@ if [ -d "$DIR" ]; then
   exit 0
 fi
 echo "Currently TMP: ${TMPDIR}"
-cp /mnt/disk2/projects/rpmtests/bundle1000.tar.gz ${TMPDIR}
-cp /mnt/disk2/projects/rpmtests/bundle100.tar.gz ${TMPDIR}
+#cp /mnt/disk2/projects/rpmtests/bundle1000.tar.gz ${TMPDIR}
+#cp /mnt/disk2/projects/rpmtests/bundle100.tar.gz ${TMPDIR}
 
 git clone https://github.com/artipie/rpm-adapter.git
 cd rpm-adapter
 echo ${PWD}
 mvn package -Pbench
-#wget https://artipie.s3.amazonaws.com/rpm-test/bundle100.tar.gz
-#wget https://artipie.s3.amazonaws.com/rpm-test/bundle1000.tar.gz
-
+wget https://artipie.s3.amazonaws.com/rpm-test/bundle100.tar.gz
+tar -xvzf bundle100.tar.gz -C ${TMPDIR}
+wget https://artipie.s3.amazonaws.com/rpm-test/bundle1000.tar.gz
+tar -xvzf bundle1000.tar.gz -C ${TMPDIR}
 mvn dependency:copy-dependencies
-env BENCH_DIR=${TMPDIR} java -cp "target/benchmarks.jar:target/classes/*:target/dependency/*" org.openjdk.jmh.Main RpmBench
+env BENCH_DIR=${TMPDIR}/bundle/100 java -cp "target/benchmarks.jar:target/classes/*:target/dependency/*" org.openjdk.jmh.Main RpmBench
