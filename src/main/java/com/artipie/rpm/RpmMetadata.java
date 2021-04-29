@@ -28,6 +28,7 @@ import com.artipie.rpm.pkg.FilePackage;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import org.apache.commons.lang3.NotImplementedException;
 
@@ -46,7 +47,7 @@ public interface RpmMetadata {
         /**
          * Metadata list.
          */
-        private final List<MetadataItem> items;
+        private final Collection<MetadataItem> items;
 
         /**
          * Ctor.
@@ -74,7 +75,7 @@ public interface RpmMetadata {
         /**
          * Metadata list.
          */
-        private final List<MetadataItem> items;
+        private final Collection<MetadataItem> items;
 
         /**
          * Ctor.
