@@ -29,7 +29,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import org.apache.commons.lang3.NotImplementedException;
 
 /**
@@ -61,7 +60,7 @@ public interface RpmMetadata {
          * Removes records from metadata by RPMs checksums.
          * @param checksums Rpms checksums  to remove by
          */
-        public void perform(final List<String> checksums) {
+        public void perform(final Collection<String> checksums) {
             throw new NotImplementedException("Will be implemented later");
         }
     }
@@ -89,7 +88,7 @@ public interface RpmMetadata {
          * Appends records about provided RPMs.
          * @param packages Rpms to append info about
          */
-        public void perform(final List<FilePackage> packages) {
+        public void perform(final Collection<FilePackage> packages) {
             throw new NotImplementedException("Not implemented yet");
         }
     }
