@@ -69,26 +69,8 @@ public final class XmlPrimaryMaid implements XmlMaid {
         final long res;
         try (InputStream in = Files.newInputStream(this.file);
             OutputStream out = Files.newOutputStream(tmp)) {
-            final XMLEventReader reader = new InputFactoryImpl().createXMLEventReader(in);
-            final XMLEventWriter writer = new OutputFactoryImpl().createXMLEventWriter(out);
-            try {
-                final XMLEventFactory events = XMLEventFactory.newFactory();
-                writer.add(reader.nextEvent());
-                writer.add(events.createSpace("\n"));
-                writer.add(reader.nextEvent());
-                writer.add(reader.nextEvent());
-                res = XmlPrimaryMaid.processPackages(checksums, reader, writer);
-                writer.add(events.createSpace("\n"));
-                writer.add(
-                    events.createEndElement(
-                        new QName(XmlPackage.PRIMARY.tag()), Collections.emptyIterator()
-                    )
-                );
-            } finally {
-                writer.close();
-                reader.close();
-            }
-        } catch (final XMLStreamException ex) {
+            res = new Stream(in, out).clean(checksums);
+        } catch (final IOException ex) {
             throw new XmlException(ex);
         }
         Files.move(tmp, this.file, StandardCopyOption.REPLACE_EXISTING);
@@ -96,52 +78,112 @@ public final class XmlPrimaryMaid implements XmlMaid {
     }
 
     /**
-     * Processes packages.
-     * @param checksums Checksums to skip
-     * @param reader Where to read from
-     * @param writer Where to write
-     * @return Valid packages count
-     * @throws XMLStreamException If fails
+     * Implementation of {@link XmlMaid} to clean primary.xml and work with streams.
+     * Input/output streams are not closed in this implementation, resources
+     * should be closed from the outside.
+     * @since 1.4
      */
-    private static long processPackages(final List<String> checksums,
-        final XMLEventReader reader, final XMLEventWriter writer) throws XMLStreamException {
-        XMLEvent event;
-        final List<XMLEvent> pckg = new ArrayList<>(10);
-        boolean valid = true;
-        long cnt = 0;
-        while (reader.hasNext()) {
-            event = reader.nextEvent();
-            if (XmlPrimaryMaid.isTag(event, "package")) {
-                pckg.clear();
+    public static final class Stream implements XmlMaid {
+
+        /**
+         * Input.
+         */
+        private final InputStream input;
+
+        /**
+         * Output.
+         */
+        private final OutputStream out;
+
+        /**
+         * Ctor.
+         * @param input Input
+         * @param out Output
+         */
+        public Stream(final InputStream input, final OutputStream out) {
+            this.input = input;
+            this.out = out;
+        }
+
+        @Override
+        public long clean(final List<String> ids) throws IOException {
+            final long res;
+            try {
+                final XMLEventReader reader =
+                    new InputFactoryImpl().createXMLEventReader(this.input);
+                final XMLEventWriter writer =
+                    new OutputFactoryImpl().createXMLEventWriter(this.out);
+                try {
+                    final XMLEventFactory events = XMLEventFactory.newFactory();
+                    writer.add(reader.nextEvent());
+                    writer.add(events.createSpace("\n"));
+                    writer.add(reader.nextEvent());
+                    writer.add(reader.nextEvent());
+                    res = Stream.processPackages(ids, reader, writer);
+                    writer.add(events.createSpace("\n"));
+                    writer.add(
+                        events.createEndElement(
+                            new QName(XmlPackage.PRIMARY.tag()), Collections.emptyIterator()
+                        )
+                    );
+                } finally {
+                    writer.close();
+                    reader.close();
+                }
+            } catch (final XMLStreamException err) {
+                throw new IOException(err);
             }
-            pckg.add(event);
-            if (XmlPrimaryMaid.isTag(event, "checksum")
-            ) {
+            return res;
+        }
+
+        /**
+         * Processes packages.
+         * @param checksums Checksums to skip
+         * @param reader Where to read from
+         * @param writer Where to write
+         * @return Valid packages count
+         * @throws XMLStreamException If fails
+         */
+        private static long processPackages(final List<String> checksums,
+            final XMLEventReader reader, final XMLEventWriter writer) throws XMLStreamException {
+            XMLEvent event;
+            final List<XMLEvent> pckg = new ArrayList<>(10);
+            boolean valid = true;
+            long cnt = 0;
+            while (reader.hasNext()) {
                 event = reader.nextEvent();
+                if (Stream.isTag(event, "package")) {
+                    pckg.clear();
+                }
                 pckg.add(event);
-                valid = event.isCharacters()
-                    && !checksums.contains(event.asCharacters().getData());
-            }
-            if (event.isEndElement()
-                && event.asEndElement().getName().getLocalPart().equals("package") && valid) {
-                cnt = cnt + 1;
-                for (final XMLEvent item : pckg) {
-                    writer.add(item);
+                if (Stream.isTag(event, "checksum")
+                ) {
+                    event = reader.nextEvent();
+                    pckg.add(event);
+                    valid = event.isCharacters()
+                        && !checksums.contains(event.asCharacters().getData());
+                }
+                if (event.isEndElement()
+                    && event.asEndElement().getName().getLocalPart().equals("package") && valid) {
+                    cnt = cnt + 1;
+                    for (final XMLEvent item : pckg) {
+                        writer.add(item);
+                    }
                 }
             }
+            return cnt;
         }
-        return cnt;
-    }
 
-    /**
-     * Checks event.
-     * @param event Event
-     * @param tag Xml tag
-     * @return True is this event is given xml tag
-     */
-    private static boolean isTag(final XMLEvent event, final String tag) {
-        return event.isStartElement()
-            && event.asStartElement().getName().getLocalPart().equals(tag);
+        /**
+         * Checks event.
+         * @param event Event
+         * @param tag Xml tag
+         * @return True is this event is given xml tag
+         */
+        private static boolean isTag(final XMLEvent event, final String tag) {
+            return event.isStartElement()
+                && event.asStartElement().getName().getLocalPart().equals(tag);
+        }
     }
 
 }
