@@ -23,6 +23,8 @@
  */
 package com.artipie.rpm.meta;
 
+import com.fasterxml.aalto.stax.InputFactoryImpl;
+import com.fasterxml.aalto.stax.OutputFactoryImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -36,8 +38,6 @@ import javax.xml.namespace.QName;
 import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLEventWriter;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
 
@@ -69,8 +69,8 @@ public final class XmlPrimaryMaid implements XmlMaid {
         final long res;
         try (InputStream in = Files.newInputStream(this.file);
             OutputStream out = Files.newOutputStream(tmp)) {
-            final XMLEventReader reader = XMLInputFactory.newInstance().createXMLEventReader(in);
-            final XMLEventWriter writer = XMLOutputFactory.newInstance().createXMLEventWriter(out);
+            final XMLEventReader reader = new InputFactoryImpl().createXMLEventReader(in);
+            final XMLEventWriter writer = new OutputFactoryImpl().createXMLEventWriter(out);
             try {
                 final XMLEventFactory events = XMLEventFactory.newFactory();
                 writer.add(reader.nextEvent());

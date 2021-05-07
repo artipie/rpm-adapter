@@ -124,6 +124,11 @@ SOFTWARE.
       <version>1.8.0-alpha2</version>
     </dependency>
     <dependency>
+      <groupId>com.fasterxml</groupId>
+      <artifactId>aalto-xml</artifactId>
+      <version>1.2.2</version>
+    </dependency>
+    <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
       <scope>runtime</scope>
@@ -194,13 +199,13 @@ SOFTWARE.
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
-      <version>1.14.3</version>
+      <version>1.15.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>junit-jupiter</artifactId>
-      <version>1.14.3</version>
+      <version>1.15.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -338,7 +343,7 @@ SOFTWARE.
                     <limit>
                       <counter>CLASS</counter>
                       <value>MISSEDCOUNT</value>
-                      <maximum>4</maximum>
+                      <maximum>5</maximum>
                     </limit>
                   </limits>
                 </rule>
