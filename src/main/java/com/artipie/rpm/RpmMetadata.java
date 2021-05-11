@@ -71,22 +71,25 @@ public interface RpmMetadata {
          */
         public void perform(final Collection<String> checksums) throws IOException {
             for (final MetadataItem item : this.items) {
-                final XmlMaid maid;
                 final Path temp = Files.createTempFile("rpm-index", "xml");
-                final long res;
-                try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(temp))) {
-                    if (item.type == XmlPackage.PRIMARY) {
-                        maid = new XmlPrimaryMaid.Stream(item.input, out);
-                    } else {
-                        maid = new XmlMaid.ByPkgidAttr.Stream(item.input, out);
+                try {
+                    final long res;
+                    final XmlMaid maid;
+                    try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(temp))) {
+                        if (item.type == XmlPackage.PRIMARY) {
+                            maid = new XmlPrimaryMaid.Stream(item.input, out);
+                        } else {
+                            maid = new XmlMaid.ByPkgidAttr.Stream(item.input, out);
+                        }
+                        res = maid.clean(checksums);
                     }
-                    res = maid.clean(checksums);
+                    try (InputStream input = new BufferedInputStream(Files.newInputStream(temp))) {
+                        new XmlAlter.Stream(input, item.out)
+                            .pkgAttr(item.type.tag(), String.valueOf(res));
+                    }
+                } finally {
+                    Files.delete(temp);
                 }
-                try (InputStream input = new BufferedInputStream(Files.newInputStream(temp))) {
-                    new XmlAlter.Stream(input, item.out)
-                        .pkgAttr(item.type.tag(), String.valueOf(res));
-                }
-                Files.delete(temp);
             }
         }
     }
