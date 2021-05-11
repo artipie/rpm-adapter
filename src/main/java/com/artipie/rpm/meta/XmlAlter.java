@@ -47,87 +47,141 @@ import javax.xml.stream.events.XMLEvent;
  * Alter xml file.
  * @since 0.8
  */
-public final class XmlAlter {
+public interface XmlAlter {
 
     /**
-     * File to update.
-     */
-    private final Path file;
-
-    /**
-     * Ctor.
-     * @param file File to update
-     */
-    public XmlAlter(final Path file) {
-        this.file = file;
-    }
-
-    /**
-     * Updates packages attribute of the given file.
+     * Updates `packages` attribute of the given tag with specified value.
+     *
      * @param tag Tag to change
      * @param value Value for the attribute
      * @throws IOException When error occurs
      */
-    public void pkgAttr(final String tag, final String value) throws IOException {
-        final Path trf = Files.createTempFile("", ".xml");
-        try (
-            InputStream input = Files.newInputStream(this.file);
-            OutputStream out = Files.newOutputStream(trf)) {
-            final XMLEventReader reader = XMLInputFactory.newInstance().createXMLEventReader(input);
-            final XMLEventWriter writer = XMLOutputFactory.newInstance().createXMLEventWriter(out);
-            XMLEvent event;
-            while (reader.hasNext()) {
-                event = reader.nextEvent();
-                if (event.isStartElement()
-                    && event.asStartElement().getName().getLocalPart().equals(tag)) {
-                    writer.add(alterEvent(event, value));
-                } else {
-                    writer.add(event);
-                }
-            }
-            reader.close();
-            writer.close();
-        } catch (final XMLStreamException err) {
-            throw new XmlException("Failed to alter file", err);
+    void pkgAttr(String tag, String value) throws IOException;
+
+    /**
+     * Implementation of {@link XmlAlter} that alters tag of the provided file.
+     * @since 1.4
+     */
+    class File implements XmlAlter {
+
+        /**
+         * File to update.
+         */
+        private final Path file;
+
+        /**
+         * Ctor.
+         *
+         * @param file File to update
+         */
+        public File(final Path file) {
+            this.file = file;
         }
-        Files.move(trf, this.file, StandardCopyOption.REPLACE_EXISTING);
+
+        @Override
+        public void pkgAttr(final String tag, final String value) throws IOException {
+            final Path trf = Files.createTempFile("", ".xml");
+            try (
+                InputStream input = Files.newInputStream(this.file);
+                OutputStream out = Files.newOutputStream(trf)) {
+                new Stream(input, out).pkgAttr(tag, value);
+            }
+            Files.move(trf, this.file, StandardCopyOption.REPLACE_EXISTING);
+        }
+
     }
 
     /**
-     * Alters event by changing packages attribute value.
-     * @param original Original event
-     * @param value New value
-     * @return Altered event
+     * Implementation of {@link XmlAlter} that works with streams, it reads data from
+     * provided InputStream, alters tag attribute and writes result into OutputStream.
+     * @since 1.4
      */
-    private static XMLEvent alterEvent(final XMLEvent original, final String value) {
-        final StartElement element = original.asStartElement();
-        final List<Attribute> newattrs = new ArrayList<>(0);
-        final XMLEventFactory events = XMLEventFactory.newFactory();
-        boolean replaced = false;
-        final Iterator<?> origattrs = element.getAttributes();
-        final XMLEvent res;
-        while (origattrs.hasNext()) {
-            final Attribute attr = (Attribute) origattrs.next();
-            if (attr.getName().getLocalPart().equals("packages")) {
-                newattrs.add(events.createAttribute(attr.getName(), value));
-                replaced = true;
-            } else {
-                newattrs.add(attr);
+    final class Stream implements XmlAlter {
+
+        /**
+         * Input.
+         */
+        private final InputStream input;
+
+        /**
+         * Output.
+         */
+        private final OutputStream out;
+
+        /**
+         * Ctor.
+         * @param input Input to read data from
+         * @param out Where to write the result
+         */
+        public Stream(final InputStream input, final OutputStream out) {
+            this.input = input;
+            this.out = out;
+        }
+
+        @Override
+        public void pkgAttr(final String tag, final String value) {
+            try {
+                final XMLEventReader reader = XMLInputFactory.newInstance()
+                    .createXMLEventReader(this.input);
+                final XMLEventWriter writer = XMLOutputFactory.newInstance()
+                    .createXMLEventWriter(this.out);
+                try {
+                    XMLEvent event;
+                    while (reader.hasNext()) {
+                        event = reader.nextEvent();
+                        if (event.isStartElement()
+                            && event.asStartElement().getName().getLocalPart().equals(tag)) {
+                            writer.add(alterEvent(event, value));
+                        } else {
+                            writer.add(event);
+                        }
+                    }
+                } finally {
+                    reader.close();
+                    writer.close();
+                }
+            } catch (final XMLStreamException err) {
+                throw new XmlException(err);
             }
         }
-        if (replaced) {
-            final QName name = element.getName();
-            res = events.createStartElement(
-                name.getPrefix(),
-                name.getNamespaceURI(),
-                name.getLocalPart(),
-                newattrs.iterator(),
-                element.getNamespaces(),
-                element.getNamespaceContext()
-            );
-        } else {
-            res = original;
+
+        /**
+         * Alters event by changing packages attribute value.
+         *
+         * @param original Original event
+         * @param value New value
+         * @return Altered event
+         */
+        private static XMLEvent alterEvent(final XMLEvent original, final String value) {
+            final StartElement element = original.asStartElement();
+            final List<Attribute> newattrs = new ArrayList<>(0);
+            final XMLEventFactory events = XMLEventFactory.newFactory();
+            boolean replaced = false;
+            final Iterator<?> origattrs = element.getAttributes();
+            final XMLEvent res;
+            while (origattrs.hasNext()) {
+                final Attribute attr = (Attribute) origattrs.next();
+                if (attr.getName().getLocalPart().equals("packages")) {
+                    newattrs.add(events.createAttribute(attr.getName(), value));
+                    replaced = true;
+                } else {
+                    newattrs.add(attr);
+                }
+            }
+            if (replaced) {
+                final QName name = element.getName();
+                res = events.createStartElement(
+                    name.getPrefix(),
+                    name.getNamespaceURI(),
+                    name.getLocalPart(),
+                    newattrs.iterator(),
+                    element.getNamespaces(),
+                    element.getNamespaceContext()
+                );
+            } else {
+                res = original;
+            }
+            return res;
         }
-        return res;
     }
 }

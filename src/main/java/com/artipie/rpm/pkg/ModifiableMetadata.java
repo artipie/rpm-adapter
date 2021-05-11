@@ -86,7 +86,7 @@ public final class ModifiableMetadata implements Metadata {
                 this.cnt = this.origin.output().maid().clean(pkgs);
             }
         }
-        new XmlAlter(this.origin.output().file()).pkgAttr(
+        new XmlAlter.File(this.origin.output().file()).pkgAttr(
             this.origin.output().tag(), String.valueOf(this.cnt)
         );
     }

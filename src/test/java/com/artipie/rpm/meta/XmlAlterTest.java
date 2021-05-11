@@ -45,7 +45,7 @@ class XmlAlterTest {
         final Path file = temp.resolve("primary.xml");
         Files.copy(new TestResource("repodata/primary.xml.example").asPath(), file);
         final int expected = 10;
-        new XmlAlter(file).pkgAttr("metadata", String.valueOf(expected));
+        new XmlAlter.File(file).pkgAttr("metadata", String.valueOf(expected));
         MatcherAssert.assertThat(
             new String(Files.readAllBytes(file), StandardCharsets.UTF_8),
             XhtmlMatchers.hasXPath(String.format("/*[@packages='%s']", expected))
@@ -65,7 +65,7 @@ class XmlAlterTest {
             ).getBytes()
         );
         final int expected = 10;
-        new XmlAlter(file).pkgAttr("tag", String.valueOf(expected));
+        new XmlAlter.File(file).pkgAttr("tag", String.valueOf(expected));
         MatcherAssert.assertThat(
             new String(Files.readAllBytes(file), StandardCharsets.UTF_8),
             XhtmlMatchers.hasXPath(String.format("/*[@packages='%s']", expected))
@@ -81,7 +81,7 @@ class XmlAlterTest {
             "<one packages=\"2\" name=\"abc\"><a>2</a></one>"
         ).getBytes();
         Files.write(file, xml);
-        new XmlAlter(file).pkgAttr("two", "10");
+        new XmlAlter.File(file).pkgAttr("two", "10");
         MatcherAssert.assertThat(
             file,
             new IsXmlEqual(xml)
@@ -97,7 +97,7 @@ class XmlAlterTest {
             "<tag name=\"abc\"><a>2</a></tag>"
         ).getBytes();
         Files.write(file, xml);
-        new XmlAlter(file).pkgAttr("tag", "23");
+        new XmlAlter.File(file).pkgAttr("tag", "23");
         MatcherAssert.assertThat(
             file,
             new IsXmlEqual(xml)

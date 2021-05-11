@@ -90,7 +90,7 @@ public final class MetadataFile implements Metadata {
 
     @Override
     public void brush(final List<String> ids) throws IOException {
-        new XmlAlter(this.out.file()).pkgAttr(this.out.tag(), String.valueOf(this.cnt.get()));
+        new XmlAlter.File(this.out.file()).pkgAttr(this.out.tag(), String.valueOf(this.cnt.get()));
     }
 
     @Override
