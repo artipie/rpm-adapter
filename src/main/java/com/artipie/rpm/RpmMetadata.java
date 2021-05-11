@@ -23,10 +23,18 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.rpm.meta.XmlAlter;
+import com.artipie.rpm.meta.XmlMaid;
 import com.artipie.rpm.meta.XmlPackage;
+import com.artipie.rpm.meta.XmlPrimaryMaid;
 import com.artipie.rpm.pkg.FilePackage;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import org.apache.commons.lang3.NotImplementedException;
@@ -59,9 +67,30 @@ public interface RpmMetadata {
         /**
          * Removes records from metadata by RPMs checksums.
          * @param checksums Rpms checksums  to remove by
+         * @throws IOException On io-operation result error
          */
-        public void perform(final Collection<String> checksums) {
-            throw new NotImplementedException("Will be implemented later");
+        public void perform(final Collection<String> checksums) throws IOException {
+            for (final MetadataItem item : this.items) {
+                final Path temp = Files.createTempFile("rpm-index", "xml");
+                try {
+                    final long res;
+                    final XmlMaid maid;
+                    try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(temp))) {
+                        if (item.type == XmlPackage.PRIMARY) {
+                            maid = new XmlPrimaryMaid.Stream(item.input, out);
+                        } else {
+                            maid = new XmlMaid.ByPkgidAttr.Stream(item.input, out);
+                        }
+                        res = maid.clean(checksums);
+                    }
+                    try (InputStream input = new BufferedInputStream(Files.newInputStream(temp))) {
+                        new XmlAlter.Stream(input, item.out)
+                            .pkgAttr(item.type.tag(), String.valueOf(res));
+                    }
+                } finally {
+                    Files.delete(temp);
+                }
+            }
         }
     }
 
