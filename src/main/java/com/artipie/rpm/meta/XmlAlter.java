@@ -125,18 +125,21 @@ public interface XmlAlter {
                     .createXMLEventReader(this.input);
                 final XMLEventWriter writer = XMLOutputFactory.newInstance()
                     .createXMLEventWriter(this.out);
-                XMLEvent event;
-                while (reader.hasNext()) {
-                    event = reader.nextEvent();
-                    if (event.isStartElement()
-                        && event.asStartElement().getName().getLocalPart().equals(tag)) {
-                        writer.add(alterEvent(event, value));
-                    } else {
-                        writer.add(event);
+                try {
+                    XMLEvent event;
+                    while (reader.hasNext()) {
+                        event = reader.nextEvent();
+                        if (event.isStartElement()
+                            && event.asStartElement().getName().getLocalPart().equals(tag)) {
+                            writer.add(alterEvent(event, value));
+                        } else {
+                            writer.add(event);
+                        }
                     }
+                } finally {
+                    reader.close();
+                    writer.close();
                 }
-                reader.close();
-                writer.close();
             } catch (final XMLStreamException err) {
                 throw new XmlException(err);
             }
