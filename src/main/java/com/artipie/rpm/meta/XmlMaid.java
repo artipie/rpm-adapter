@@ -31,7 +31,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.List;
+import java.util.Collection;
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLEventWriter;
@@ -50,7 +50,7 @@ public interface XmlMaid {
      * @return Packages count
      * @throws IOException When something wrong
      */
-    long clean(List<String> ids) throws IOException;
+    long clean(Collection<String> ids) throws IOException;
 
     /**
      * Cleans xml by pkgid attribute in package tag.
@@ -77,7 +77,7 @@ public interface XmlMaid {
         }
 
         @Override
-        public long clean(final List<String> ids) throws IOException {
+        public long clean(final Collection<String> ids) throws IOException {
             final Path tmp = this.file.getParent().resolve(
                 String.format("%s.part", this.file.getFileName().toString())
             );
@@ -121,7 +121,7 @@ public interface XmlMaid {
             }
 
             @Override
-            public long clean(final List<String> ids) throws IOException {
+            public long clean(final Collection<String> ids) throws IOException {
                 final long res;
                 try {
                     final XMLEventReader reader =
@@ -148,7 +148,7 @@ public interface XmlMaid {
              * @return Valid packages count
              * @throws XMLStreamException When error occurs
              */
-            private static long process(final List<String> ids, final XMLEventReader reader,
+            private static long process(final Collection<String> ids, final XMLEventReader reader,
                 final XMLEventWriter writer) throws XMLStreamException {
                 boolean valid = true;
                 long cnt = 0;

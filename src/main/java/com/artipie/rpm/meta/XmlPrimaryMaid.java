@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import javax.xml.namespace.QName;
@@ -62,7 +63,7 @@ public final class XmlPrimaryMaid implements XmlMaid {
     }
 
     @Override
-    public long clean(final List<String> checksums) throws IOException {
+    public long clean(final Collection<String> checksums) throws IOException {
         final Path tmp = this.file.getParent().resolve(
             String.format("%s.part", this.file.getFileName().toString())
         );
@@ -106,7 +107,7 @@ public final class XmlPrimaryMaid implements XmlMaid {
         }
 
         @Override
-        public long clean(final List<String> ids) throws IOException {
+        public long clean(final Collection<String> ids) throws IOException {
             final long res;
             try {
                 final XMLEventReader reader =
@@ -144,7 +145,7 @@ public final class XmlPrimaryMaid implements XmlMaid {
          * @return Valid packages count
          * @throws XMLStreamException If fails
          */
-        private static long processPackages(final List<String> checksums,
+        private static long processPackages(final Collection<String> checksums,
             final XMLEventReader reader, final XMLEventWriter writer) throws XMLStreamException {
             XMLEvent event;
             final List<XMLEvent> pckg = new ArrayList<>(10);
