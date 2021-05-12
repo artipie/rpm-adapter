@@ -149,7 +149,8 @@ public interface RpmMetadata {
          * @param input Xml metadata input stream
          * @param out Xml metadata output, where write the result
          */
-        MetadataItem(final XmlPackage type, final InputStream input, final OutputStream out) {
+        public MetadataItem(final XmlPackage type, final InputStream input,
+            final OutputStream out) {
             this.type = type;
             this.input = input;
             this.out = out;
