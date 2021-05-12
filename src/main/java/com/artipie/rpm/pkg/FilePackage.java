@@ -101,7 +101,7 @@ public final class FilePackage implements Package {
      * File package metadata.
      * @since 0.6
      */
-    static final class Headers implements Meta {
+    public static final class Headers implements Meta {
 
         /**
          * Native headers.
@@ -131,7 +131,8 @@ public final class FilePackage implements Package {
          * @param location File relative location
          * @checkstyle ParameterNumberCheck (10 lines)
          */
-        Headers(final Header hdr, final Path file, final Digest digest, final String location) {
+        public Headers(final Header hdr, final Path file, final Digest digest,
+            final String location) {
             this.hdr = hdr;
             this.file = file;
             this.digest = digest;
@@ -144,7 +145,7 @@ public final class FilePackage implements Package {
          * @param file File path
          * @param digest Digest
          */
-        Headers(final Header hdr, final Path file, final Digest digest) {
+        public Headers(final Header hdr, final Path file, final Digest digest) {
             this(hdr, file, digest, file.getFileName().toString());
         }
 
