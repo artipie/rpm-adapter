@@ -27,7 +27,6 @@ import com.artipie.rpm.meta.XmlAlter;
 import com.artipie.rpm.meta.XmlMaid;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryMaid;
-import com.artipie.rpm.pkg.FilePackage;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -37,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import org.apache.commons.lang3.NotImplementedException;
 
 /**
@@ -106,18 +106,25 @@ public interface RpmMetadata {
         private final Collection<MetadataItem> items;
 
         /**
+         * Digest algorithm.
+         */
+        private final Digest digest;
+
+        /**
          * Ctor.
+         * @param digest Digest algorithm
          * @param items Metadata items
          */
-        public Append(final MetadataItem... items) {
+        public Append(final Digest digest, final MetadataItem... items) {
+            this.digest = digest;
             this.items = Arrays.asList(items);
         }
 
         /**
          * Appends records about provided RPMs.
-         * @param packages Rpms to append info about
+         * @param packages Rpms to append info about, map of the path to file and location
          */
-        public void perform(final Collection<FilePackage> packages) {
+        public void perform(final Map<Path, String> packages) {
             throw new NotImplementedException("Not implemented yet");
         }
     }

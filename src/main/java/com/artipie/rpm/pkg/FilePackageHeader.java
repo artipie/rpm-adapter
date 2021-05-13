@@ -40,7 +40,7 @@ import org.redline_rpm.header.Header;
  *
  * @since 0.10
  */
-final class FilePackageHeader {
+public final class FilePackageHeader {
 
     /**
      * The RPM file.
@@ -52,7 +52,7 @@ final class FilePackageHeader {
      *
      * @param file The RPM file.
      */
-    FilePackageHeader(final Path file) {
+    public FilePackageHeader(final Path file) {
         this.file = file;
     }
 
@@ -64,7 +64,7 @@ final class FilePackageHeader {
      * @throws IOException In case of I/O error.
      */
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    Header header() throws InvalidPackageException, IOException {
+    public Header header() throws InvalidPackageException, IOException {
         try (FileChannel chan = FileChannel.open(this.file, StandardOpenOption.READ)) {
             final Format format;
             try {
