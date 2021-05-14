@@ -40,10 +40,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Test for {@link XmlEvent.Others}.
+ * Test for {@link XmlEvent.Other}.
  * @since 1.5
  */
-class XmlEventOthersTest {
+class XmlEventFilelistsTest {
 
     /**
      * Temporary directory for all tests.
@@ -54,11 +54,11 @@ class XmlEventOthersTest {
 
     @Test
     void writesPackageInfo() throws XMLStreamException, IOException {
-        final Path res = Files.createTempFile(this.tmp, "others", ".xml");
-        final Path file = new TestResource("abc-1.01-26.git20200127.fc32.ppc64le.rpm").asPath();
+        final Path res = Files.createTempFile(this.tmp, "filelists", ".xml");
+        final Path file = new TestResource("libdeflt1_0-2020.03.27-25.1.armv7hl.rpm").asPath();
         try (OutputStream out = Files.newOutputStream(res)) {
             final XMLEventWriter writer = new OutputFactoryImpl().createXMLEventWriter(out);
-            new XmlEvent.Others(writer).add(
+            new XmlEvent.Filelists(writer).add(
                 new FilePackage.Headers(new FilePackageHeader(file).header(), file, Digest.SHA256)
             );
             writer.close();
@@ -69,8 +69,11 @@ class XmlEventOthersTest {
                 String.join(
                     "\n",
                     //@checkstyle LineLengthCheck (1 line)
-                    "<package pkgid=\"b9d10ae3485a5c5f71f0afb1eaf682bfbea4ea667cc3c3975057d6e3d8f2e905\" name=\"abc\" arch=\"ppc64le\">",
-                    "<version epoch=\"0\" ver=\"1.01\" rel=\"26.git20200127.fc32\"/>",
+                    "<package pkgid=\"47bbb8b2401e8853812e6340f4197252b92463c132f64a257e18c0c8c83ae462\" name=\"libdeflt1_0\" arch=\"armv7hl\">",
+                    "<version epoch=\"0\" ver=\"2020.03.27\" rel=\"25.1\"/>",
+                    "<file>/usr/lib/libdeflt.so.1.0</file>",
+                    "<file type=\"dir\">/usr/share/licenses/libdeflt1_0</file>",
+                    "<file>/usr/share/licenses/libdeflt1_0/CDDL.Schily.txt</file>",
                     "</package>"
                 )
             )
