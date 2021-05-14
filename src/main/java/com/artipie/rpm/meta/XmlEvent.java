@@ -52,7 +52,7 @@ public interface XmlEvent {
      * Implementation of {@link XmlEvent} to build event for `package` and `version` tags.
      * @since 1.5
      */
-    class PackageAndVersion implements XmlEvent {
+    final class PackageAndVersion implements XmlEvent {
 
         /**
          * Where to write the event.
@@ -93,7 +93,7 @@ public interface XmlEvent {
      * Implementation of {@link XmlEvent} to build event for {@link XmlPackage#OTHER} package.
      * @since 1.5
      */
-    class Other implements XmlEvent {
+    final class Other implements XmlEvent {
 
         /**
          * Where to write the event.
@@ -134,7 +134,7 @@ public interface XmlEvent {
      * Implementation of {@link XmlEvent} to build event for {@link XmlPackage#FILELISTS} package.
      * @since 1.5
      */
-    class Filelists implements XmlEvent {
+    final class Filelists implements XmlEvent {
 
         /**
          * Where to write the event.
@@ -161,6 +161,9 @@ public interface XmlEvent {
                 final int[] did = tags.dirIndexes();
                 for (int idx = 0; idx < files.length; idx += 1) {
                     final String fle = files[idx];
+                    // @checkstyle MethodBodyCommentsCheck (2 lines)
+                    // @todo #388:30min This condition is not covered with unit test, extend
+                    //  the test to check this case and make sure it works properly.
                     if (fle.isEmpty() || fle.charAt(0) == '.') {
                         continue;
                     }

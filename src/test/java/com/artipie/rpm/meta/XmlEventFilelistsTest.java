@@ -42,6 +42,7 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Test for {@link XmlEvent.Other}.
  * @since 1.5
+ * @todo #388:30min Extend this test to check
  */
 class XmlEventFilelistsTest {
 
