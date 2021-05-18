@@ -40,23 +40,23 @@ import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 
 /**
- * Test for {@link XmlPrimaryComposition}.
+ * Test for {@link MergedPrimaryXml}.
  * @since 1.5
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle MagicNumberCheck (500 lines)
  */
-class XmlPrimaryCompositionTest {
+class MergedPrimaryXmlTest {
 
     @Test
     void addsRecords() throws IOException {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         final TestRpm.Libdeflt libdeflt = new TestRpm.Libdeflt();
         try (InputStream input = new TestResource("repodata/primary.xml.example").asInputStream()) {
-            final XmlPrimaryComposition.Result res =
-                new XmlPrimaryComposition(
+            final MergedPrimaryXml.Result res =
+                new MergedPrimaryXml(
                     input,
                     out, Digest.SHA256
-                ).append(
+                ).merge(
                     new MapOf<Path, String>(
                         new MapEntry<>(libdeflt.path(), libdeflt.path().getFileName().toString())
                     )

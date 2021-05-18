@@ -48,12 +48,12 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
 
 /**
- * Xml primary composition: appends provided information to primary.xml,
+ * Merged primary xml: appends provided information to primary.xml,
  * excluding duplicated packages by `location` tag.
  * @since 1.5
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
-public final class XmlPrimaryComposition {
+public final class MergedPrimaryXml {
 
     /**
      * From where to read primary.xml.
@@ -76,7 +76,7 @@ public final class XmlPrimaryComposition {
      * @param out Output stream
      * @param dgst Digest algorithm
      */
-    public XmlPrimaryComposition(final InputStream input, final OutputStream out,
+    public MergedPrimaryXml(final InputStream input, final OutputStream out,
         final Digest dgst) {
         this.input = input;
         this.out = out;
@@ -89,7 +89,7 @@ public final class XmlPrimaryComposition {
      * @return Result of the operation: final packages count and ids of the duplicated packages
      * @throws IOException On error
      */
-    public Result append(final Map<Path, String> packages) throws IOException {
+    public Result merge(final Map<Path, String> packages) throws IOException {
         final AtomicLong res = new AtomicLong();
         final Collection<String> checksums;
         try {
@@ -103,7 +103,7 @@ public final class XmlPrimaryComposition {
                 writer.add(events.createSpace("\n"));
                 writer.add(reader.nextEvent());
                 writer.add(reader.nextEvent());
-                checksums = XmlPrimaryComposition.processPackages(
+                checksums = MergedPrimaryXml.processPackages(
                     new HashSet<>(packages.values()), reader, writer, res
                 );
                 for (final Map.Entry<Path, String> item : packages.entrySet()) {
@@ -153,14 +153,14 @@ public final class XmlPrimaryComposition {
         String checksum = "123";
         while (reader.hasNext()) {
             event = reader.nextEvent();
-            if (XmlPrimaryComposition.isTag(event, "package")) {
+            if (MergedPrimaryXml.isTag(event, "package")) {
                 pckg.clear();
             }
             pckg.add(event);
-            if (XmlPrimaryComposition.isTag(event, "checksum") && event.isCharacters()) {
+            if (MergedPrimaryXml.isTag(event, "checksum") && event.isCharacters()) {
                 checksum = event.asCharacters().getData();
             }
-            if (XmlPrimaryComposition.isTag(event, "location")) {
+            if (MergedPrimaryXml.isTag(event, "location")) {
                 valid = event.isStartElement()
                     && !locations.contains(
                         event.asStartElement().getAttributeByName(new QName("href")).getValue()
