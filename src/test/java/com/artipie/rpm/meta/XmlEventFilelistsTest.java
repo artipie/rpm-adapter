@@ -58,7 +58,8 @@ class XmlEventFilelistsTest {
         final Path file = new TestResource("libdeflt1_0-2020.03.27-25.1.armv7hl.rpm").asPath();
         try (OutputStream out = Files.newOutputStream(res)) {
             final XMLEventWriter writer = new OutputFactoryImpl().createXMLEventWriter(out);
-            new XmlEvent.Filelists(writer).add(
+            new XmlEvent.Filelists().add(
+                writer,
                 new FilePackage.Headers(new FilePackageHeader(file).header(), file, Digest.SHA256)
             );
             writer.close();

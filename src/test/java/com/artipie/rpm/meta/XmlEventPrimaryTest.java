@@ -55,7 +55,8 @@ class XmlEventPrimaryTest {
         writer.add(events.createStartElement("", "", "metadata"));
         writer.add(events.createNamespace("http://linux.duke.edu/metadata/common"));
         writer.add(events.createNamespace("rpm", "http://linux.duke.edu/metadata/rpm"));
-        new XmlEvent.Primary(writer).add(
+        new XmlEvent.Primary().add(
+            writer,
             new FilePackage.Headers(new FilePackageHeader(file).header(), file, Digest.SHA256)
         );
         writer.add(events.createEndElement("", "", "metadata"));
