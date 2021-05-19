@@ -61,7 +61,7 @@ public interface XmlMaid {
         /**
          * Package tag name.
          */
-        private static final String TAG = "package";
+        static final String TAG = "package";
 
         /**
          * File to clear.
