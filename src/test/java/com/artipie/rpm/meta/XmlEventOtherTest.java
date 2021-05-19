@@ -58,7 +58,8 @@ class XmlEventOtherTest {
         final Path file = new TestResource("abc-1.01-26.git20200127.fc32.ppc64le.rpm").asPath();
         try (OutputStream out = Files.newOutputStream(res)) {
             final XMLEventWriter writer = new OutputFactoryImpl().createXMLEventWriter(out);
-            new XmlEvent.Other(writer).add(
+            new XmlEvent.Other().add(
+                writer,
                 new FilePackage.Headers(new FilePackageHeader(file).header(), file, Digest.SHA256)
             );
             writer.close();
