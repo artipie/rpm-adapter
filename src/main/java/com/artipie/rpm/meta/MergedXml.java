@@ -99,10 +99,6 @@ public final class MergedXml {
             final XMLEventWriter writer = new OutputFactoryImpl().createXMLEventWriter(this.out);
             try {
                 final XMLEventFactory events = XMLEventFactory.newFactory();
-                writer.add(reader.nextEvent());
-                writer.add(events.createSpace("\n"));
-                writer.add(reader.nextEvent());
-                writer.add(reader.nextEvent());
                 this.process(
                     this.res.checksums(), reader, writer, String.valueOf(this.res.count())
                 );
@@ -135,6 +131,7 @@ public final class MergedXml {
      * @param cnt Packages count
      * @throws XMLStreamException When error occurs
      * @checkstyle ParameterNumberCheck (5 lines)
+     * @checkstyle CyclomaticComplexityCheck (20 lines)
      */
     private void process(final Collection<String> ids, final XMLEventReader reader,
         final XMLEventWriter writer, final String cnt) throws XMLStreamException {
@@ -145,21 +142,35 @@ public final class MergedXml {
             if (event.isStartElement()
                 && event.asStartElement().getName().getLocalPart().equals(this.type.tag())) {
                 writer.add(XmlAlter.Stream.alterEvent(event, cnt));
-            }
-            if (event.isStartElement()
-                && event.asStartElement().getName().getLocalPart().equals(XmlMaid.ByPkgidAttr.TAG)
-            ) {
-                valid = !ids.contains(
-                    event.asStartElement().getAttributeByName(new QName("pkgid")).getValue()
-                );
-            }
-            if (valid) {
-                writer.add(event);
-            }
-            if (event.isEndElement()
-                && event.asEndElement().getName().getLocalPart().equals(XmlMaid.ByPkgidAttr.TAG)) {
-                valid = true;
+            } else if (MergedXml.isEndTag(event, this.type.tag())) {
+                break;
+            } else {
+                if (event.isStartElement()
+                    && event.asStartElement().getName().getLocalPart()
+                    .equals(XmlMaid.ByPkgidAttr.TAG)
+                ) {
+                    valid = !ids.contains(
+                        event.asStartElement().getAttributeByName(new QName("pkgid")).getValue()
+                    );
+                }
+                if (valid) {
+                    writer.add(event);
+                }
+                if (MergedXml.isEndTag(event, XmlMaid.ByPkgidAttr.TAG)) {
+                    valid = true;
+                }
             }
         }
+    }
+
+    /**
+     * Is event end tag?
+     * @param event Event
+     * @param tag Tag name
+     * @return True if event is end tag
+     */
+    private static boolean isEndTag(final XMLEvent event, final String tag) {
+        return event.isEndElement()
+            && event.asEndElement().getName().getLocalPart().equals(tag);
     }
 }
