@@ -152,7 +152,7 @@ public interface XmlAlter {
          * @param value New value
          * @return Altered event
          */
-        private static XMLEvent alterEvent(final XMLEvent original, final String value) {
+        static XMLEvent alterEvent(final XMLEvent original, final String value) {
             final StartElement element = original.asStartElement();
             final List<Attribute> newattrs = new ArrayList<>(0);
             final XMLEventFactory events = XMLEventFactory.newFactory();
