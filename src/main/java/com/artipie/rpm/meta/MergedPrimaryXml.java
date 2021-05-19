@@ -107,7 +107,8 @@ public final class MergedPrimaryXml {
                     new HashSet<>(packages.values()), reader, writer, res
                 );
                 for (final Map.Entry<Path, String> item : packages.entrySet()) {
-                    new XmlEvent.Primary(writer).add(
+                    new XmlEvent.Primary().add(
+                        writer,
                         new FilePackage.Headers(
                             new FilePackageHeader(item.getKey()).header(),
                             item.getKey(), this.dgst, item.getValue()
