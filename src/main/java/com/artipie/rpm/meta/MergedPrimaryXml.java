@@ -157,7 +157,9 @@ public final class MergedPrimaryXml {
                 pckg.clear();
             }
             pckg.add(event);
-            if (MergedPrimaryXml.isTag(event, "checksum") && event.isCharacters()) {
+            if (MergedPrimaryXml.isTag(event, "checksum")) {
+                event = reader.nextEvent();
+                pckg.add(event);
                 checksum = event.asCharacters().getData();
             }
             if (MergedPrimaryXml.isTag(event, "location")) {
