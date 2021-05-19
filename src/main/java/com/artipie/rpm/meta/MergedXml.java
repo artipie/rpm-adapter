@@ -108,6 +108,7 @@ public final class MergedXml {
                 );
                 for (final Path item : packages.keySet()) {
                     event.add(
+                        writer,
                         new FilePackage.Headers(
                             new FilePackageHeader(item).header(), item, dgst
                         )
