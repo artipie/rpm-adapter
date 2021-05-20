@@ -56,12 +56,12 @@ class MergedXmlPrimaryTest {
         try (InputStream input = new TestResource("repodata/primary.xml.example").asInputStream()) {
             final MergedXmlPrimary.Result res =
                 new MergedXmlPrimary(
-                    input,
-                    out, Digest.SHA256
+                    input, out
                 ).merge(
                     new MapOf<Path, String>(
                         new MapEntry<>(libdeflt.path(), libdeflt.path().getFileName().toString())
-                    )
+                    ),
+                    Digest.SHA256, new XmlEvent.Primary()
                 );
             MatcherAssert.assertThat(
                 "Packages count is incorrect",
@@ -96,11 +96,12 @@ class MergedXmlPrimaryTest {
                 .asInputStream()
         ) {
             final MergedXmlPrimary.Result res =
-                new MergedXmlPrimary(input, out, Digest.SHA256).merge(
+                new MergedXmlPrimary(input, out).merge(
                     new MapOf<Path, String>(
                         new MapEntry<>(time.path(), time.path().getFileName().toString()),
                         new MapEntry<>(libdeflt.path(), libdeflt.path().getFileName().toString())
-                    )
+                    ),
+                    Digest.SHA256, new XmlEvent.Primary()
                 );
             MatcherAssert.assertThat(
                 "Packages count is incorrect",
@@ -137,12 +138,13 @@ class MergedXmlPrimaryTest {
                 .asInputStream()
         ) {
             final MergedXmlPrimary.Result res =
-                new MergedXmlPrimary(input, out, Digest.SHA256).merge(
+                new MergedXmlPrimary(input, out).merge(
                     new MapOf<Path, String>(
                         new MapEntry<>(time.path(), time.path().getFileName().toString()),
                         new MapEntry<>(abc.path(), abc.path().getFileName().toString()),
                         new MapEntry<>(libdeflt.path(), libdeflt.path().getFileName().toString())
-                    )
+                    ),
+                    Digest.SHA256, new XmlEvent.Primary()
                 );
             MatcherAssert.assertThat(
                 "Packages count is incorrect",
