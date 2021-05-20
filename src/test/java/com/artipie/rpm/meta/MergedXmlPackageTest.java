@@ -41,13 +41,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Test for {@link MergedXml}.
+ * Test for {@link MergedXmlPackage}.
  * @since 1.5
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle MagicNumberCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-class MergedXmlTest {
+class MergedXmlPackageTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"other", "filelists"})
@@ -57,9 +57,9 @@ class MergedXmlTest {
         try (InputStream input =
             new TestResource(String.format("repodata/%s.xml.example", filename)).asInputStream()) {
             final XmlPackage type = XmlPackage.valueOf(filename.toUpperCase(Locale.US));
-            new MergedXml(
+            new MergedXmlPackage(
                 input, out, type,
-                new MergedPrimaryXml.Result(3L, Collections.emptyList())
+                new MergedXmlPrimary.Result(3L, Collections.emptyList())
             ).merge(
                 new MapOf<Path, String>(
                     new MapEntry<>(libdeflt.path(), libdeflt.path().getFileName().toString())
@@ -91,9 +91,9 @@ class MergedXmlTest {
         ).asInputStream()
         ) {
             final XmlPackage type = XmlPackage.valueOf(filename.toUpperCase(Locale.US));
-            new MergedXml(
+            new MergedXmlPackage(
                 input, out, type,
-                new MergedPrimaryXml.Result(2L, Collections.singleton("abc123"))
+                new MergedXmlPrimary.Result(2L, Collections.singleton("abc123"))
             ).merge(
                 new MapOf<Path, String>(
                     new MapEntry<>(libdeflt.path(), libdeflt.path().getFileName().toString()),
@@ -126,9 +126,9 @@ class MergedXmlTest {
         ).asInputStream()
         ) {
             final XmlPackage type = XmlPackage.valueOf(filename.toUpperCase(Locale.US));
-            new MergedXml(
+            new MergedXmlPackage(
                 input, out, type,
-                new MergedPrimaryXml.Result(4L, Collections.singleton("abc123"))
+                new MergedXmlPrimary.Result(4L, Collections.singleton("abc123"))
             ).merge(
                 new MapOf<Path, String>(
                     new MapEntry<>(libdeflt.path(), libdeflt.path().getFileName().toString()),

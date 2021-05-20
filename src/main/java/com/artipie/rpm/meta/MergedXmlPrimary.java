@@ -53,7 +53,7 @@ import javax.xml.stream.events.XMLEvent;
  * @since 1.5
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
-public final class MergedPrimaryXml {
+public final class MergedXmlPrimary implements MergedXml {
 
     /**
      * From where to read primary.xml.
@@ -66,52 +66,38 @@ public final class MergedPrimaryXml {
     private final OutputStream out;
 
     /**
-     * Digest algorithm.
-     */
-    private final Digest dgst;
-
-    /**
      * Ctor.
      * @param input Input stream
      * @param out Output stream
-     * @param dgst Digest algorithm
      */
-    public MergedPrimaryXml(final InputStream input, final OutputStream out,
-        final Digest dgst) {
+    public MergedXmlPrimary(final InputStream input, final OutputStream out) {
         this.input = input;
         this.out = out;
-        this.dgst = dgst;
     }
 
-    /**
-     * Appends provided packages to the primary.xml.
-     * @param packages Packages to append
-     * @return Result of the operation: final packages count and ids of the duplicated packages
-     * @throws IOException On error
-     */
-    public Result merge(final Map<Path, String> packages) throws IOException {
+    @Override
+    public Result merge(final Map<Path, String> packages, final Digest dgst, final XmlEvent event)
+        throws IOException {
         final AtomicLong res = new AtomicLong();
         final Collection<String> checksums;
         try {
-            final XMLEventReader reader =
-                new InputFactoryImpl().createXMLEventReader(this.input);
-            final XMLEventWriter writer =
-                new OutputFactoryImpl().createXMLEventWriter(this.out);
+            final XMLEventReader reader = new InputFactoryImpl().createXMLEventReader(this.input);
+            final XMLEventWriter writer = new OutputFactoryImpl().createXMLEventWriter(this.out);
             try {
                 final XMLEventFactory events = XMLEventFactory.newFactory();
                 writer.add(reader.nextEvent());
                 writer.add(events.createSpace("\n"));
                 writer.add(reader.nextEvent());
                 writer.add(reader.nextEvent());
-                checksums = MergedPrimaryXml.processPackages(
+                checksums = MergedXmlPrimary.processPackages(
                     new HashSet<>(packages.values()), reader, writer, res
                 );
                 for (final Map.Entry<Path, String> item : packages.entrySet()) {
-                    new XmlEvent.Primary().add(
+                    event.add(
                         writer,
                         new FilePackage.Headers(
                             new FilePackageHeader(item.getKey()).header(),
-                            item.getKey(), this.dgst, item.getValue()
+                            item.getKey(), dgst, item.getValue()
                         )
                     );
                     res.incrementAndGet();
@@ -129,7 +115,7 @@ public final class MergedPrimaryXml {
         } catch (final XMLStreamException err) {
             throw new IOException(err);
         }
-        return new Result(res.get(), checksums);
+        return new MergedXml.Result(res.get(), checksums);
     }
 
     /**
@@ -154,16 +140,16 @@ public final class MergedPrimaryXml {
         String checksum = "123";
         while (reader.hasNext()) {
             event = reader.nextEvent();
-            if (MergedPrimaryXml.isTag(event, "package")) {
+            if (MergedXmlPrimary.isTag(event, "package")) {
                 pckg.clear();
             }
             pckg.add(event);
-            if (MergedPrimaryXml.isTag(event, "checksum")) {
+            if (MergedXmlPrimary.isTag(event, "checksum")) {
                 event = reader.nextEvent();
                 pckg.add(event);
                 checksum = event.asCharacters().getData();
             }
-            if (MergedPrimaryXml.isTag(event, "location")) {
+            if (MergedXmlPrimary.isTag(event, "location")) {
                 valid = event.isStartElement()
                     && !locations.contains(
                         event.asStartElement().getAttributeByName(new QName("href")).getValue()
@@ -194,46 +180,4 @@ public final class MergedPrimaryXml {
             && event.asStartElement().getName().getLocalPart().equals(tag);
     }
 
-    /**
-     * XmlPrimary composition result.
-     * @since 1.5
-     */
-    public static final class Result {
-
-        /**
-         * Items count.
-         */
-        private final long cnt;
-
-        /**
-         * Ids of the items to remove.
-         */
-        private final Collection<String> ids;
-
-        /**
-         * Ctor.
-         * @param cnt Items count
-         * @param ids Ids of the items to remove
-         */
-        public Result(final long cnt, final Collection<String> ids) {
-            this.cnt = cnt;
-            this.ids = ids;
-        }
-
-        /**
-         * Get packages count.
-         * @return Count
-         */
-        public long count() {
-            return this.cnt;
-        }
-
-        /**
-         * Get packages checksums (ids).
-         * @return Checksums
-         */
-        public Collection<String> checksums() {
-            return this.ids;
-        }
-    }
 }

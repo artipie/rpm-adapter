@@ -41,21 +41,21 @@ import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 
 /**
- * Test for {@link MergedPrimaryXml}.
+ * Test for {@link MergedXmlPrimary}.
  * @since 1.5
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle MagicNumberCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-class MergedPrimaryXmlTest {
+class MergedXmlPrimaryTest {
 
     @Test
     void addsRecords() throws IOException {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         final TestRpm.Libdeflt libdeflt = new TestRpm.Libdeflt();
         try (InputStream input = new TestResource("repodata/primary.xml.example").asInputStream()) {
-            final MergedPrimaryXml.Result res =
-                new MergedPrimaryXml(
+            final MergedXmlPrimary.Result res =
+                new MergedXmlPrimary(
                     input,
                     out, Digest.SHA256
                 ).merge(
@@ -95,8 +95,8 @@ class MergedPrimaryXmlTest {
             new TestResource("repodata/MergedXmlTest/libdeflt-primary.xml.example")
                 .asInputStream()
         ) {
-            final MergedPrimaryXml.Result res =
-                new MergedPrimaryXml(input, out, Digest.SHA256).merge(
+            final MergedXmlPrimary.Result res =
+                new MergedXmlPrimary(input, out, Digest.SHA256).merge(
                     new MapOf<Path, String>(
                         new MapEntry<>(time.path(), time.path().getFileName().toString()),
                         new MapEntry<>(libdeflt.path(), libdeflt.path().getFileName().toString())
@@ -136,8 +136,8 @@ class MergedPrimaryXmlTest {
             new TestResource("repodata/MergedXmlTest/libdeflt-nginx-promary.xml.example")
                 .asInputStream()
         ) {
-            final MergedPrimaryXml.Result res =
-                new MergedPrimaryXml(input, out, Digest.SHA256).merge(
+            final MergedXmlPrimary.Result res =
+                new MergedXmlPrimary(input, out, Digest.SHA256).merge(
                     new MapOf<Path, String>(
                         new MapEntry<>(time.path(), time.path().getFileName().toString()),
                         new MapEntry<>(abc.path(), abc.path().getFileName().toString()),
