@@ -92,7 +92,7 @@ class MergedPrimaryXmlTest {
         final TestRpm.Libdeflt libdeflt = new TestRpm.Libdeflt();
         final TestRpm.Time time = new TestRpm.Time();
         try (InputStream input =
-            new TestResource("repodata/XmlPrimaryCompTest/libdeflt-primary.xml.example")
+            new TestResource("repodata/MergedXmlTest/libdeflt-primary.xml.example")
                 .asInputStream()
         ) {
             final MergedPrimaryXml.Result res =
@@ -133,7 +133,7 @@ class MergedPrimaryXmlTest {
         final TestRpm time = new TestRpm.Time();
         final TestRpm abc = new TestRpm.Abc();
         try (InputStream input =
-            new TestResource("repodata/XmlPrimaryCompTest/libdeflt-nginx-promary.xml.example")
+            new TestResource("repodata/MergedXmlTest/libdeflt-nginx-promary.xml.example")
                 .asInputStream()
         ) {
             final MergedPrimaryXml.Result res =
