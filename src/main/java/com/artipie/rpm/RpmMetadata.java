@@ -23,7 +23,11 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.rpm.meta.MergedXml;
+import com.artipie.rpm.meta.MergedXmlPackage;
+import com.artipie.rpm.meta.MergedXmlPrimary;
 import com.artipie.rpm.meta.XmlAlter;
+import com.artipie.rpm.meta.XmlEvent;
 import com.artipie.rpm.meta.XmlMaid;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryMaid;
@@ -37,11 +41,12 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-import org.apache.commons.lang3.NotImplementedException;
+import java.util.Optional;
 
 /**
  * Rpm metadata class works with xml metadata - adds or removes records about xml packages.
  * @since 1.4
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public interface RpmMetadata {
 
@@ -50,6 +55,11 @@ public interface RpmMetadata {
      * @since 1.4
      */
     final class Remove {
+
+        /**
+         * Temp file suffix.
+         */
+        private static final String SUFFIX = ".xml";
 
         /**
          * Metadata list.
@@ -71,7 +81,7 @@ public interface RpmMetadata {
          */
         public void perform(final Collection<String> checksums) throws IOException {
             for (final MetadataItem item : this.items) {
-                final Path temp = Files.createTempFile("rpm-index", "xml");
+                final Path temp = Files.createTempFile("rpm-index", Remove.SUFFIX);
                 try {
                     final long res;
                     final XmlMaid maid;
@@ -123,9 +133,36 @@ public interface RpmMetadata {
         /**
          * Appends records about provided RPMs.
          * @param packages Rpms to append info about, map of the path to file and location
+         * @throws IOException On error
          */
-        public void perform(final Map<Path, String> packages) {
-            throw new NotImplementedException("Not implemented yet");
+        public void perform(final Map<Path, String> packages) throws IOException {
+            final Path temp = Files.createTempFile("rpm-primary-append", Remove.SUFFIX);
+            try {
+                final MergedXml.Result res;
+                final MetadataItem primary = this.items.stream()
+                    .filter(item -> item.type == XmlPackage.PRIMARY).findFirst().get();
+                try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(temp))) {
+                    res = new MergedXmlPrimary(primary.input, out)
+                        .merge(packages, this.digest, new XmlEvent.Primary());
+                }
+                try (InputStream input = new BufferedInputStream(Files.newInputStream(temp))) {
+                    new XmlAlter.Stream(input, primary.out)
+                        .pkgAttr(primary.type.tag(), String.valueOf(res.count()));
+                }
+                final MetadataItem other = this.items.stream()
+                    .filter(item -> item.type == XmlPackage.OTHER).findFirst().get();
+                new MergedXmlPackage(other.input, other.out, XmlPackage.OTHER, res)
+                    .merge(packages, this.digest, new XmlEvent.Other());
+                final Optional<MetadataItem> filelist = this.items.stream()
+                    .filter(item -> item.type == XmlPackage.FILELISTS).findFirst();
+                if (filelist.isPresent()) {
+                    new MergedXmlPackage(
+                        filelist.get().input, filelist.get().out, XmlPackage.FILELISTS, res
+                    ).merge(packages, this.digest, new XmlEvent.Filelists());
+                }
+            } finally {
+                Files.delete(temp);
+            }
         }
     }
 
