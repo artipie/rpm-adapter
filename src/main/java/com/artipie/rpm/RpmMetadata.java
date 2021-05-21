@@ -43,10 +43,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -152,19 +150,25 @@ public interface RpmMetadata {
                         .merge(packages, this.digest, new XmlEvent.Primary());
                 }
                 final ExecutorService service = Executors.newFixedThreadPool(3);
-                service.submit(setPrimaryPckg(temp, res, primary));
-                service.submit(updateOther(packages, res));
-                service.submit(updateFilelist(packages, res));
+                service.submit(Append.setPrimaryPckg(temp, res, primary));
+                service.submit(this.updateOther(packages, res));
+                service.submit(this.updateFilelist(packages, res));
                 service.shutdown();
                 service.awaitTermination(Long.MAX_VALUE, TimeUnit.HOURS);
             } catch (final InterruptedException err) {
                 Thread.currentThread().interrupt();
-                throw new IOException("Failed to update metadata", err.getCause());
+                throw new IOException("Failed to update metadata", err);
             } finally {
                 Files.delete(temp);
             }
         }
 
+        /**
+         * Creates runnable action to update filelist.xml index.
+         * @param packages Packages to add
+         * @param res Xml update primary result
+         * @return Action
+         */
         private Runnable updateFilelist(final Map<Path, String> packages,
             final MergedXml.Result res) {
             return () -> {
@@ -182,11 +186,17 @@ public interface RpmMetadata {
             };
         }
 
+        /**
+         * Creates runnable action to update other.xml index.
+         * @param packages Packages to add
+         * @param res Xml update primary result
+         * @return Action
+         */
         private Runnable updateOther(final Map<Path, String> packages, final MergedXml.Result res) {
             return () -> {
                 try {
                     final MetadataItem other = this.items.stream()
-                    .filter(item -> item.type == XmlPackage.OTHER).findFirst().get();
+                        .filter(item -> item.type == XmlPackage.OTHER).findFirst().get();
                     new MergedXmlPackage(other.input, other.out, XmlPackage.OTHER, res)
                         .merge(packages, this.digest, new XmlEvent.Other());
                 } catch (final IOException err) {
@@ -195,7 +205,14 @@ public interface RpmMetadata {
             };
         }
 
-        private Runnable setPrimaryPckg(final Path temp, final MergedXml.Result res,
+        /**
+         * Creates actions to update `packages` attribute of primary.xml.
+         * @param temp Merge result temp file
+         * @param res Xml primary update result
+         * @param primary Metadata
+         * @return Action
+         */
+        private static Runnable setPrimaryPckg(final Path temp, final MergedXml.Result res,
             final MetadataItem primary) {
             return () -> {
                 try (InputStream input = new BufferedInputStream(Files.newInputStream(temp))) {
