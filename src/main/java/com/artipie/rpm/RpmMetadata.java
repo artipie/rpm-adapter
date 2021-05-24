@@ -31,17 +31,22 @@ import com.artipie.rpm.meta.XmlEvent;
 import com.artipie.rpm.meta.XmlMaid;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryMaid;
+import com.jcabi.log.Logger;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Rpm metadata class works with xml metadata - adds or removes records about xml packages.
@@ -145,24 +150,79 @@ public interface RpmMetadata {
                     res = new MergedXmlPrimary(primary.input, out)
                         .merge(packages, this.digest, new XmlEvent.Primary());
                 }
-                try (InputStream input = new BufferedInputStream(Files.newInputStream(temp))) {
-                    new XmlAlter.Stream(input, primary.out)
-                        .pkgAttr(primary.type.tag(), String.valueOf(res.count()));
-                }
-                final MetadataItem other = this.items.stream()
-                    .filter(item -> item.type == XmlPackage.OTHER).findFirst().get();
-                new MergedXmlPackage(other.input, other.out, XmlPackage.OTHER, res)
-                    .merge(packages, this.digest, new XmlEvent.Other());
-                final Optional<MetadataItem> filelist = this.items.stream()
-                    .filter(item -> item.type == XmlPackage.FILELISTS).findFirst();
-                if (filelist.isPresent()) {
-                    new MergedXmlPackage(
-                        filelist.get().input, filelist.get().out, XmlPackage.FILELISTS, res
-                    ).merge(packages, this.digest, new XmlEvent.Filelists());
-                }
+                final ExecutorService service = Executors.newFixedThreadPool(3);
+                service.submit(Append.setPrimaryPckg(temp, res, primary));
+                service.submit(this.updateOther(packages, res));
+                service.submit(this.updateFilelist(packages, res));
+                service.shutdown();
+                service.awaitTermination(Long.MAX_VALUE, TimeUnit.HOURS);
+            } catch (final InterruptedException err) {
+                Thread.currentThread().interrupt();
+                Logger.error(this, err.getMessage());
             } finally {
                 Files.delete(temp);
             }
+        }
+
+        /**
+         * Creates runnable action to update filelist.xml index.
+         * @param packages Packages to add
+         * @param res Xml update primary result
+         * @return Action
+         */
+        private Runnable updateFilelist(final Map<Path, String> packages,
+            final MergedXml.Result res) {
+            return () -> {
+                final Optional<MetadataItem> filelist = this.items.stream()
+                    .filter(item -> item.type == XmlPackage.FILELISTS).findFirst();
+                if (filelist.isPresent()) {
+                    try {
+                        new MergedXmlPackage(
+                            filelist.get().input, filelist.get().out, XmlPackage.FILELISTS, res
+                        ).merge(packages, this.digest, new XmlEvent.Filelists());
+                    } catch (final IOException err) {
+                        throw new UncheckedIOException(err);
+                    }
+                }
+            };
+        }
+
+        /**
+         * Creates runnable action to update other.xml index.
+         * @param packages Packages to add
+         * @param res Xml update primary result
+         * @return Action
+         */
+        private Runnable updateOther(final Map<Path, String> packages, final MergedXml.Result res) {
+            return () -> {
+                try {
+                    final MetadataItem other = this.items.stream()
+                        .filter(item -> item.type == XmlPackage.OTHER).findFirst().get();
+                    new MergedXmlPackage(other.input, other.out, XmlPackage.OTHER, res)
+                        .merge(packages, this.digest, new XmlEvent.Other());
+                } catch (final IOException err) {
+                    throw new UncheckedIOException(err);
+                }
+            };
+        }
+
+        /**
+         * Creates actions to update `packages` attribute of primary.xml.
+         * @param temp Merge result temp file
+         * @param res Xml primary update result
+         * @param primary Metadata
+         * @return Action
+         */
+        private static Runnable setPrimaryPckg(final Path temp, final MergedXml.Result res,
+            final MetadataItem primary) {
+            return () -> {
+                try (InputStream input = new BufferedInputStream(Files.newInputStream(temp))) {
+                    new XmlAlter.Stream(input, primary.out)
+                        .pkgAttr(primary.type.tag(), String.valueOf(res.count()));
+                } catch (final IOException err) {
+                    throw new UncheckedIOException(err);
+                }
+            };
         }
     }
 
