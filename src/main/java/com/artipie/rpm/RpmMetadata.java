@@ -31,6 +31,7 @@ import com.artipie.rpm.meta.XmlEvent;
 import com.artipie.rpm.meta.XmlMaid;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryMaid;
+import com.jcabi.log.Logger;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -157,7 +158,7 @@ public interface RpmMetadata {
                 service.awaitTermination(Long.MAX_VALUE, TimeUnit.HOURS);
             } catch (final InterruptedException err) {
                 Thread.currentThread().interrupt();
-                throw new IOException("Failed to update metadata", err);
+                Logger.error(this, err.getMessage());
             } finally {
                 Files.delete(temp);
             }
