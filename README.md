@@ -147,3 +147,10 @@ This benchmark class removes RPM packages records from the repository index file
 `com.artipie.rpm.RpmMetadata.Remove` class and requires xml (unpacked) indexes in the test directory.
 Example repository index xmls can be found 
 [here](https://artipie.s3.amazonaws.com/rpm-test/centos-7-os-x86_64-repodata.tar.gz).
+
+### RpmMetadataAppendBench
+
+`RpmMetadataAppendBench` updates repository metadata with the list of the provided `.rpm` packages, 
+it works with `com.artipie.rpm.RpmMetadata.Append` class and requires xml (unpacked) indexes and 
+`.rpm` packages to add in the test directory. Example data set for the benchmark can be found 
+[here](https://artipie.s3.amazonaws.com/rpm-test/rpm-metadata-append-bench.tar.gz).
