@@ -27,7 +27,7 @@ SOFTWARE.
   <parent>
     <groupId>com.artipie</groupId>
     <artifactId>ppom</artifactId>
-    <version>0.4.1</version>
+    <version>0.5.1</version>
   </parent>
   <artifactId>rpm-adapter</artifactId>
   <version>1.0-SNAPSHOT</version>
@@ -37,11 +37,12 @@ SOFTWARE.
   <inceptionYear>2019</inceptionYear>
   <properties>
     <jmh.version>1.29</jmh.version>
+    <qulice.license>${project.basedir}/LICENSE.header</qulice.license>
   </properties>
   <licenses>
     <license>
       <name>MIT</name>
-      <url>https://github.com/artipie/rpm-adapter/blob/master/LICENSE.txt</url>
+      <url>https://github.com/artipie/rpm-adapter/LICENSE.txt</url>
     </license>
   </licenses>
   <developers>
@@ -229,6 +230,11 @@ SOFTWARE.
       <groupId>org.openjdk.jmh</groupId>
       <artifactId>jmh-generator-annprocess</artifactId>
       <version>${jmh.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.jcabi</groupId>
+      <artifactId>jcabi-aspects</artifactId>
+      <version>0.22.6</version>
     </dependency>
   </dependencies>
   <build>
