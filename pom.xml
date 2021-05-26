@@ -231,6 +231,11 @@ SOFTWARE.
       <artifactId>jmh-generator-annprocess</artifactId>
       <version>${jmh.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.jcabi</groupId>
+      <artifactId>jcabi-aspects</artifactId>
+      <version>0.22.6</version>
+    </dependency>
   </dependencies>
   <build>
     <testResources>
