@@ -4,6 +4,7 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.asto.ArtipieIOException;
 import com.artipie.rpm.meta.MergedXml;
 import com.artipie.rpm.meta.MergedXmlPackage;
 import com.artipie.rpm.meta.MergedXmlPrimary;
@@ -63,29 +64,36 @@ public interface RpmMetadata {
         /**
          * Removes records from metadata by RPMs checksums.
          * @param checksums Rpms checksums  to remove by
-         * @throws IOException On io-operation result error
+         * @throws ArtipieIOException On io-operation result error
+         * @checkstyle NestedTryDepthCheck (20 lines)
          */
-        public void perform(final Collection<String> checksums) throws IOException {
-            for (final MetadataItem item : this.items) {
-                final Path temp = Files.createTempFile("rpm-index", Remove.SUFFIX);
-                try {
-                    final long res;
-                    final XmlMaid maid;
-                    try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(temp))) {
-                        if (item.type == XmlPackage.PRIMARY) {
-                            maid = new XmlPrimaryMaid.Stream(item.input, out);
-                        } else {
-                            maid = new XmlMaid.ByPkgidAttr.Stream(item.input, out);
+        public void perform(final Collection<String> checksums) {
+            try {
+                for (final MetadataItem item : this.items) {
+                    final Path temp = Files.createTempFile("rpm-index", Remove.SUFFIX);
+                    try {
+                        final long res;
+                        final XmlMaid maid;
+                        try (OutputStream out =
+                            new BufferedOutputStream(Files.newOutputStream(temp))) {
+                            if (item.type == XmlPackage.PRIMARY) {
+                                maid = new XmlPrimaryMaid.Stream(item.input, out);
+                            } else {
+                                maid = new XmlMaid.ByPkgidAttr.Stream(item.input, out);
+                            }
+                            res = maid.clean(checksums);
                         }
-                        res = maid.clean(checksums);
+                        try (InputStream input =
+                            new BufferedInputStream(Files.newInputStream(temp))) {
+                            new XmlAlter.Stream(input, item.out)
+                                .pkgAttr(item.type.tag(), String.valueOf(res));
+                        }
+                    } finally {
+                        Files.delete(temp);
                     }
-                    try (InputStream input = new BufferedInputStream(Files.newInputStream(temp))) {
-                        new XmlAlter.Stream(input, item.out)
-                            .pkgAttr(item.type.tag(), String.valueOf(res));
-                    }
-                } finally {
-                    Files.delete(temp);
                 }
+            } catch (final IOException err) {
+                throw new ArtipieIOException(err);
             }
         }
     }
@@ -119,29 +127,34 @@ public interface RpmMetadata {
         /**
          * Appends records about provided RPMs.
          * @param packages Rpms to append info about, map of the path to file and location
-         * @throws IOException On error
+         * @throws ArtipieIOException On io-operation error
+         * @checkstyle NestedTryDepthCheck (20 lines)
          */
-        public void perform(final Map<Path, String> packages) throws IOException {
-            final Path temp = Files.createTempFile("rpm-primary-append", Remove.SUFFIX);
+        public void perform(final Map<Path, String> packages) {
             try {
-                final MergedXml.Result res;
-                final MetadataItem primary = this.items.stream()
-                    .filter(item -> item.type == XmlPackage.PRIMARY).findFirst().get();
-                try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(temp))) {
-                    res = new MergedXmlPrimary(primary.input, out)
-                        .merge(packages, this.digest, new XmlEvent.Primary());
+                final Path temp = Files.createTempFile("rpm-primary-append", Remove.SUFFIX);
+                try {
+                    final MergedXml.Result res;
+                    final MetadataItem primary = this.items.stream()
+                        .filter(item -> item.type == XmlPackage.PRIMARY).findFirst().get();
+                    try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(temp))) {
+                        res = new MergedXmlPrimary(primary.input, out)
+                            .merge(packages, this.digest, new XmlEvent.Primary());
+                    }
+                    final ExecutorService service = Executors.newFixedThreadPool(3);
+                    service.submit(Append.setPrimaryPckg(temp, res, primary));
+                    service.submit(this.updateOther(packages, res));
+                    service.submit(this.updateFilelist(packages, res));
+                    service.shutdown();
+                    service.awaitTermination(Long.MAX_VALUE, TimeUnit.HOURS);
+                } catch (final InterruptedException err) {
+                    Thread.currentThread().interrupt();
+                    Logger.error(this, err.getMessage());
+                } finally {
+                    Files.delete(temp);
                 }
-                final ExecutorService service = Executors.newFixedThreadPool(3);
-                service.submit(Append.setPrimaryPckg(temp, res, primary));
-                service.submit(this.updateOther(packages, res));
-                service.submit(this.updateFilelist(packages, res));
-                service.shutdown();
-                service.awaitTermination(Long.MAX_VALUE, TimeUnit.HOURS);
-            } catch (final InterruptedException err) {
-                Thread.currentThread().interrupt();
-                Logger.error(this, err.getMessage());
-            } finally {
-                Files.delete(temp);
+            } catch (final IOException err) {
+                throw new ArtipieIOException(err);
             }
         }
 
@@ -182,7 +195,7 @@ public interface RpmMetadata {
                     new MergedXmlPackage(other.input, other.out, XmlPackage.OTHER, res)
                         .merge(packages, this.digest, new XmlEvent.Other());
                 } catch (final IOException err) {
-                    throw new UncheckedIOException(err);
+                    throw new ArtipieIOException(err);
                 }
             };
         }
@@ -201,7 +214,7 @@ public interface RpmMetadata {
                     new XmlAlter.Stream(input, primary.out)
                         .pkgAttr(primary.type.tag(), String.valueOf(res.count()));
                 } catch (final IOException err) {
-                    throw new UncheckedIOException(err);
+                    throw new ArtipieIOException(err);
                 }
             };
         }

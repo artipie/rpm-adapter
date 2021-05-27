@@ -4,6 +4,7 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.asto.ArtipieIOException;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.SubStorage;
@@ -61,6 +62,7 @@ import org.apache.commons.io.FileUtils;
  *
  * @since 0.1
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
+ * @checkstyle ClassFanOutComplexityCheck (500 lines)
  */
 @SuppressWarnings({"PMD.AvoidDuplicateLiterals", "PMD.TooManyMethods"})
 public final class Rpm {
@@ -165,6 +167,7 @@ public final class Rpm {
      * Batch update RPM files for repository.
      * @param prefix Repository key prefix
      * @return Completable action
+     * @throws ArtipieIOException On IO-operation errors
      */
     public Completable batchUpdate(final Key prefix) {
         final Path tmpdir;
@@ -173,7 +176,7 @@ public final class Rpm {
             tmpdir = Files.createTempDirectory("repo-");
             metadir = Files.createTempDirectory("meta-");
         } catch (final IOException err) {
-            throw new IllegalStateException("Failed to create temp dir", err);
+            throw new ArtipieIOException("Failed to create temp dir", err);
         }
         final Storage local = new FileStorage(tmpdir);
         return this.doWithLock(
@@ -222,6 +225,7 @@ public final class Rpm {
      * Updates repository incrementally.
      * @param prefix Repo prefix
      * @return Completable action
+     * @throws ArtipieIOException On IO-operation errors
      */
     public Completable batchUpdateIncrementally(final Key prefix) {
         final Path tmpdir;
@@ -230,7 +234,7 @@ public final class Rpm {
             tmpdir = Files.createTempDirectory("repo-");
             metadir = Files.createTempDirectory("meta-");
         } catch (final IOException err) {
-            throw new IllegalStateException("Failed to create temp dir", err);
+            throw new ArtipieIOException("Failed to create temp dir", err);
         }
         final Storage local = new FileStorage(tmpdir);
         return this.doWithLock(
@@ -348,10 +352,13 @@ public final class Rpm {
     /**
      * Cleanup temporary dir.
      * @param dir Directory
-     * @throws IOException On error
      */
-    private static void cleanup(final Path dir) throws IOException {
-        FileUtils.deleteDirectory(dir.toFile());
+    private static void cleanup(final Path dir) {
+        try {
+            FileUtils.deleteDirectory(dir.toFile());
+        } catch (final IOException err) {
+            throw new ArtipieIOException(err);
+        }
     }
 
     /**
