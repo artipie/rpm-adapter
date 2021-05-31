@@ -7,11 +7,13 @@ package com.artipie.rpm.meta;
 import com.artipie.asto.test.TestResource;
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.TestRpm;
+import com.artipie.rpm.pkg.InvalidPackageException;
 import com.jcabi.matchers.XhtmlMatchers;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.cactoos.map.MapEntry;
 import org.cactoos.map.MapOf;
@@ -19,7 +21,9 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.collection.IsEmptyCollection;
 import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Test for {@link MergedXmlPrimary}.
@@ -37,7 +41,7 @@ class MergedXmlPrimaryTest {
         try (InputStream input = new TestResource("repodata/primary.xml.example").asInputStream()) {
             final MergedXmlPrimary.Result res =
                 new MergedXmlPrimary(
-                    input, out
+                    input, out, true
                 ).merge(
                     new MapOf<Path, String>(
                         new MapEntry<>(libdeflt.path(), libdeflt.path().getFileName().toString())
@@ -77,7 +81,7 @@ class MergedXmlPrimaryTest {
                 .asInputStream()
         ) {
             final MergedXmlPrimary.Result res =
-                new MergedXmlPrimary(input, out).merge(
+                new MergedXmlPrimary(input, out, true).merge(
                     new MapOf<Path, String>(
                         new MapEntry<>(time.path(), time.path().getFileName().toString()),
                         new MapEntry<>(libdeflt.path(), libdeflt.path().getFileName().toString())
@@ -119,7 +123,7 @@ class MergedXmlPrimaryTest {
                 .asInputStream()
         ) {
             final MergedXmlPrimary.Result res =
-                new MergedXmlPrimary(input, out).merge(
+                new MergedXmlPrimary(input, out, true).merge(
                     new MapOf<Path, String>(
                         new MapEntry<>(time.path(), time.path().getFileName().toString()),
                         new MapEntry<>(abc.path(), abc.path().getFileName().toString()),
@@ -148,6 +152,69 @@ class MergedXmlPrimaryTest {
                     "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='nginx']",
                     "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='libdeflt1_0']",
                     "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='checksum' and text()='47bbb8b2401e8853812e6340f4197252b92463c132f64a257e18c0c8c83ae462']"
+                )
+            );
+        }
+    }
+
+    @Test
+    void skipsInvalidPackage(@TempDir final Path tmp) throws IOException {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        final Path invalid = tmp.resolve("invalid.rpm");
+        Files.write(invalid, "123".getBytes());
+        final TestRpm abc = new TestRpm.Abc();
+        try (InputStream input =
+            new TestResource("repodata/MergedXmlTest/libdeflt-nginx-promary.xml.example")
+                .asInputStream()
+        ) {
+            final MergedXmlPrimary.Result res =
+                new MergedXmlPrimary(input, out, true).merge(
+                    new MapOf<Path, String>(
+                        new MapEntry<>(abc.path(), abc.path().getFileName().toString()),
+                        new MapEntry<>(invalid, invalid.getFileName().toString())
+                    ),
+                    Digest.SHA256, new XmlEvent.Primary()
+                );
+            MatcherAssert.assertThat(
+                "Packages count is incorrect",
+                res.count(),
+                new IsEqual<>(3L)
+            );
+            MatcherAssert.assertThat(
+                "Duplicated packages is not empty",
+                res.checksums(),
+                Matchers.emptyIterable()
+            );
+            final String actual = out.toString(StandardCharsets.UTF_8.name());
+            MatcherAssert.assertThat(
+                "Primary does not have expected packages",
+                actual,
+                XhtmlMatchers.hasXPaths(
+                    // @checkstyle LineLengthCheck (5 lines)
+                    "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='abc']",
+                    "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='nginx']",
+                    "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='libdeflt1_0']"
+                )
+            );
+        }
+    }
+
+    @Test
+    void failsOnInvalidPackage(@TempDir final Path tmp) throws IOException {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        final Path invalid = tmp.resolve("invalid.rpm");
+        Files.write(invalid, "123".getBytes());
+        try (InputStream input =
+            new TestResource("repodata/MergedXmlTest/libdeflt-nginx-promary.xml.example")
+                .asInputStream()
+        ) {
+            Assertions.assertThrows(
+                InvalidPackageException.class,
+                () -> new MergedXmlPrimary(input, out, false).merge(
+                    new MapOf<Path, String>(
+                        new MapEntry<>(invalid, invalid.getFileName().toString())
+                    ),
+                    Digest.SHA256, new XmlEvent.Primary()
                 )
             );
         }

@@ -115,13 +115,29 @@ public interface RpmMetadata {
         private final Digest digest;
 
         /**
+         * Should invalid packages be skipped? Default value is true.
+         */
+        private final boolean skip;
+
+        /**
+         * Ctor.
+         * @param digest Digest algorithm
+         * @param skip Should invalid packages be skipped?
+         * @param items Metadata items
+         */
+        public Append(final Digest digest, final boolean skip, final MetadataItem... items) {
+            this.digest = digest;
+            this.skip = skip;
+            this.items = Arrays.asList(items);
+        }
+
+        /**
          * Ctor.
          * @param digest Digest algorithm
          * @param items Metadata items
          */
         public Append(final Digest digest, final MetadataItem... items) {
-            this.digest = digest;
-            this.items = Arrays.asList(items);
+            this(digest, true, items);
         }
 
         /**
@@ -138,7 +154,7 @@ public interface RpmMetadata {
                     final MetadataItem primary = this.items.stream()
                         .filter(item -> item.type == XmlPackage.PRIMARY).findFirst().get();
                     try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(temp))) {
-                        res = new MergedXmlPrimary(primary.input, out)
+                        res = new MergedXmlPrimary(primary.input, out, this.skip)
                             .merge(packages, this.digest, new XmlEvent.Primary());
                     }
                     final ExecutorService service = Executors.newFixedThreadPool(3);
@@ -172,7 +188,8 @@ public interface RpmMetadata {
                 if (filelist.isPresent()) {
                     try {
                         new MergedXmlPackage(
-                            filelist.get().input, filelist.get().out, XmlPackage.FILELISTS, res
+                            filelist.get().input, filelist.get().out, XmlPackage.FILELISTS,
+                            res, this.skip
                         ).merge(packages, this.digest, new XmlEvent.Filelists());
                     } catch (final IOException err) {
                         throw new UncheckedIOException(err);
@@ -192,7 +209,7 @@ public interface RpmMetadata {
                 try {
                     final MetadataItem other = this.items.stream()
                         .filter(item -> item.type == XmlPackage.OTHER).findFirst().get();
-                    new MergedXmlPackage(other.input, other.out, XmlPackage.OTHER, res)
+                    new MergedXmlPackage(other.input, other.out, XmlPackage.OTHER, res, this.skip)
                         .merge(packages, this.digest, new XmlEvent.Other());
                 } catch (final IOException err) {
                     throw new ArtipieIOException(err);
