@@ -47,15 +47,23 @@ public final class MergedXmlPrimary implements MergedXml {
     private final OutputStream out;
 
     /**
+     * Should invalid packages be skipped?
+     */
+    private final boolean skip;
+
+    /**
      * Ctor.
      * @param input Input stream
      * @param out Output stream
+     * @param skip Should invalid packages be skipped?
      */
-    public MergedXmlPrimary(final InputStream input, final OutputStream out) {
+    public MergedXmlPrimary(final InputStream input, final OutputStream out, final boolean skip) {
         this.input = input;
         this.out = out;
+        this.skip = skip;
     }
 
+    // @checkstyle ExecutableStatementCountCheck (100 lines)
     @Override
     public Result merge(final Map<Path, String> packages, final Digest dgst, final XmlEvent event)
         throws IOException {
@@ -74,14 +82,19 @@ public final class MergedXmlPrimary implements MergedXml {
                     new HashSet<>(packages.values()), reader, writer, res
                 );
                 for (final Map.Entry<Path, String> item : packages.entrySet()) {
-                    event.add(
-                        writer,
-                        new FilePackage.Headers(
-                            new FilePackageHeader(item.getKey()).header(),
-                            item.getKey(), dgst, item.getValue()
-                        )
-                    );
-                    res.incrementAndGet();
+                    new InvalidPackage<>(
+                        () -> {
+                            event.add(
+                                writer,
+                                new FilePackage.Headers(
+                                    new FilePackageHeader(item.getKey()).header(),
+                                    item.getKey(), dgst, item.getValue()
+                                )
+                            );
+                            res.incrementAndGet();
+                        },
+                        this.skip
+                    ).handle();
                 }
                 writer.add(events.createSpace("\n"));
                 writer.add(

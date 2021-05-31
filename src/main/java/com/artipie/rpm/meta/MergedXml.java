@@ -5,6 +5,7 @@
 package com.artipie.rpm.meta;
 
 import com.artipie.rpm.Digest;
+import com.artipie.rpm.pkg.InvalidPackageException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -67,5 +68,62 @@ public interface MergedXml {
         public Collection<String> checksums() {
             return this.ids;
         }
+    }
+
+    /**
+     * Handles invalid rpm packages.
+     * @param <E> Exception type
+     * @since 1.7
+     */
+    final class InvalidPackage<E extends Throwable> {
+
+        /**
+         * Action to perform.
+         */
+        private final Action<E> action;
+
+        /**
+         * Should invalid package be skipped?
+         */
+        private final boolean skip;
+
+        /**
+         * Ctor.
+         * @param action Action to perform
+         * @param skip Should invalid package be skipped?
+         */
+        public InvalidPackage(final Action<E> action, final boolean skip) {
+            this.action = action;
+            this.skip = skip;
+        }
+
+        /**
+         * Handles {@link InvalidPackageException}.
+         * @throws E Error type
+         */
+        void handle() throws E {
+            try {
+                this.action.perform();
+            } catch (final InvalidPackageException err) {
+                if (!this.skip) {
+                    throw err;
+                }
+            }
+        }
+    }
+
+    /**
+     * Action.
+     * @param <E> Error type
+     * @since 1.7
+     */
+    @FunctionalInterface
+    interface Action<E extends Throwable> {
+
+        /**
+         * Perform action.
+         * @throws E On error
+         */
+        void perform() throws E;
     }
 }

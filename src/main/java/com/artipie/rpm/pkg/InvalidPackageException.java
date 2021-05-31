@@ -4,13 +4,15 @@
  */
 package com.artipie.rpm.pkg;
 
+import com.artipie.ArtipieException;
+
 /**
  * Exception indicates that package is invalid.
  *
  * @since 0.8.3
  */
 @SuppressWarnings("serial")
-public class InvalidPackageException extends RuntimeException {
+public class InvalidPackageException extends ArtipieException {
     /**
      * Ctor.
      *

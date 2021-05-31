@@ -51,19 +51,26 @@ public final class MergedXmlPackage implements MergedXml {
     private final MergedXml.Result res;
 
     /**
+     * Should invalid packages be skipped?
+     */
+    private final boolean skip;
+
+    /**
      * Ctor.
      * @param input Input stream
      * @param out Output stream
      * @param type Xml package type
      * @param res Result of the primary.xml merging
+     * @param skip Should invalid packages be skipped?
      * @checkstyle ParameterNumberCheck (5 lines)
      */
     public MergedXmlPackage(final InputStream input, final OutputStream out, final XmlPackage type,
-        final MergedXml.Result res) {
+        final MergedXml.Result res, final boolean skip) {
         this.input = input;
         this.out = out;
         this.type = type;
         this.res = res;
+        this.skip = skip;
     }
 
     @Override
@@ -78,12 +85,14 @@ public final class MergedXmlPackage implements MergedXml {
                     this.res.checksums(), reader, writer, String.valueOf(this.res.count())
                 );
                 for (final Path item : packages.keySet()) {
-                    event.add(
-                        writer,
-                        new FilePackage.Headers(
-                            new FilePackageHeader(item).header(), item, dgst
-                        )
-                    );
+                    new MergedXml.InvalidPackage<>(
+                        () -> event.add(
+                            writer,
+                            new FilePackage.Headers(
+                                new FilePackageHeader(item).header(), item, dgst
+                            )
+                        ), this.skip
+                    ).handle();
                 }
                 writer.add(events.createSpace("\n"));
                 writer.add(
