@@ -74,10 +74,7 @@ public final class MergedXmlPrimary implements MergedXml {
             final XMLEventWriter writer = new OutputFactoryImpl().createXMLEventWriter(this.out);
             try {
                 final XMLEventFactory events = XMLEventFactory.newFactory();
-                writer.add(reader.nextEvent());
-                writer.add(events.createSpace("\n"));
-                writer.add(reader.nextEvent());
-                writer.add(reader.nextEvent());
+                MergedXmlPackage.startDocument(writer, "-1", XmlPackage.PRIMARY);
                 checksums = MergedXmlPrimary.processPackages(
                     new HashSet<>(packages.values()), reader, writer, res
                 );
@@ -132,6 +129,8 @@ public final class MergedXmlPrimary implements MergedXml {
         boolean valid = true;
         final Collection<String> res = new ArrayList<>(locations.size());
         String checksum = "123";
+        reader.nextEvent();
+        reader.nextEvent();
         while (reader.hasNext()) {
             event = reader.nextEvent();
             if (MergedXmlPrimary.isTag(event, "package")) {

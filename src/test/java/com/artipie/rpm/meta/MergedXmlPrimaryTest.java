@@ -24,6 +24,8 @@ import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Test for {@link MergedXmlPrimary}.
@@ -215,6 +217,44 @@ class MergedXmlPrimaryTest {
                         new MapEntry<>(invalid, invalid.getFileName().toString())
                     ),
                     Digest.SHA256, new XmlEvent.Primary()
+                )
+            );
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"primary_1.xml.example", "primary_2.xml.example"})
+    void worksWithEmptyInput(final String filename) throws IOException {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        final TestRpm abc = new TestRpm.Abc();
+        try (
+            InputStream input = new TestResource(String.format("repodata/empty/%s", filename))
+                .asInputStream()
+        ) {
+            final MergedXmlPrimary.Result res = new MergedXmlPrimary(
+                input, out, true
+            ).merge(
+                new MapOf<Path, String>(
+                    new MapEntry<>(abc.path(), abc.path().getFileName().toString())
+                ),
+                Digest.SHA256, new XmlEvent.Primary()
+            );
+            MatcherAssert.assertThat(
+                "Packages count is incorrect",
+                res.count(),
+                new IsEqual<>(1L)
+            );
+            MatcherAssert.assertThat(
+                "Duplicated packages is not empty",
+                res.checksums(),
+                Matchers.emptyIterable()
+            );
+            final String actual = out.toString(StandardCharsets.UTF_8.name());
+            MatcherAssert.assertThat(
+                actual,
+                XhtmlMatchers.hasXPaths(
+                    // @checkstyle LineLengthCheck (1 line)
+                    "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='abc']"
                 )
             );
         }
