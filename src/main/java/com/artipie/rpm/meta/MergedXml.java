@@ -72,15 +72,14 @@ public interface MergedXml {
 
     /**
      * Handles invalid rpm packages.
-     * @param <E> Exception type
      * @since 1.7
      */
-    final class InvalidPackage<E extends Throwable> {
+    final class InvalidPackage {
 
         /**
          * Action to perform.
          */
-        private final Action<E> action;
+        private final Action action;
 
         /**
          * Should invalid package be skipped?
@@ -92,16 +91,16 @@ public interface MergedXml {
          * @param action Action to perform
          * @param skip Should invalid package be skipped?
          */
-        public InvalidPackage(final Action<E> action, final boolean skip) {
+        public InvalidPackage(final Action action, final boolean skip) {
             this.action = action;
             this.skip = skip;
         }
 
         /**
          * Handles {@link InvalidPackageException}.
-         * @throws E Error type
+         * @throws IOException On error
          */
-        void handle() throws E {
+        void handle() throws IOException {
             try {
                 this.action.perform();
             } catch (final InvalidPackageException err) {
@@ -114,16 +113,15 @@ public interface MergedXml {
 
     /**
      * Action.
-     * @param <E> Error type
      * @since 1.7
      */
     @FunctionalInterface
-    interface Action<E extends Throwable> {
+    interface Action {
 
         /**
          * Perform action.
-         * @throws E On error
+         * @throws IOException On error
          */
-        void perform() throws E;
+        void perform() throws IOException;
     }
 }

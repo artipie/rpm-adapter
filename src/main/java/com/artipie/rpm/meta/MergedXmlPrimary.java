@@ -82,7 +82,7 @@ public final class MergedXmlPrimary implements MergedXml {
                     new HashSet<>(packages.values()), reader, writer, res
                 );
                 for (final Map.Entry<Path, String> item : packages.entrySet()) {
-                    new InvalidPackage<>(
+                    new InvalidPackage(
                         () -> {
                             event.add(
                                 writer,

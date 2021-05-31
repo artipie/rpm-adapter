@@ -85,7 +85,7 @@ public final class MergedXmlPackage implements MergedXml {
                     this.res.checksums(), reader, writer, String.valueOf(this.res.count())
                 );
                 for (final Path item : packages.keySet()) {
-                    new MergedXml.InvalidPackage<>(
+                    new MergedXml.InvalidPackage(
                         () -> event.add(
                             writer,
                             new FilePackage.Headers(
