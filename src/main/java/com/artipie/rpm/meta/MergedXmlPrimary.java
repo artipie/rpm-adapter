@@ -110,7 +110,10 @@ public final class MergedXmlPrimary implements MergedXml {
     }
 
     /**
-     * Processes packages.
+     * Processes packages. Header and root tag opening are written by method
+     * {@link MergedXmlPackage#startDocument(XMLEventWriter, String, XmlPackage)} call in
+     * {@link MergedXmlPrimary#merge(Map, Digest, XmlEvent)}, that's why
+     * we skip first two events here.
      * @param locations Locations to skip
      * @param reader Where to read from
      * @param writer Where to write

@@ -129,7 +129,10 @@ public final class MergedXmlPackage implements MergedXml {
     }
 
     /**
-     * Process lines.
+     * Process lines. Header and root tag opening are written by method
+     * {@link MergedXmlPackage#startDocument(XMLEventWriter, String, XmlPackage)} call in
+     * {@link MergedXmlPackage#merge(Map, Digest, XmlEvent)}, that's why
+     * we skip first two events here.
      * @param ids Not valid ids list
      * @param reader Reader
      * @param writer Writes
