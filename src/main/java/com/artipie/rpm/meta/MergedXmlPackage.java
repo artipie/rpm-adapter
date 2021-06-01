@@ -121,7 +121,7 @@ public final class MergedXmlPackage implements MergedXml {
         final XMLEventFactory events = XMLEventFactory.newFactory();
         writer.add(events.createStartDocument(StandardCharsets.UTF_8.displayName(), "1.0"));
         writer.add(events.createStartElement("", "", type.tag()));
-        for (Map.Entry<String, String> item : type.xmlNamespaces().entrySet()) {
+        for (final Map.Entry<String, String> item : type.xmlNamespaces().entrySet()) {
             writer.add(events.createNamespace(item.getKey(), item.getValue()));
         }
         writer.add(events.createAttribute("packages", cnt));
