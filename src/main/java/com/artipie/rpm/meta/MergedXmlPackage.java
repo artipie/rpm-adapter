@@ -9,8 +9,6 @@ import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.FilePackageHeader;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.fasterxml.aalto.stax.OutputFactoryImpl;
-import com.sun.xml.internal.stream.events.AttributeImpl;
-import com.sun.xml.internal.stream.events.NamespaceImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -122,14 +120,11 @@ public final class MergedXmlPackage implements MergedXml {
         throws XMLStreamException {
         final XMLEventFactory events = XMLEventFactory.newFactory();
         writer.add(events.createStartDocument(StandardCharsets.UTF_8.displayName(), "1.0"));
-        writer.add(
-            events.createStartElement(
-                new QName(type.tag()),
-                Collections.singletonList(new AttributeImpl("packages", cnt)).iterator(),
-                type.xmlNamespaces().entrySet().stream()
-                    .map(entry -> new NamespaceImpl(entry.getKey(), entry.getValue())).iterator()
-            )
-        );
+        writer.add(events.createStartElement("", "", type.tag()));
+        for (Map.Entry<String, String> item : type.xmlNamespaces().entrySet()) {
+            writer.add(events.createNamespace(item.getKey(), item.getValue()));
+        }
+        writer.add(events.createAttribute("packages", cnt));
         writer.add(events.createSpace("\n"));
     }
 
