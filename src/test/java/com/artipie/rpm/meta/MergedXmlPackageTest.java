@@ -137,6 +137,42 @@ class MergedXmlPackageTest {
     }
 
     @ParameterizedTest
+    @ValueSource(strings = {
+        "other_1.xml.example", "other_2.xml.example",
+        "filelists_1.xml.example", "filelists_2.xml.example"
+    })
+    void worksWithEmptyInput(final String filename) throws IOException {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        final TestRpm abc = new TestRpm.Abc();
+        try (
+            InputStream input = new TestResource(String.format("repodata/empty/%s", filename))
+                .asInputStream()
+        ) {
+            final XmlPackage type = XmlPackage.valueOf(
+                filename.substring(0, filename.indexOf('_')).toUpperCase(Locale.US)
+            );
+            new MergedXmlPackage(
+                input, out, type,
+                new MergedXmlPrimary.Result(1L, Collections.emptyList()), true
+            ).merge(
+                new MapOf<Path, String>(
+                    new MapEntry<>(abc.path(), abc.path().getFileName().toString())
+                ),
+                Digest.SHA256, this.event(type)
+            );
+            final String actual = out.toString(StandardCharsets.UTF_8.name());
+            MatcherAssert.assertThat(
+                actual,
+                XhtmlMatchers.hasXPaths(
+                    // @checkstyle LineLengthCheck (4 lines)
+                    String.format("/*[local-name()='%s' and @packages='1']", type.tag()),
+                    String.format("/*[local-name()='%s']/*[local-name()='package' and @name='abc']", type.tag())
+                )
+            );
+        }
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {"other", "filelists"})
     void skipsInvalidPackage(final String filename, @TempDir final Path tmp) throws IOException {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();

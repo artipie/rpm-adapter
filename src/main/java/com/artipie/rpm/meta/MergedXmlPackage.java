@@ -12,6 +12,7 @@ import com.fasterxml.aalto.stax.OutputFactoryImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,6 +28,7 @@ import javax.xml.stream.events.XMLEvent;
  * Merged xml: reads provided index (filelist of others xml), excludes items by
  * provided checksums, adds items by provided file paths and updates `packages` attribute value.
  * @since 1.5
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class MergedXmlPackage implements MergedXml {
 
@@ -81,9 +83,8 @@ public final class MergedXmlPackage implements MergedXml {
             final XMLEventWriter writer = new OutputFactoryImpl().createXMLEventWriter(this.out);
             try {
                 final XMLEventFactory events = XMLEventFactory.newFactory();
-                this.process(
-                    this.res.checksums(), reader, writer, String.valueOf(this.res.count())
-                );
+                MergedXmlPackage.startDocument(writer, String.valueOf(this.res.count()), this.type);
+                this.process(this.res.checksums(), reader, writer);
                 for (final Path item : packages.keySet()) {
                     new MergedXml.InvalidPackage(
                         () -> event.add(
@@ -109,25 +110,45 @@ public final class MergedXmlPackage implements MergedXml {
     }
 
     /**
-     * Process lines.
+     * Starts resulting packages index file.
+     * @param writer Document writer
+     * @param cnt Packages count
+     * @param type Package type
+     * @throws XMLStreamException On error
+     */
+    static void startDocument(final XMLEventWriter writer, final String cnt, final XmlPackage type)
+        throws XMLStreamException {
+        final XMLEventFactory events = XMLEventFactory.newFactory();
+        writer.add(events.createStartDocument(StandardCharsets.UTF_8.displayName(), "1.0"));
+        writer.add(events.createStartElement("", "", type.tag()));
+        for (final Map.Entry<String, String> item : type.xmlNamespaces().entrySet()) {
+            writer.add(events.createNamespace(item.getKey(), item.getValue()));
+        }
+        writer.add(events.createAttribute("packages", cnt));
+        writer.add(events.createSpace("\n"));
+    }
+
+    /**
+     * Process lines. Header and root tag opening are written by method
+     * {@link MergedXmlPackage#startDocument(XMLEventWriter, String, XmlPackage)} call in
+     * {@link MergedXmlPackage#merge(Map, Digest, XmlEvent)}, that's why
+     * we skip first two events here.
      * @param ids Not valid ids list
      * @param reader Reader
      * @param writer Writes
-     * @param cnt Packages count
      * @throws XMLStreamException When error occurs
      * @checkstyle ParameterNumberCheck (5 lines)
      * @checkstyle CyclomaticComplexityCheck (20 lines)
      */
     private void process(final Collection<String> ids, final XMLEventReader reader,
-        final XMLEventWriter writer, final String cnt) throws XMLStreamException {
+        final XMLEventWriter writer) throws XMLStreamException {
         boolean valid = true;
         XMLEvent event;
+        reader.nextEvent();
+        reader.nextEvent();
         while (reader.hasNext()) {
             event = reader.nextEvent();
-            if (event.isStartElement()
-                && event.asStartElement().getName().getLocalPart().equals(this.type.tag())) {
-                writer.add(XmlAlter.Stream.alterEvent(event, cnt));
-            } else if (MergedXmlPackage.isEndTag(event, this.type.tag())) {
+            if (MergedXmlPackage.isEndTag(event, this.type.tag())) {
                 break;
             } else {
                 if (event.isStartElement()
