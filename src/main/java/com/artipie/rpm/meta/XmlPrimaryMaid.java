@@ -97,10 +97,7 @@ public final class XmlPrimaryMaid implements XmlMaid {
                     new OutputFactoryImpl().createXMLEventWriter(this.out);
                 try {
                     final XMLEventFactory events = XMLEventFactory.newFactory();
-                    writer.add(reader.nextEvent());
-                    writer.add(events.createSpace("\n"));
-                    writer.add(reader.nextEvent());
-                    writer.add(reader.nextEvent());
+                    MergedXmlPackage.startDocument(writer, "-1", XmlPackage.PRIMARY);
                     res = Stream.processPackages(ids, reader, writer);
                     writer.add(events.createSpace("\n"));
                     writer.add(

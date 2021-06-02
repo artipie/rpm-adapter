@@ -32,7 +32,7 @@ class XmlPrimaryMaidTest {
         );
         MatcherAssert.assertThat(
             file,
-            new IsXmlEqual(new TestResource("repodata/primary.xml.example.second").asPath())
+            new IsXmlEqual(new TestResource("repodata/primary.xml.example_maid.second").asPath())
         );
     }
 
@@ -47,7 +47,7 @@ class XmlPrimaryMaidTest {
         );
         MatcherAssert.assertThat(
             file,
-            new IsXmlEqual(new TestResource("repodata/primary.xml.example.first").asPath())
+            new IsXmlEqual(new TestResource("repodata/primary.xml.example_maid.first").asPath())
         );
     }
 
