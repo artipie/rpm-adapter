@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
  * @since 1.5
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class RpmMetadataAppendTest {
 
     @Test
