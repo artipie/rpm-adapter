@@ -19,7 +19,6 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -65,11 +64,14 @@ public interface RpmMetadata {
          * Removes records from metadata by RPMs checksums.
          * @param checksums Rpms checksums  to remove by
          * @throws ArtipieIOException On io-operation result error
-         * @checkstyle NestedTryDepthCheck (20 lines)
+         * @checkstyle NestedTryDepthCheck (30 lines)
          */
         public void perform(final Collection<String> checksums) {
             try {
                 for (final MetadataItem item : this.items) {
+                    if (!item.input.isPresent()) {
+                        continue;
+                    }
                     final Path temp = Files.createTempFile("rpm-index", Remove.SUFFIX);
                     try {
                         final long res;
@@ -77,9 +79,9 @@ public interface RpmMetadata {
                         try (OutputStream out =
                             new BufferedOutputStream(Files.newOutputStream(temp))) {
                             if (item.type == XmlPackage.PRIMARY) {
-                                maid = new XmlPrimaryMaid.Stream(item.input, out);
+                                maid = new XmlPrimaryMaid.Stream(item.input.get(), out);
                             } else {
-                                maid = new XmlMaid.ByPkgidAttr.Stream(item.input, out);
+                                maid = new XmlMaid.ByPkgidAttr.Stream(item.input.get(), out);
                             }
                             res = maid.clean(checksums);
                         }
@@ -192,7 +194,7 @@ public interface RpmMetadata {
                             res, this.skip
                         ).merge(packages, this.digest, new XmlEvent.Filelists());
                     } catch (final IOException err) {
-                        throw new UncheckedIOException(err);
+                        throw new ArtipieIOException(err);
                     }
                 }
             };
@@ -251,7 +253,7 @@ public interface RpmMetadata {
         /**
          * Xml metadata input stream.
          */
-        private final InputStream input;
+        private final Optional<InputStream> input;
 
         /**
          * Xml metadata output, where write the result.
@@ -264,11 +266,31 @@ public interface RpmMetadata {
          * @param input Xml metadata input stream
          * @param out Xml metadata output, where write the result
          */
-        public MetadataItem(final XmlPackage type, final InputStream input,
+        public MetadataItem(final XmlPackage type, final Optional<InputStream> input,
             final OutputStream out) {
             this.type = type;
             this.input = input;
             this.out = out;
+        }
+
+        /**
+         * Ctor.
+         * @param type Xml type
+         * @param input Xml metadata input stream
+         * @param out Xml metadata output, where write the result
+         */
+        public MetadataItem(final XmlPackage type, final InputStream input,
+            final OutputStream out) {
+            this(type, Optional.of(input), out);
+        }
+
+        /**
+         * Ctor.
+         * @param type Xml type
+         * @param out Xml metadata output, where write the result
+         */
+        public MetadataItem(final XmlPackage type, final OutputStream out) {
+            this(type, Optional.empty(), out);
         }
     }
 }

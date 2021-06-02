@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import org.cactoos.map.MapEntry;
 import org.cactoos.map.MapOf;
 import org.hamcrest.MatcherAssert;
@@ -258,5 +259,38 @@ class MergedXmlPrimaryTest {
                 )
             );
         }
+    }
+
+    @Test
+    void worksWithAbsentInput() throws IOException {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        final TestRpm time = new TestRpm.Time();
+        final TestRpm abc = new TestRpm.Abc();
+        final MergedXmlPrimary.Result res = new MergedXmlPrimary(Optional.empty(), out, true).merge(
+            new MapOf<Path, String>(
+                new MapEntry<>(abc.path(), abc.path().getFileName().toString()),
+                new MapEntry<>(time.path(), time.path().getFileName().toString())
+            ),
+            Digest.SHA256, new XmlEvent.Primary()
+        );
+        MatcherAssert.assertThat(
+            "Packages count is incorrect",
+            res.count(),
+            new IsEqual<>(2L)
+        );
+        MatcherAssert.assertThat(
+            "Duplicated packages is not empty",
+            res.checksums(),
+            Matchers.emptyIterable()
+        );
+        MatcherAssert.assertThat(
+            "Primary does not have expected packages",
+            out.toString(StandardCharsets.UTF_8.name()),
+            XhtmlMatchers.hasXPaths(
+                // @checkstyle LineLengthCheck (5 lines)
+                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='time']",
+                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='abc']"
+            )
+        );
     }
 }
