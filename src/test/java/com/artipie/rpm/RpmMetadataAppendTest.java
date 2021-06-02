@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
  * @since 1.5
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class RpmMetadataAppendTest {
 
     @Test
@@ -76,6 +77,53 @@ class RpmMetadataAppendTest {
                 "/*[local-name()='otherdata']/*[local-name()='package' and @name='nginx']",
                 "/*[local-name()='otherdata']/*[local-name()='package' and @name='abc']",
                 "/*[local-name()='otherdata']/*[local-name()='package' and @name='libdeflt1_0']"
+            )
+        );
+    }
+
+    @Test
+    void createsIndexesWhenInputsAreAbsent() {
+        final ByteArrayOutputStream primary = new ByteArrayOutputStream();
+        final ByteArrayOutputStream other = new ByteArrayOutputStream();
+        new RpmMetadata.Append(
+            Digest.SHA256,
+            new RpmMetadata.MetadataItem(
+                XmlPackage.PRIMARY,
+                primary
+            ),
+            new RpmMetadata.MetadataItem(
+                XmlPackage.OTHER,
+                other
+            )
+        ).perform(
+            new MapOf<Path, String>(
+                new MapEntry<>(
+                    new TestRpm.Time().path(),
+                    new TestRpm.Time().path().getFileName().toString()
+                ),
+                new MapEntry<>(
+                    new TestRpm.Abc().path(),
+                    new TestRpm.Abc().path().getFileName().toString()
+                )
+            )
+        );
+        MatcherAssert.assertThat(
+            "Records were not added to primary xml",
+            primary.toString(),
+            XhtmlMatchers.hasXPaths(
+                "/*[local-name()='metadata' and @packages='2']",
+                //@checkstyle LineLengthCheck (2 lines)
+                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='time']",
+                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='abc']"
+            )
+        );
+        MatcherAssert.assertThat(
+            "Records were not added to others xml",
+            other.toString(),
+            XhtmlMatchers.hasXPaths(
+                "/*[local-name()='otherdata' and @packages='2']",
+                "/*[local-name()='otherdata']/*[local-name()='package' and @name='time']",
+                "/*[local-name()='otherdata']/*[local-name()='package' and @name='abc']"
             )
         );
     }
