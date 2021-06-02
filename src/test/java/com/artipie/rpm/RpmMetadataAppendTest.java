@@ -81,7 +81,7 @@ class RpmMetadataAppendTest {
     }
 
     @Test
-    void createsIndexesWhenInputsAreEmpty() {
+    void createsIndexesWhenInputsAreAbsent() {
         final ByteArrayOutputStream primary = new ByteArrayOutputStream();
         final ByteArrayOutputStream other = new ByteArrayOutputStream();
         new RpmMetadata.Append(
