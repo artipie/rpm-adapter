@@ -30,7 +30,7 @@ SOFTWARE.
     <version>0.5.1</version>
   </parent>
   <artifactId>rpm-adapter</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.7</version>
   <name>rpm-files</name>
   <description>Turns your files/objects into RPM artifacts</description>
   <url>https://github.com/artipie/rpm-adapter</url>
