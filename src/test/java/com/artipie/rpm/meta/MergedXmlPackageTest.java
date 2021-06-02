@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Locale;
+import java.util.Optional;
 import org.cactoos.map.MapEntry;
 import org.cactoos.map.MapOf;
 import org.hamcrest.MatcherAssert;
@@ -233,6 +234,34 @@ class MergedXmlPackageTest {
                 )
             );
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"other", "filelists"})
+    void worksWithAbsentInput(final String filename) throws IOException {
+        final XmlPackage type = XmlPackage.valueOf(filename.toUpperCase(Locale.US));
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        final TestRpm time = new TestRpm.Time();
+        final TestRpm abc = new TestRpm.Abc();
+        new MergedXmlPackage(
+            Optional.empty(), out, type,
+            new MergedXmlPrimary.Result(2L, Collections.emptyList()), true
+        ).merge(
+            new MapOf<Path, String>(
+                new MapEntry<>(time.path(), time.path().getFileName().toString()),
+                new MapEntry<>(abc.path(), abc.path().getFileName().toString())
+            ),
+            Digest.SHA256, this.event(type)
+        );
+        MatcherAssert.assertThat(
+            out.toString(StandardCharsets.UTF_8.name()),
+            XhtmlMatchers.hasXPaths(
+                // @checkstyle LineLengthCheck (3 lines)
+                String.format("/*[local-name()='%s' and @packages='2']", type.tag()),
+                String.format("/*[local-name()='%s']/*[local-name()='package' and @name='abc']", type.tag()),
+                String.format("/*[local-name()='%s']/*[local-name()='package' and @name='time']", type.tag())
+            )
+        );
     }
 
     private XmlEvent event(final XmlPackage xml) {

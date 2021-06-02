@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.xml.namespace.QName;
@@ -39,7 +40,7 @@ public final class MergedXmlPrimary implements MergedXml {
     /**
      * From where to read primary.xml.
      */
-    private final InputStream input;
+    private final Optional<InputStream> input;
 
     /**
      * Where to write the result.
@@ -57,10 +58,21 @@ public final class MergedXmlPrimary implements MergedXml {
      * @param out Output stream
      * @param skip Should invalid packages be skipped?
      */
-    public MergedXmlPrimary(final InputStream input, final OutputStream out, final boolean skip) {
+    public MergedXmlPrimary(final Optional<InputStream> input, final OutputStream out,
+        final boolean skip) {
         this.input = input;
         this.out = out;
         this.skip = skip;
+    }
+
+    /**
+     * Ctor.
+     * @param input Input stream
+     * @param out Output stream
+     * @param skip Should invalid packages be skipped?
+     */
+    public MergedXmlPrimary(final InputStream input, final OutputStream out, final boolean skip) {
+        this(Optional.of(input), out, skip);
     }
 
     // @checkstyle ExecutableStatementCountCheck (100 lines)
@@ -68,16 +80,21 @@ public final class MergedXmlPrimary implements MergedXml {
     public Result merge(final Map<Path, String> packages, final Digest dgst, final XmlEvent event)
         throws IOException {
         final AtomicLong res = new AtomicLong();
-        final Collection<String> checksums;
+        Collection<String> checksums = Collections.emptyList();
         try {
-            final XMLEventReader reader = new InputFactoryImpl().createXMLEventReader(this.input);
+            Optional<XMLEventReader> reader = Optional.empty();
+            if (this.input.isPresent()) {
+                reader = Optional.of(new InputFactoryImpl().createXMLEventReader(this.input.get()));
+            }
             final XMLEventWriter writer = new OutputFactoryImpl().createXMLEventWriter(this.out);
             try {
                 final XMLEventFactory events = XMLEventFactory.newFactory();
                 MergedXmlPackage.startDocument(writer, "-1", XmlPackage.PRIMARY);
-                checksums = MergedXmlPrimary.processPackages(
-                    new HashSet<>(packages.values()), reader, writer, res
-                );
+                if (reader.isPresent()) {
+                    checksums = MergedXmlPrimary.processPackages(
+                        new HashSet<>(packages.values()), reader.get(), writer, res
+                    );
+                }
                 for (final Map.Entry<Path, String> item : packages.entrySet()) {
                     new InvalidPackage(
                         () -> {
@@ -101,7 +118,9 @@ public final class MergedXmlPrimary implements MergedXml {
                 );
             } finally {
                 writer.close();
-                reader.close();
+                if (reader.isPresent()) {
+                    reader.get().close();
+                }
             }
         } catch (final XMLStreamException err) {
             throw new IOException(err);
