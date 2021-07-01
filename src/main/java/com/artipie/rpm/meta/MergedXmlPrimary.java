@@ -44,31 +44,22 @@ public final class MergedXmlPrimary implements MergedXml {
     private final OutputStream out;
 
     /**
-     * Should invalid packages be skipped?
-     */
-    private final boolean skip;
-
-    /**
      * Ctor.
      * @param input Input stream
      * @param out Output stream
-     * @param skip Should invalid packages be skipped?
      */
-    public MergedXmlPrimary(final Optional<InputStream> input, final OutputStream out,
-        final boolean skip) {
+    public MergedXmlPrimary(final Optional<InputStream> input, final OutputStream out) {
         this.input = input;
         this.out = out;
-        this.skip = skip;
     }
 
     /**
      * Ctor.
      * @param input Input stream
      * @param out Output stream
-     * @param skip Should invalid packages be skipped?
      */
-    public MergedXmlPrimary(final InputStream input, final OutputStream out, final boolean skip) {
-        this(Optional.of(input), out, skip);
+    public MergedXmlPrimary(final InputStream input, final OutputStream out) {
+        this(Optional.of(input), out);
     }
 
     // @checkstyle ExecutableStatementCountCheck (100 lines)
@@ -93,13 +84,8 @@ public final class MergedXmlPrimary implements MergedXml {
                     );
                 }
                 for (final Package.Meta item : packages) {
-                    new InvalidPackage(
-                        () -> {
-                            event.add(writer, item);
-                            res.incrementAndGet();
-                        },
-                        this.skip
-                    ).handle();
+                    event.add(writer, item);
+                    res.incrementAndGet();
                 }
                 writer.add(events.createSpace("\n"));
                 writer.add(
