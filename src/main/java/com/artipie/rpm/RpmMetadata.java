@@ -13,6 +13,9 @@ import com.artipie.rpm.meta.XmlEvent;
 import com.artipie.rpm.meta.XmlMaid;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryMaid;
+import com.artipie.rpm.pkg.Checksum;
+import com.artipie.rpm.pkg.FilePackage;
+import com.artipie.rpm.pkg.Package;
 import com.jcabi.log.Logger;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -23,11 +26,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.redline_rpm.header.Header;
 
 /**
  * Rpm metadata class works with xml metadata - adds or removes records about xml packages.
@@ -112,34 +115,26 @@ public interface RpmMetadata {
         private final Collection<MetadataItem> items;
 
         /**
-         * Digest algorithm.
-         */
-        private final Digest digest;
-
-        /**
          * Should invalid packages be skipped? Default value is true.
          */
         private final boolean skip;
 
         /**
          * Ctor.
-         * @param digest Digest algorithm
          * @param skip Should invalid packages be skipped?
          * @param items Metadata items
          */
-        public Append(final Digest digest, final boolean skip, final MetadataItem... items) {
-            this.digest = digest;
+        public Append(final boolean skip, final MetadataItem... items) {
             this.skip = skip;
             this.items = Arrays.asList(items);
         }
 
         /**
          * Ctor.
-         * @param digest Digest algorithm
          * @param items Metadata items
          */
-        public Append(final Digest digest, final MetadataItem... items) {
-            this(digest, true, items);
+        public Append(final MetadataItem... items) {
+            this(true, items);
         }
 
         /**
@@ -148,7 +143,7 @@ public interface RpmMetadata {
          * @throws ArtipieIOException On io-operation error
          * @checkstyle NestedTryDepthCheck (20 lines)
          */
-        public void perform(final Map<Path, String> packages) {
+        public void perform(final Collection<Package.Meta> packages) {
             try {
                 final Path temp = Files.createTempFile("rpm-primary-append", Remove.SUFFIX);
                 try {
@@ -157,7 +152,7 @@ public interface RpmMetadata {
                         .filter(item -> item.type == XmlPackage.PRIMARY).findFirst().get();
                     try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(temp))) {
                         res = new MergedXmlPrimary(primary.input, out, this.skip)
-                            .merge(packages, this.digest, new XmlEvent.Primary());
+                            .merge(packages, new XmlEvent.Primary());
                     }
                     final ExecutorService service = Executors.newFixedThreadPool(3);
                     service.submit(Append.setPrimaryPckg(temp, res, primary));
@@ -182,7 +177,7 @@ public interface RpmMetadata {
          * @param res Xml update primary result
          * @return Action
          */
-        private Runnable updateFilelist(final Map<Path, String> packages,
+        private Runnable updateFilelist(final Collection<Package.Meta> packages,
             final MergedXml.Result res) {
             return () -> {
                 final Optional<MetadataItem> filelist = this.items.stream()
@@ -192,7 +187,7 @@ public interface RpmMetadata {
                         new MergedXmlPackage(
                             filelist.get().input, filelist.get().out, XmlPackage.FILELISTS,
                             res, this.skip
-                        ).merge(packages, this.digest, new XmlEvent.Filelists());
+                        ).merge(packages, new XmlEvent.Filelists());
                     } catch (final IOException err) {
                         throw new ArtipieIOException(err);
                     }
@@ -206,13 +201,14 @@ public interface RpmMetadata {
          * @param res Xml update primary result
          * @return Action
          */
-        private Runnable updateOther(final Map<Path, String> packages, final MergedXml.Result res) {
+        private Runnable updateOther(final Collection<Package.Meta> packages,
+            final MergedXml.Result res) {
             return () -> {
                 try {
                     final MetadataItem other = this.items.stream()
                         .filter(item -> item.type == XmlPackage.OTHER).findFirst().get();
                     new MergedXmlPackage(other.input, other.out, XmlPackage.OTHER, res, this.skip)
-                        .merge(packages, this.digest, new XmlEvent.Other());
+                        .merge(packages, new XmlEvent.Other());
                 } catch (final IOException err) {
                     throw new ArtipieIOException(err);
                 }
@@ -291,6 +287,93 @@ public interface RpmMetadata {
          */
         public MetadataItem(final XmlPackage type, final OutputStream out) {
             this(type, Optional.empty(), out);
+        }
+    }
+
+    /**
+     * Rpm file item.
+     * @since 1.8
+     */
+    final class RpmItem implements Package.Meta {
+
+        /**
+         * Rpm file header.
+         */
+        private final Header header;
+
+        /**
+         * File size.
+         */
+        private final long size;
+
+        /**
+         * File checksum and algorithm.
+         */
+        private final Checksum sum;
+
+        /**
+         * Relative file location in the repository, value of
+         * location tag from primary xml.
+         */
+        private final String location;
+
+        /**
+         * Ctor.
+         * @param header Rpm file header
+         * @param size File size
+         * @param sum File checksum and algorithm
+         * @param location Relative file location in the repository, value of
+         *  location tag from primary xml
+         * @checkstyle ParameterNumberCheck (5 lines)
+         */
+        public RpmItem(final Header header, final long size, final Checksum sum,
+            final String location) {
+            this.header = header;
+            this.size = size;
+            this.sum = sum;
+            this.location = location;
+        }
+
+        /**
+         * Ctor with SHA256 as default checksum algorithm.
+         * @param header Rpm file header
+         * @param size File size
+         * @param dgst File checksum
+         * @param location Relative file location in the repository, value of
+         *  location tag from primary xml
+         * @checkstyle ParameterNumberCheck (5 lines)
+         */
+        public RpmItem(final Header header, final long size, final String dgst,
+            final String location) {
+            this(header, size, new Checksum.Simple(Digest.SHA256, dgst), location);
+        }
+
+        @Override
+        public Package.MetaHeader header(final Header.HeaderTag tag) {
+            return new FilePackage.EntryHeader(this.header.getEntry(tag));
+        }
+
+        @Override
+        public Checksum checksum() {
+            return this.sum;
+        }
+
+        @Override
+        public long size() {
+            return this.size;
+        }
+
+        @Override
+        public String href() {
+            return this.location;
+        }
+
+        @Override
+        public int[] range() {
+            return new int[] {
+                this.header.getStartPos(),
+                this.header.getEndPos(),
+            };
         }
     }
 }

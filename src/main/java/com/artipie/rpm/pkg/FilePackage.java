@@ -164,7 +164,7 @@ public final class FilePackage implements Package {
      *
      * @since 0.6.3
      */
-    private static final class EntryHeader implements MetaHeader {
+    public static final class EntryHeader implements MetaHeader {
 
         /**
          * Native header entry.
@@ -175,7 +175,7 @@ public final class FilePackage implements Package {
          * Ctor.
          * @param entry Native header entry
          */
-        EntryHeader(final AbstractHeader.Entry<?> entry) {
+        public EntryHeader(final AbstractHeader.Entry<?> entry) {
             this(Optional.ofNullable(entry));
         }
 

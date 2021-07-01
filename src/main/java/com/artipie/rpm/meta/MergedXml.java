@@ -4,12 +4,10 @@
  */
 package com.artipie.rpm.meta;
 
-import com.artipie.rpm.Digest;
 import com.artipie.rpm.pkg.InvalidPackageException;
+import com.artipie.rpm.pkg.Package;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Map;
 
 /**
  * Merged xml: merge provided packages into existing xml index.
@@ -20,12 +18,11 @@ public interface MergedXml {
     /**
      * Appends provided packages to the index xml.
      * @param packages Packages to append info about
-     * @param dgst Digest algorithm
      * @param event Event constant and to append
      * @return Merge result
      * @throws IOException On error
      */
-    Result merge(Map<Path, String> packages, Digest dgst, XmlEvent event) throws IOException;
+    Result merge(Collection<Package.Meta> packages, XmlEvent event) throws IOException;
 
     /**
      * Merge result.

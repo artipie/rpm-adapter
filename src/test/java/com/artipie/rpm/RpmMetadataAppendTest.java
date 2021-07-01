@@ -6,13 +6,13 @@ package com.artipie.rpm;
 
 import com.artipie.asto.test.TestResource;
 import com.artipie.rpm.meta.XmlPackage;
+import com.artipie.rpm.pkg.FilePackage;
+import com.artipie.rpm.pkg.FilePackageHeader;
 import com.jcabi.matchers.XhtmlMatchers;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.file.Path;
-import org.cactoos.map.MapEntry;
-import org.cactoos.map.MapOf;
+import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 
@@ -28,8 +28,9 @@ class RpmMetadataAppendTest {
     void appendsRecords() throws IOException {
         final ByteArrayOutputStream primary = new ByteArrayOutputStream();
         final ByteArrayOutputStream other = new ByteArrayOutputStream();
+        final TestRpm.Libdeflt libdeflt = new TestRpm.Libdeflt();
+        final TestRpm.Abc abc = new TestRpm.Abc();
         new RpmMetadata.Append(
-            Digest.SHA256,
             new RpmMetadata.MetadataItem(
                 XmlPackage.PRIMARY,
                 new ByteArrayInputStream(
@@ -45,14 +46,14 @@ class RpmMetadataAppendTest {
                 other
             )
         ).perform(
-            new MapOf<Path, String>(
-                new MapEntry<>(
-                    new TestRpm.Libdeflt().path(),
-                    new TestRpm.Libdeflt().path().getFileName().toString()
+            new ListOf<>(
+                new FilePackage.Headers(
+                    new FilePackageHeader(libdeflt.path()).header(),
+                    libdeflt.path(), Digest.SHA256, libdeflt.path().getFileName().toString()
                 ),
-                new MapEntry<>(
-                    new TestRpm.Abc().path(),
-                    new TestRpm.Abc().path().getFileName().toString()
+                new FilePackage.Headers(
+                    new FilePackageHeader(abc.path()).header(),
+                    abc.path(), Digest.SHA256, abc.path().getFileName().toString()
                 )
             )
         );
@@ -82,11 +83,12 @@ class RpmMetadataAppendTest {
     }
 
     @Test
-    void createsIndexesWhenInputsAreAbsent() {
+    void createsIndexesWhenInputsAreAbsent() throws IOException {
         final ByteArrayOutputStream primary = new ByteArrayOutputStream();
         final ByteArrayOutputStream other = new ByteArrayOutputStream();
+        final TestRpm.Time time = new TestRpm.Time();
+        final TestRpm.Abc abc = new TestRpm.Abc();
         new RpmMetadata.Append(
-            Digest.SHA256,
             new RpmMetadata.MetadataItem(
                 XmlPackage.PRIMARY,
                 primary
@@ -96,14 +98,14 @@ class RpmMetadataAppendTest {
                 other
             )
         ).perform(
-            new MapOf<Path, String>(
-                new MapEntry<>(
-                    new TestRpm.Time().path(),
-                    new TestRpm.Time().path().getFileName().toString()
+            new ListOf<>(
+                new FilePackage.Headers(
+                    new FilePackageHeader(time.path()).header(),
+                    time.path(), Digest.SHA256, time.path().getFileName().toString()
                 ),
-                new MapEntry<>(
-                    new TestRpm.Abc().path(),
-                    new TestRpm.Abc().path().getFileName().toString()
+                new FilePackage.Headers(
+                    new FilePackageHeader(abc.path()).header(),
+                    abc.path(), Digest.SHA256, abc.path().getFileName().toString()
                 )
             )
         );
