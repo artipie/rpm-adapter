@@ -8,12 +8,16 @@ package com.artipie.rpm.benchmarks;
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.RpmMetadata;
 import com.artipie.rpm.meta.XmlPackage;
+import com.artipie.rpm.pkg.FilePackage;
+import com.artipie.rpm.pkg.FilePackageHeader;
+import com.artipie.rpm.pkg.Package;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -64,7 +68,7 @@ public class RpmMetadataAppendBench {
     /**
      * Benchmark rpms.
      */
-    private Map<Path, String> rpms;
+    private Collection<Package.Meta> rpms;
 
     @Setup
     public void setup() throws IOException {
@@ -85,14 +89,18 @@ public class RpmMetadataAppendBench {
             ).filter(Optional::isPresent).map(Optional::get)
                 .collect(Collectors.toMap(MapEntry::getKey, MapEntry::getValue));
             this.rpms = flist.stream().filter(item -> item.endsWith(".rpm"))
-                .collect(Collectors.toMap(item -> item, item -> item.getFileName().toString()));
+                .map(
+                    item -> new FilePackage.Headers(
+                        new Unchecked<>(() -> new FilePackageHeader(item).header()).value(),
+                        item, Digest.SHA256, item.getFileName().toString()
+                    )
+                ).collect(Collectors.toList());
         }
     }
 
     @Benchmark
     public void run(final Blackhole bhl) throws IOException {
         new RpmMetadata.Append(
-            Digest.SHA256,
             this.items.entrySet().stream()
             .map(
                 entry -> new RpmMetadata.MetadataItem(
