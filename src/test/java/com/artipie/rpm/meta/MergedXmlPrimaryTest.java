@@ -9,24 +9,18 @@ import com.artipie.rpm.Digest;
 import com.artipie.rpm.TestRpm;
 import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.FilePackageHeader;
-import com.artipie.rpm.pkg.InvalidPackageException;
 import com.jcabi.matchers.XhtmlMatchers;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Optional;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.collection.IsEmptyCollection;
 import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -45,9 +39,7 @@ class MergedXmlPrimaryTest {
         final TestRpm.Libdeflt libdeflt = new TestRpm.Libdeflt();
         try (InputStream input = new TestResource("repodata/primary.xml.example").asInputStream()) {
             final MergedXmlPrimary.Result res =
-                new MergedXmlPrimary(
-                    input, out, true
-                ).merge(
+                new MergedXmlPrimary(input, out).merge(
                     new ListOf<>(
                         new FilePackage.Headers(
                             new FilePackageHeader(libdeflt.path()).header(),
@@ -85,11 +77,10 @@ class MergedXmlPrimaryTest {
         final TestRpm.Libdeflt libdeflt = new TestRpm.Libdeflt();
         final TestRpm.Time time = new TestRpm.Time();
         try (InputStream input =
-            new TestResource("repodata/MergedXmlTest/libdeflt-primary.xml.example")
-                .asInputStream()
+            new TestResource("repodata/MergedXmlTest/libdeflt-primary.xml.example").asInputStream()
         ) {
             final MergedXmlPrimary.Result res =
-                new MergedXmlPrimary(input, out, true).merge(
+                new MergedXmlPrimary(input, out).merge(
                     new ListOf<>(
                         new FilePackage.Headers(
                             new FilePackageHeader(time.path()).header(),
@@ -137,7 +128,7 @@ class MergedXmlPrimaryTest {
                 .asInputStream()
         ) {
             final MergedXmlPrimary.Result res =
-                new MergedXmlPrimary(input, out, true).merge(
+                new MergedXmlPrimary(input, out).merge(
                     new ListOf<>(
                         new FilePackage.Headers(
                             new FilePackageHeader(time.path()).header(),
@@ -180,80 +171,6 @@ class MergedXmlPrimaryTest {
         }
     }
 
-    @Test
-    @Disabled
-    void skipsInvalidPackage(@TempDir final Path tmp) throws IOException {
-        final ByteArrayOutputStream out = new ByteArrayOutputStream();
-        final Path invalid = tmp.resolve("invalid.rpm");
-        Files.write(invalid, "abc123".getBytes());
-        final TestRpm abc = new TestRpm.Abc();
-        try (InputStream input =
-            new TestResource("repodata/MergedXmlTest/libdeflt-nginx-promary.xml.example")
-                .asInputStream()
-        ) {
-            final MergedXmlPrimary.Result res =
-                new MergedXmlPrimary(input, out, true).merge(
-                    new ListOf<>(
-                        new FilePackage.Headers(
-                            new FilePackageHeader(abc.path()).header(),
-                            abc.path(), Digest.SHA256, abc.path().getFileName().toString()
-                        ),
-                        new FilePackage.Headers(
-                            new FilePackageHeader(invalid).header(),
-                            invalid, Digest.SHA256, invalid.getFileName().toString()
-                        )
-                    ),
-                    new XmlEvent.Primary()
-                );
-            MatcherAssert.assertThat(
-                "Packages count is incorrect",
-                res.count(),
-                new IsEqual<>(3L)
-            );
-            MatcherAssert.assertThat(
-                "Duplicated packages is not empty",
-                res.checksums(),
-                Matchers.emptyIterable()
-            );
-            final String actual = out.toString(StandardCharsets.UTF_8.name());
-            MatcherAssert.assertThat(
-                "Primary does not have expected packages",
-                actual,
-                XhtmlMatchers.hasXPaths(
-                    // @checkstyle LineLengthCheck (5 lines)
-                    "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='abc']",
-                    "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='nginx']",
-                    "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='libdeflt1_0']"
-                )
-            );
-        }
-    }
-
-    @Test
-    @Disabled
-    void failsOnInvalidPackage(@TempDir final Path tmp) throws IOException {
-        final ByteArrayOutputStream out = new ByteArrayOutputStream();
-        final Path invalid = tmp.resolve("invalid.rpm");
-        Files.write(invalid, "123".getBytes());
-        try (InputStream input =
-            new TestResource("repodata/MergedXmlTest/libdeflt-nginx-promary.xml.example")
-                .asInputStream()
-        ) {
-            Assertions.assertThrows(
-                InvalidPackageException.class,
-                () -> new MergedXmlPrimary(input, out, false).merge(
-                    new ListOf<>(
-                        new FilePackage.Headers(
-                            new FilePackageHeader(invalid).header(),
-                            invalid, Digest.SHA256, invalid.getFileName().toString()
-                        )
-                    ),
-                    new XmlEvent.Primary()
-                )
-            );
-        }
-    }
-
     @ParameterizedTest
     @ValueSource(strings = {"primary_1.xml.example", "primary_2.xml.example"})
     void worksWithEmptyInput(final String filename) throws IOException {
@@ -263,9 +180,7 @@ class MergedXmlPrimaryTest {
             InputStream input = new TestResource(String.format("repodata/empty/%s", filename))
                 .asInputStream()
         ) {
-            final MergedXmlPrimary.Result res = new MergedXmlPrimary(
-                input, out, true
-            ).merge(
+            final MergedXmlPrimary.Result res = new MergedXmlPrimary(input, out).merge(
                 new ListOf<>(
                     new FilePackage.Headers(
                         new FilePackageHeader(abc.path()).header(),
@@ -300,7 +215,7 @@ class MergedXmlPrimaryTest {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         final TestRpm time = new TestRpm.Time();
         final TestRpm abc = new TestRpm.Abc();
-        final MergedXmlPrimary.Result res = new MergedXmlPrimary(Optional.empty(), out, true).merge(
+        final MergedXmlPrimary.Result res = new MergedXmlPrimary(Optional.empty(), out).merge(
             new ListOf<>(
                 new FilePackage.Headers(
                     new FilePackageHeader(abc.path()).header(),
