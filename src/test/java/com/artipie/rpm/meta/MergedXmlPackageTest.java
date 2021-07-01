@@ -9,22 +9,16 @@ import com.artipie.rpm.Digest;
 import com.artipie.rpm.TestRpm;
 import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.FilePackageHeader;
-import com.artipie.rpm.pkg.InvalidPackageException;
 import com.jcabi.matchers.XhtmlMatchers;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Optional;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -47,7 +41,7 @@ class MergedXmlPackageTest {
             final XmlPackage type = XmlPackage.valueOf(filename.toUpperCase(Locale.US));
             new MergedXmlPackage(
                 input, out, type,
-                new MergedXmlPrimary.Result(3L, Collections.emptyList()), true
+                new MergedXmlPrimary.Result(3L, Collections.emptyList())
             ).merge(
                 new ListOf<>(
                     new FilePackage.Headers(
@@ -84,7 +78,7 @@ class MergedXmlPackageTest {
             final XmlPackage type = XmlPackage.valueOf(filename.toUpperCase(Locale.US));
             new MergedXmlPackage(
                 input, out, type,
-                new MergedXmlPrimary.Result(2L, Collections.singleton("abc123")), true
+                new MergedXmlPrimary.Result(2L, Collections.singleton("abc123"))
             ).merge(
                 new ListOf<>(
                     new FilePackage.Headers(
@@ -125,7 +119,7 @@ class MergedXmlPackageTest {
             final XmlPackage type = XmlPackage.valueOf(filename.toUpperCase(Locale.US));
             new MergedXmlPackage(
                 input, out, type,
-                new MergedXmlPrimary.Result(4L, Collections.singleton("abc123")), true
+                new MergedXmlPrimary.Result(4L, Collections.singleton("abc123"))
             ).merge(
                 new ListOf<>(
                     new FilePackage.Headers(
@@ -174,7 +168,7 @@ class MergedXmlPackageTest {
             );
             new MergedXmlPackage(
                 input, out, type,
-                new MergedXmlPrimary.Result(1L, Collections.emptyList()), true
+                new MergedXmlPrimary.Result(1L, Collections.emptyList())
             ).merge(
                 new ListOf<>(
                     new FilePackage.Headers(
@@ -198,80 +192,6 @@ class MergedXmlPackageTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"other", "filelists"})
-    @Disabled
-    void skipsInvalidPackage(final String filename, @TempDir final Path tmp) throws IOException {
-        final ByteArrayOutputStream out = new ByteArrayOutputStream();
-        final Path invalid = tmp.resolve("invalid.rpm");
-        Files.write(invalid, "abc123".getBytes());
-        final TestRpm time = new TestRpm.Time();
-        try (InputStream input = new TestResource(
-            String.format("repodata/MergedXmlTest/libdeflt-nginx-%s.xml.example", filename)
-        ).asInputStream()
-        ) {
-            final XmlPackage type = XmlPackage.valueOf(filename.toUpperCase(Locale.US));
-            new MergedXmlPackage(
-                input, out, type,
-                new MergedXmlPrimary.Result(3L, Collections.emptyList()), true
-            ).merge(
-                new ListOf<>(
-                    new FilePackage.Headers(
-                        new FilePackageHeader(time.path()).header(),
-                        time.path(), Digest.SHA256, time.path().getFileName().toString()
-                    ),
-                    new FilePackage.Headers(
-                        new FilePackageHeader(invalid).header(),
-                        invalid, Digest.SHA256, invalid.getFileName().toString()
-                    )
-                ),
-                this.event(type)
-            );
-            final String actual = out.toString(StandardCharsets.UTF_8.name());
-            MatcherAssert.assertThat(
-                actual,
-                XhtmlMatchers.hasXPaths(
-                    // @checkstyle LineLengthCheck (4 lines)
-                    String.format("/*[local-name()='%s' and @packages='3']", type.tag()),
-                    String.format("/*[local-name()='%s']/*[local-name()='package' and @name='libdeflt1_0']", type.tag()),
-                    String.format("/*[local-name()='%s']/*[local-name()='package' and @name='nginx']", type.tag()),
-                    String.format("/*[local-name()='%s']/*[local-name()='package' and @name='time']", type.tag())
-                )
-            );
-        }
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"other", "filelists"})
-    @Disabled
-    void failsWhenInvalidPackageProvided(final String filename, @TempDir final Path tmp)
-        throws IOException {
-        final ByteArrayOutputStream out = new ByteArrayOutputStream();
-        final Path invalid = tmp.resolve("invalid.rpm");
-        Files.write(invalid, "123".getBytes());
-        try (InputStream input = new TestResource(
-            String.format("repodata/MergedXmlTest/libdeflt-nginx-%s.xml.example", filename)
-        ).asInputStream()
-        ) {
-            final XmlPackage type = XmlPackage.valueOf(filename.toUpperCase(Locale.US));
-            Assertions.assertThrows(
-                InvalidPackageException.class,
-                () -> new MergedXmlPackage(
-                    input, out, type,
-                    new MergedXmlPrimary.Result(3L, Collections.emptyList()), false
-                ).merge(
-                    new ListOf<>(
-                        new FilePackage.Headers(
-                            new FilePackageHeader(invalid).header(),
-                            invalid, Digest.SHA256, invalid.getFileName().toString()
-                        )
-                    ),
-                    this.event(type)
-                )
-            );
-        }
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"other", "filelists"})
     void worksWithAbsentInput(final String filename) throws IOException {
         final XmlPackage type = XmlPackage.valueOf(filename.toUpperCase(Locale.US));
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -279,7 +199,7 @@ class MergedXmlPackageTest {
         final TestRpm abc = new TestRpm.Abc();
         new MergedXmlPackage(
             Optional.empty(), out, type,
-            new MergedXmlPrimary.Result(2L, Collections.emptyList()), true
+            new MergedXmlPrimary.Result(2L, Collections.emptyList())
         ).merge(
             new ListOf<>(
                 new FilePackage.Headers(

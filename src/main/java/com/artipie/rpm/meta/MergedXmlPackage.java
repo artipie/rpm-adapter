@@ -51,26 +51,19 @@ public final class MergedXmlPackage implements MergedXml {
     private final MergedXml.Result res;
 
     /**
-     * Should invalid packages be skipped?
-     */
-    private final boolean skip;
-
-    /**
      * Ctor.
      * @param input Input stream
      * @param out Output stream
      * @param type Xml package type
      * @param res Result of the primary.xml merging
-     * @param skip Should invalid packages be skipped?
      * @checkstyle ParameterNumberCheck (5 lines)
      */
     public MergedXmlPackage(final Optional<InputStream> input, final OutputStream out,
-        final XmlPackage type, final MergedXml.Result res, final boolean skip) {
+        final XmlPackage type, final MergedXml.Result res) {
         this.input = input;
         this.out = out;
         this.type = type;
         this.res = res;
-        this.skip = skip;
     }
 
     /**
@@ -79,12 +72,11 @@ public final class MergedXmlPackage implements MergedXml {
      * @param out Output stream
      * @param type Xml package type
      * @param res Result of the primary.xml merging
-     * @param skip Should invalid packages be skipped?
      * @checkstyle ParameterNumberCheck (5 lines)
      */
     public MergedXmlPackage(final InputStream input, final OutputStream out,
-        final XmlPackage type, final MergedXml.Result res, final boolean skip) {
-        this(Optional.of(input), out, type, res, skip);
+        final XmlPackage type, final MergedXml.Result res) {
+        this(Optional.of(input), out, type, res);
     }
 
     @Override
@@ -103,9 +95,7 @@ public final class MergedXmlPackage implements MergedXml {
                     this.process(this.res.checksums(), reader.get(), writer);
                 }
                 for (final Package.Meta item : packages) {
-                    new MergedXml.InvalidPackage(
-                        () -> event.add(writer, item), this.skip
-                    ).handle();
+                    event.add(writer, item);
                 }
                 writer.add(events.createSpace("\n"));
                 writer.add(
