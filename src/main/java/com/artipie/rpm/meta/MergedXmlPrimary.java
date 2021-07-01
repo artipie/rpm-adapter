@@ -4,24 +4,20 @@
  */
 package com.artipie.rpm.meta;
 
-import com.artipie.rpm.Digest;
-import com.artipie.rpm.pkg.FilePackage;
-import com.artipie.rpm.pkg.FilePackageHeader;
+import com.artipie.rpm.pkg.Package;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.fasterxml.aalto.stax.OutputFactoryImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventReader;
@@ -77,7 +73,7 @@ public final class MergedXmlPrimary implements MergedXml {
 
     // @checkstyle ExecutableStatementCountCheck (100 lines)
     @Override
-    public Result merge(final Map<Path, String> packages, final Digest dgst, final XmlEvent event)
+    public Result merge(final Collection<Package.Meta> packages, final XmlEvent event)
         throws IOException {
         final AtomicLong res = new AtomicLong();
         Collection<String> checksums = Collections.emptyList();
@@ -92,19 +88,14 @@ public final class MergedXmlPrimary implements MergedXml {
                 MergedXmlPackage.startDocument(writer, "-1", XmlPackage.PRIMARY);
                 if (reader.isPresent()) {
                     checksums = MergedXmlPrimary.processPackages(
-                        new HashSet<>(packages.values()), reader.get(), writer, res
+                        packages.stream().map(Package.Meta::href).collect(Collectors.toSet()),
+                        reader.get(), writer, res
                     );
                 }
-                for (final Map.Entry<Path, String> item : packages.entrySet()) {
+                for (final Package.Meta item : packages) {
                     new InvalidPackage(
                         () -> {
-                            event.add(
-                                writer,
-                                new FilePackage.Headers(
-                                    new FilePackageHeader(item.getKey()).header(),
-                                    item.getKey(), dgst, item.getValue()
-                                )
-                            );
+                            event.add(writer, item);
                             res.incrementAndGet();
                         },
                         this.skip
@@ -131,7 +122,7 @@ public final class MergedXmlPrimary implements MergedXml {
     /**
      * Processes packages. Header and root tag opening are written by method
      * {@link MergedXmlPackage#startDocument(XMLEventWriter, String, XmlPackage)} call in
-     * {@link MergedXmlPrimary#merge(Map, Digest, XmlEvent)}, that's why
+     * {@link MergedXmlPrimary#merge(Collection, XmlEvent)}, that's why
      * we skip first two events here.
      * @param locations Locations to skip
      * @param reader Where to read from

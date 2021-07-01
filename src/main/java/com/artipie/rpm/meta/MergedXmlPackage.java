@@ -4,16 +4,13 @@
  */
 package com.artipie.rpm.meta;
 
-import com.artipie.rpm.Digest;
-import com.artipie.rpm.pkg.FilePackage;
-import com.artipie.rpm.pkg.FilePackageHeader;
+import com.artipie.rpm.pkg.Package;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.fasterxml.aalto.stax.OutputFactoryImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -91,7 +88,7 @@ public final class MergedXmlPackage implements MergedXml {
     }
 
     @Override
-    public MergedXml.Result merge(final Map<Path, String> packages, final Digest dgst,
+    public MergedXml.Result merge(final Collection<Package.Meta> packages,
         final XmlEvent event) throws IOException {
         try {
             Optional<XMLEventReader> reader = Optional.empty();
@@ -105,14 +102,9 @@ public final class MergedXmlPackage implements MergedXml {
                 if (reader.isPresent()) {
                     this.process(this.res.checksums(), reader.get(), writer);
                 }
-                for (final Path item : packages.keySet()) {
+                for (final Package.Meta item : packages) {
                     new MergedXml.InvalidPackage(
-                        () -> event.add(
-                            writer,
-                            new FilePackage.Headers(
-                                new FilePackageHeader(item).header(), item, dgst
-                            )
-                        ), this.skip
+                        () -> event.add(writer, item), this.skip
                     ).handle();
                 }
                 writer.add(events.createSpace("\n"));
@@ -153,7 +145,7 @@ public final class MergedXmlPackage implements MergedXml {
     /**
      * Process lines. Header and root tag opening are written by method
      * {@link MergedXmlPackage#startDocument(XMLEventWriter, String, XmlPackage)} call in
-     * {@link MergedXmlPackage#merge(Map, Digest, XmlEvent)}, that's why
+     * {@link MergedXmlPackage#merge(Collection, XmlEvent)}, that's why
      * we skip first two events here.
      * @param ids Not valid ids list
      * @param reader Reader
