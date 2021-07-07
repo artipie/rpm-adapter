@@ -5,6 +5,7 @@
 package com.artipie.rpm;
 
 import com.artipie.asto.test.TestResource;
+import com.artipie.rpm.hm.IsXmlEqual;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.FilePackageHeader;
@@ -12,6 +13,8 @@ import com.jcabi.matchers.XhtmlMatchers;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
@@ -127,6 +130,67 @@ class RpmMetadataAppendTest {
                 "/*[local-name()='otherdata']/*[local-name()='package' and @name='time']",
                 "/*[local-name()='otherdata']/*[local-name()='package' and @name='abc']"
             )
+        );
+    }
+
+    @Test
+    void doesNothingWhenRmpsListIsEmpty() throws IOException {
+        final ByteArrayOutputStream primary = new ByteArrayOutputStream();
+        final ByteArrayOutputStream other = new ByteArrayOutputStream();
+        final ByteArrayOutputStream filelists = new ByteArrayOutputStream();
+        try (
+            InputStream isfilelists = new TestResource("repodata/filelists.xml.example")
+                .asInputStream();
+            InputStream isprim = new TestResource("repodata/primary.xml.example").asInputStream();
+            InputStream isother = new TestResource("repodata/other.xml.example").asInputStream()
+        ) {
+            new RpmMetadata.Append(
+                new RpmMetadata.MetadataItem(XmlPackage.PRIMARY, isprim, primary),
+                new RpmMetadata.MetadataItem(XmlPackage.OTHER, isother, other),
+                new RpmMetadata.MetadataItem(XmlPackage.FILELISTS, isfilelists, filelists)
+            ).perform(Collections.emptyList());
+        }
+        MatcherAssert.assertThat(
+            "Records were changed in primary xml",
+            new TestResource("repodata/primary.xml.example").asPath(),
+            new IsXmlEqual(primary.toByteArray())
+        );
+        MatcherAssert.assertThat(
+            "Records were changed in others xml",
+            new TestResource("repodata/other.xml.example").asPath(),
+            new IsXmlEqual(other.toByteArray())
+        );
+        MatcherAssert.assertThat(
+            "Records were changed in filelists xml",
+            new TestResource("repodata/filelists.xml.example").asPath(),
+            new IsXmlEqual(filelists.toByteArray())
+        );
+    }
+
+    @Test
+    void generatesEmptyIndexesWhenRpmsListIsEmpty() {
+        final ByteArrayOutputStream primary = new ByteArrayOutputStream();
+        final ByteArrayOutputStream other = new ByteArrayOutputStream();
+        final ByteArrayOutputStream filelists = new ByteArrayOutputStream();
+        new RpmMetadata.Append(
+            new RpmMetadata.MetadataItem(XmlPackage.PRIMARY, primary),
+            new RpmMetadata.MetadataItem(XmlPackage.OTHER, other),
+            new RpmMetadata.MetadataItem(XmlPackage.FILELISTS, filelists)
+        ).perform(Collections.emptyList());
+        MatcherAssert.assertThat(
+            "Empty primary xml was not generated",
+            primary.toString(),
+            XhtmlMatchers.hasXPaths("/*[local-name()='metadata' and @packages='0']")
+        );
+        MatcherAssert.assertThat(
+            "Empty other xml was not generated",
+            other.toString(),
+            XhtmlMatchers.hasXPaths("/*[local-name()='otherdata' and @packages='0']")
+        );
+        MatcherAssert.assertThat(
+            "Empty filelists xml was not generated",
+            filelists.toString(),
+            XhtmlMatchers.hasXPaths("/*[local-name()='filelists' and @packages='0']")
         );
     }
 }
