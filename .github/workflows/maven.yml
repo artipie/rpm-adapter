@@ -27,6 +27,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-jdk-${{ matrix.java }}-maven-
       - name: Build adapter with Maven
-        run: mvn -B verify -Pqulice
+        run: mvn -B install -Pqulice
       - name: Build benchmarks with Maven
         run: mvn -B install -f ./benchmarks
