@@ -26,5 +26,7 @@ jobs:
           key: ${{ runner.os }}-jdk-${{ matrix.java }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-jdk-${{ matrix.java }}-maven-
-      - name: Build it with Maven
+      - name: Build adapter with Maven
         run: mvn -B verify -Pqulice
+      - name: Build benchmarks with Maven
+        run: mvn -B install -f ./benchmarks
