@@ -82,6 +82,21 @@ SOFTWARE.
       <groupId>org.redline-rpm</groupId>
       <artifactId>redline</artifactId>
       <version>1.2.9</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.ant</groupId>
+          <artifactId>ant</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-compress</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-compress</artifactId>
+      <version>1.21</version>
     </dependency>
     <dependency>
       <groupId>com.artipie</groupId>
@@ -96,7 +111,7 @@ SOFTWARE.
     <dependency>
       <groupId>com.artipie</groupId>
       <artifactId>asto</artifactId>
-      <version>1.0.0</version>
+      <version>v1.3.2</version>
     </dependency>
     <dependency>
       <groupId>commons-cli</groupId>
