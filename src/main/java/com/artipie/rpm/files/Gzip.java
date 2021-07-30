@@ -5,7 +5,6 @@
 package com.artipie.rpm.files;
 
 import com.jcabi.log.Logger;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -47,11 +46,14 @@ public final class Gzip {
         try (TarArchiveInputStream tar = new TarArchiveInputStream(input)) {
             TarArchiveEntry entry;
             while ((entry = (TarArchiveEntry) tar.getNextEntry()) != null) {
-                final File next = dest.resolve(entry.getName()).toFile();
+                final Path next = dest.resolve(entry.getName());
+                if (!next.normalize().startsWith(dest)) {
+                    throw new IllegalStateException("Bad tar.gz entry");
+                }
                 if (entry.isDirectory()) {
-                    next.mkdirs();
+                    next.toFile().mkdirs();
                 } else {
-                    try (OutputStream out = Files.newOutputStream(next.toPath())) {
+                    try (OutputStream out = Files.newOutputStream(next)) {
                         IOUtils.copy(tar, out);
                     }
                 }
