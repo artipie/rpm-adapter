@@ -35,6 +35,14 @@ public enum RpmOptions {
     FILELISTS(
         "filelists", "fl",
         "(optional, default true) includes File Lists for Rpm: true or false"
+    ),
+
+    /**
+     * Update option allows to set schedule to update repository in cron format.
+     */
+    UPDATE(
+        "update", "upd",
+        "(optional) allows to set schedule to update repository in cron format"
     );
 
     /**

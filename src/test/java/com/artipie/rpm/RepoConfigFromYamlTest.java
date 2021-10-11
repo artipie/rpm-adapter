@@ -16,6 +16,7 @@ import org.llorllale.cactoos.matchers.MatcherOf;
  * Test for {@link RepoConfig.FromYaml}.
  * @since 0.10
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class RepoConfigFromYamlTest {
 
     @Test
@@ -23,12 +24,36 @@ public final class RepoConfigFromYamlTest {
         MatcherAssert.assertThat(
             new RepoConfig.FromYaml(
                 Yaml.createYamlMappingBuilder().add("digest", "sha1")
-                .add("naming-policy", "sha256").add("filelists", "false").build()
+                .add("naming-policy", "sha256").add("filelists", "false")
+                .add("update", Yaml.createYamlMappingBuilder().add("on", "upload").build()).build()
             ),
             Matchers.allOf(
                 new MatcherOf<>(cnfg -> cnfg.digest() == Digest.SHA1),
                 new MatcherOf<>(cnfg -> cnfg.naming() == StandardNamingPolicy.SHA256),
-                new MatcherOf<>(fromYaml -> !fromYaml.filelists())
+                new MatcherOf<>(fromYaml -> !fromYaml.filelists()),
+                new MatcherOf<>(cnfg -> cnfg.mode() == RepoConfig.UpdateMode.UPLOAD),
+                new MatcherOf<>(new ProcOf<>(cnfg -> !cnfg.cron().isPresent()))
+            )
+        );
+    }
+
+    @Test
+    void readsSettingsWithCron() {
+        final String cron = "0 * * * *";
+        MatcherAssert.assertThat(
+            new RepoConfig.FromYaml(
+                Yaml.createYamlMappingBuilder()
+                    .add(
+                        "update",
+                        Yaml.createYamlMappingBuilder().add(
+                            "on",
+                            Yaml.createYamlMappingBuilder().add("cron", cron).build()
+                        ).build()
+                    ).build()
+            ),
+            Matchers.allOf(
+                new MatcherOf<>(cnfg -> cnfg.mode() == RepoConfig.UpdateMode.CRON),
+                new MatcherOf<>(new ProcOf<>(cnfg -> !cnfg.cron().get().equals(cron)))
             )
         );
     }
@@ -40,7 +65,9 @@ public final class RepoConfigFromYamlTest {
             Matchers.allOf(
                 new MatcherOf<>(cnfg -> cnfg.digest() == Digest.SHA256),
                 new MatcherOf<>(cnfg -> cnfg.naming() == StandardNamingPolicy.SHA256),
-                new MatcherOf<>(new ProcOf<>(RepoConfig.FromYaml::filelists))
+                new MatcherOf<>(new ProcOf<>(RepoConfig.FromYaml::filelists)),
+                new MatcherOf<>(cnfg -> cnfg.mode() == RepoConfig.UpdateMode.UPLOAD),
+                new MatcherOf<>(new ProcOf<>(cnfg -> !cnfg.cron().isPresent()))
             )
         );
     }
