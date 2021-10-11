@@ -9,6 +9,8 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Tests for {@link CliArguments}.
@@ -121,18 +123,11 @@ class CliArgumentsTest {
         );
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = {"-u0 1 * * *", "-update=1 * * * *"})
     void canParseModeArgument() {
         MatcherAssert.assertThat(
             new CliArguments("-u0 1 * * *").config().mode(),
-            new IsEqual<>(RepoConfig.UpdateMode.CRON)
-        );
-    }
-
-    @Test
-    void canParseModeArgumentWithLongopt() {
-        MatcherAssert.assertThat(
-            new CliArguments("-update=1 * * * *").config().mode(),
             new IsEqual<>(RepoConfig.UpdateMode.CRON)
         );
     }
