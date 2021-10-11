@@ -125,9 +125,9 @@ class CliArgumentsTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"-u0 1 * * *", "-update=1 * * * *"})
-    void canParseModeArgument() {
+    void canParseModeArgument(final String input) {
         MatcherAssert.assertThat(
-            new CliArguments("-u0 1 * * *").config().mode(),
+            new CliArguments(input).config().mode(),
             new IsEqual<>(RepoConfig.UpdateMode.CRON)
         );
     }
