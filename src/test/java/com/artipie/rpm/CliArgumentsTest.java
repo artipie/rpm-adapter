@@ -15,6 +15,7 @@ import org.junit.jupiter.api.io.TempDir;
  *
  * @since 0.9
  */
+@SuppressWarnings("PMD.TooManyMethods")
 class CliArgumentsTest {
 
     @Test
@@ -117,6 +118,46 @@ class CliArgumentsTest {
                 "-digest=sha1"
             ).config().digest(),
             new IsEqual<>(Digest.SHA1)
+        );
+    }
+
+    @Test
+    void canParseModeArgument() {
+        MatcherAssert.assertThat(
+            new CliArguments("-u0 1 * * *").config().mode(),
+            new IsEqual<>(RepoConfig.UpdateMode.CRON)
+        );
+    }
+
+    @Test
+    void canParseModeArgumentWithLongopt() {
+        MatcherAssert.assertThat(
+            new CliArguments("-update=1 * * * *").config().mode(),
+            new IsEqual<>(RepoConfig.UpdateMode.CRON)
+        );
+    }
+
+    @Test
+    void canParseCronArgument() {
+        MatcherAssert.assertThat(
+            new CliArguments("-u* * 0 * *").config().cron().get(),
+            new IsEqual<>("* * 0 * *")
+        );
+    }
+
+    @Test
+    void canParseCronArgumentWithLongopt() {
+        MatcherAssert.assertThat(
+            new CliArguments("-update=4 * * * *").config().cron().get(),
+            new IsEqual<>("4 * * * *")
+        );
+    }
+
+    @Test
+    void returnEmptyCronIfOptionNot() {
+        MatcherAssert.assertThat(
+            new CliArguments("").config().cron().isPresent(),
+            new IsEqual<>(false)
         );
     }
 }

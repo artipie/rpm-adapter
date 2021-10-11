@@ -4,8 +4,11 @@
  */
 package com.artipie.rpm;
 
+import com.amihaiemil.eoyaml.Node;
 import com.amihaiemil.eoyaml.Yaml;
 import com.amihaiemil.eoyaml.YamlMapping;
+import com.amihaiemil.eoyaml.YamlNode;
+import com.artipie.ArtipieException;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -34,10 +37,52 @@ public interface RepoConfig {
     boolean filelists();
 
     /**
+     * Repository update mode, default is {@link UpdateMode#UPLOAD}.
+     * @return Instance of {@link UpdateMode}
+     * @throws ArtipieException When configuration is invalid
+     */
+    UpdateMode mode();
+
+    /**
+     * Schedule to update repository in cron format, available for {@link UpdateMode#CRON} only.
+     * @return Cron update schedule
+     * @throws ArtipieException When configuration is invalid
+     */
+    Optional<String> cron();
+
+    /**
+     * Rpm repository update mode.
+     * @since 1.9
+     */
+    enum UpdateMode {
+
+        /**
+         * Update on upload: repository is updated when HTTP methods
+         * to upload/remove package are called.
+         */
+        UPLOAD,
+
+        /**
+         * Repository is updated by schedule.
+         */
+        CRON
+    }
+
+    /**
      * Repository configuration from yaml.
      * @since 0.10
      */
     final class FromYaml implements RepoConfig {
+
+        /**
+         * Update yaml section.
+         */
+        private static final String UPDATE = "update";
+
+        /**
+         * Cron yaml mapping in yaml config.
+         */
+        private static final String CRON = "cron";
 
         /**
          * Settings.
@@ -77,6 +122,39 @@ public interface RepoConfig {
         public boolean filelists() {
             return !Boolean.FALSE.toString()
                 .equals(this.yaml.string(RpmOptions.FILELISTS.optionName()));
+        }
+
+        @Override
+        public UpdateMode mode() {
+            return Optional.ofNullable(this.yaml.yamlMapping(FromYaml.UPDATE)).map(
+                upd -> {
+                    final YamlNode node = upd.value("on");
+                    final UpdateMode res;
+                    if (node.type() == Node.MAPPING
+                        && node.asMapping().value(FromYaml.CRON) != null) {
+                        res = UpdateMode.CRON;
+                    } else if (node.type() == Node.SCALAR
+                        && node.asScalar().value().equals("upload")) {
+                        res = UpdateMode.UPLOAD;
+                    } else {
+                        throw new ArtipieException(
+                            "Repository settings section `upload` is incorrectly configured"
+                        );
+                    }
+                    return res;
+                }
+            ).orElse(UpdateMode.UPLOAD);
+        }
+
+        @Override
+        public Optional<String> cron() {
+            Optional<String> res = Optional.empty();
+            if (this.mode() == UpdateMode.CRON) {
+                res = Optional.of(
+                    this.yaml.yamlMapping(FromYaml.UPDATE).yamlMapping("on").string(FromYaml.CRON)
+                );
+            }
+            return res;
         }
     }
 
@@ -133,6 +211,16 @@ public interface RepoConfig {
         @Override
         public boolean filelists() {
             return this.filelist;
+        }
+
+        @Override
+        public UpdateMode mode() {
+            return UpdateMode.UPLOAD;
+        }
+
+        @Override
+        public Optional<String> cron() {
+            return Optional.empty();
         }
     }
 }
