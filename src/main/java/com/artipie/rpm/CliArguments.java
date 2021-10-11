@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
@@ -30,7 +31,8 @@ public final class CliArguments {
     private static final Options OPTIONS = new Options()
         .addOption(RpmOptions.DIGEST.option())
         .addOption(RpmOptions.NAMING_POLICY.option())
-        .addOption(RpmOptions.FILELISTS.option());
+        .addOption(RpmOptions.FILELISTS.option())
+        .addOption(RpmOptions.UPDATE.option());
 
     /**
      * Cli.
@@ -140,6 +142,19 @@ public final class CliArguments {
         public boolean filelists() {
             return Boolean.parseBoolean(
                 this.cli.getOptionValue(RpmOptions.FILELISTS.option().getOpt(), "true")
+            );
+        }
+
+        @Override
+        public UpdateMode mode() {
+            return Optional.ofNullable(this.cli.getOptionValue(RpmOptions.UPDATE.option().getOpt()))
+                .map(ignored -> UpdateMode.CRON).orElse(UpdateMode.UPLOAD);
+        }
+
+        @Override
+        public Optional<String> cron() {
+            return Optional.ofNullable(
+                this.cli.getOptionValue(RpmOptions.UPDATE.option().getOpt())
             );
         }
     }

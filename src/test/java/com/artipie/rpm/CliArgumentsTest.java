@@ -9,12 +9,15 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Tests for {@link CliArguments}.
  *
  * @since 0.9
  */
+@SuppressWarnings("PMD.TooManyMethods")
 class CliArgumentsTest {
 
     @Test
@@ -117,6 +120,39 @@ class CliArgumentsTest {
                 "-digest=sha1"
             ).config().digest(),
             new IsEqual<>(Digest.SHA1)
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"-u0 1 * * *", "-update=1 * * * *"})
+    void canParseModeArgument(final String input) {
+        MatcherAssert.assertThat(
+            new CliArguments(input).config().mode(),
+            new IsEqual<>(RepoConfig.UpdateMode.CRON)
+        );
+    }
+
+    @Test
+    void canParseCronArgument() {
+        MatcherAssert.assertThat(
+            new CliArguments("-u* * 0 * *").config().cron().get(),
+            new IsEqual<>("* * 0 * *")
+        );
+    }
+
+    @Test
+    void canParseCronArgumentWithLongopt() {
+        MatcherAssert.assertThat(
+            new CliArguments("-update=4 * * * *").config().cron().get(),
+            new IsEqual<>("4 * * * *")
+        );
+    }
+
+    @Test
+    void returnEmptyCronIfOptionNot() {
+        MatcherAssert.assertThat(
+            new CliArguments("").config().cron().isPresent(),
+            new IsEqual<>(false)
         );
     }
 }
