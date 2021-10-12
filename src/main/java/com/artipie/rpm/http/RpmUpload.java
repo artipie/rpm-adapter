@@ -157,6 +157,15 @@ final class RpmUpload implements Slice {
         }
 
         /**
+         * Returns `force` param.
+         *
+         * @return Force param value, <code>false</code> - if absent
+         */
+        public boolean force() {
+            return this.hasParamValue("force=true");
+        }
+
+        /**
          * Matches request path by RegEx pattern.
          *
          * @return Path matcher.

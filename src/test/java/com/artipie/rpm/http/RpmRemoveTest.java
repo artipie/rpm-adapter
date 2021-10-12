@@ -45,7 +45,26 @@ class RpmRemoveTest {
             new RpmRemove(this.asto, new RepoConfig.Simple()),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.BAD_REQUEST),
-                new RequestLine(RqMethod.DELETE, "/any.rpm")
+                new RequestLine(RqMethod.DELETE, "/any.rpm"),
+                new Headers.From("X-Checksum-sha-256", "abc123"),
+                Content.EMPTY
+            )
+        );
+        MatcherAssert.assertThat(
+            "Storage should be empty",
+            this.asto.list(Key.ROOT).join(),
+            Matchers.emptyIterable()
+        );
+    }
+
+    @Test
+    void returnsBadRequestIfHeaderIsNotPresent() {
+        MatcherAssert.assertThat(
+            "Response status is not `BAD_REQUEST`",
+            new RpmRemove(this.asto, new RepoConfig.Simple()),
+            new SliceHasResponse(
+                new RsHasStatus(RsStatus.BAD_REQUEST),
+                new RequestLine(RqMethod.DELETE, "/any_package.rpm")
             )
         );
         MatcherAssert.assertThat(
@@ -65,8 +84,8 @@ class RpmRemoveTest {
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.BAD_REQUEST),
                 new RequestLine(RqMethod.DELETE, "/my_package.rpm"),
-                Headers.EMPTY,
-                new Content.From("abc123".getBytes())
+                new Headers.From("x-checksum-md5", "abc123"),
+                Content.EMPTY
             )
         );
         MatcherAssert.assertThat(

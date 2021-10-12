@@ -69,4 +69,25 @@ public final class RpmUploadRequestTest {
             new IsEqual<>(expected)
         );
     }
+
+    @ParameterizedTest
+    @CsvSource({
+        "/file.rpm?force=true,true",
+        "/file.rpm?some_param=true&force=true,true",
+        "/file.rpm?some_param=false&force=true,true",
+        ",false",
+        "/file.rpm,false",
+        "/file.rpm?some_param=true,false",
+        "/file.rpm?force=false,false",
+        "/file.rpm?force=whatever,false",
+        "/file.rpm?not_force=true,false"
+    })
+    void readsForceFlag(final String uri, final boolean expected) {
+        MatcherAssert.assertThat(
+            new RpmUpload.Request(
+                new RequestLine("DELETE", uri).toString()
+            ).force(),
+            new IsEqual<>(expected)
+        );
+    }
 }
