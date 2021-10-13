@@ -20,6 +20,8 @@ import com.artipie.rpm.meta.XmlAlter;
 import com.artipie.rpm.meta.XmlMaid;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryMaid;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -74,31 +76,37 @@ public final class AstoMetadataRemove {
         final Storage tmpstor = new SubStorage(prefix, this.asto);
         for (final XmlPackage pckg : new XmlPackage.Stream(this.cnfg.filelists())
             .get().collect(Collectors.toList())) {
-            final Key key = new Key.From(pckg.name());
-            final Key tmpkey = new Key.From(prefix, pckg.name());
             res.add(
-                this.asto.list(new Key.From("metadata")).thenApply(
-                    list -> list.stream().filter(item -> item.string().contains(pckg.filename()))
-                        .findFirst()
-                ).thenCompose(
-                    opt -> {
-                        CompletionStage<Void> result = CompletableFuture.allOf();
-                        if (opt.isPresent()) {
-                            result = new Copy(this.asto, new SetOf<Key>(opt.get())).copy(tmpstor)
-                                .thenCompose(nothing -> tmpstor.move(opt.get(), key))
-                                .thenCompose(
-                                    ignored -> this.removePackages(pckg, tmpkey, checksums)
-                                )
-                                .thenCompose(
-                                    cnt -> new StorageValuePipeline<>(this.asto, tmpkey).process(
-                                        (inpt, out) -> new XmlAlter.Stream(inpt.get(), out)
-                                            .pkgAttr(pckg.tag(), String.valueOf(cnt))
+                CompletableFuture.supplyAsync(() -> pckg).thenCompose(
+                    pkg -> this.asto.list(new Key.From("metadata")).thenApply(
+                        list -> list.stream()
+                            .filter(item -> item.string().contains(pckg.filename())).findFirst()
+                    ).thenCompose(
+                        opt -> {
+                            final Key key = new Key.From(pkg.name());
+                            final Key tmpkey = new Key.From(prefix, pkg.name());
+                            CompletionStage<Void> result = CompletableFuture.allOf();
+                            if (opt.isPresent()) {
+                                result = new Copy(this.asto, new SetOf<Key>(opt.get()))
+                                    .copy(tmpstor)
+                                    .thenCompose(nothing -> tmpstor.move(opt.get(), key))
+                                    .thenCompose(
+                                        ignored -> this.removePackages(pckg, tmpkey, checksums)
                                     )
-                                ).thenCompose(nothing -> this.checksumAndSize(tmpkey))
-                                .thenCompose(hex -> this.compress(tmpkey));
+                                    .thenCompose(
+                                        cnt -> new StorageValuePipeline<>(this.asto, tmpkey)
+                                            .process(
+                                                (inpt, out) -> new XmlAlter.Stream(
+                                                    new BufferedInputStream(inpt.get()),
+                                                    new BufferedOutputStream(out)
+                                                ).pkgAttr(pckg.tag(), String.valueOf(cnt))
+                                        )
+                                    ).thenCompose(nothing -> this.checksumAndSize(tmpkey))
+                                    .thenCompose(hex -> this.compress(tmpkey));
+                            }
+                            return result;
                         }
-                        return result;
-                    }
+                    )
                 )
             );
         }
