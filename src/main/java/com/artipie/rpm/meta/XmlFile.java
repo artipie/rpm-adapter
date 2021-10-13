@@ -43,7 +43,7 @@ final class XmlFile extends XmlWriterWrap {
      * Primary ctor.
      * @param out Underlying output stream
      */
-    private XmlFile(final OutputStream out) {
+    XmlFile(final OutputStream out) {
         super(xmlStreamWriter(out));
         this.stream = out;
     }
