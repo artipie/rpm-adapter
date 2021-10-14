@@ -4,6 +4,7 @@
  */
 package com.artipie.rpm;
 
+import com.artipie.rpm.meta.XmlPackage;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -15,7 +16,18 @@ public enum StandardNamingPolicy implements NamingPolicy {
     /**
      * Plain simple names.
      */
-    PLAIN((src, digest) -> src),
+    PLAIN(new NamingPolicy() {
+
+        @Override
+        public String name(final String source, final Path content) {
+            return source;
+        }
+
+        @Override
+        public String name(final XmlPackage source, final String prefix) {
+            return String.format("metadata/%s.xml.gz", source);
+        }
+    }),
     /**
      * Add SHA1 prefixes to names.
      */
@@ -41,5 +53,10 @@ public enum StandardNamingPolicy implements NamingPolicy {
     @Override
     public String name(final String source, final Path content) throws IOException {
         return this.origin.name(source, content);
+    }
+
+    @Override
+    public String name(final XmlPackage source, final String prefix) {
+        return this.origin.name(source, prefix);
     }
 }

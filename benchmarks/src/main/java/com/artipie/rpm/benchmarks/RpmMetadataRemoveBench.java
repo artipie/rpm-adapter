@@ -68,7 +68,7 @@ public class RpmMetadataRemoveBench {
         try (Stream<Path> files = Files.list(Paths.get(RpmMetadataRemoveBench.BENCH_DIR))) {
             this.items = files.map(
                 file -> new XmlPackage.Stream(true).get()
-                    .filter(xml -> file.toString().contains(xml.filename()))
+                    .filter(xml -> file.toString().contains(xml.lowercase()))
                     .findFirst().map(
                         item -> new MapEntry<>(
                             item,

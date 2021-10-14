@@ -72,13 +72,12 @@ public final class AstoCreateRepomd {
                                     ).forEach(
                                         type -> {
                                             try (XmlRepomd.Data data =
-                                                repomd.beginData(type.filename())) {
-                                                data.gzipChecksum(this.checksum(gziped, type));
+                                                repomd.beginData(type.lowercase())) {
+                                                final Checksum gzsum = this.checksum(gziped, type);
+                                                data.gzipChecksum(gzsum);
                                                 data.openChecksum(this.checksum(open, type));
                                                 data.location(
-                                                    String.format(
-                                                        "repodata/%s.xml.gz", type.filename()
-                                                    )
+                                                    this.cnfg.naming().name(type, gzsum.hex())
                                                 );
                                                 data.gzipSize(AstoCreateRepomd.size(gziped, type));
                                                 data.openSize(AstoCreateRepomd.size(open, type));

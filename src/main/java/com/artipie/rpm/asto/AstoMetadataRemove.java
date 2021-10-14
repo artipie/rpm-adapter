@@ -80,7 +80,7 @@ public final class AstoMetadataRemove {
                 CompletableFuture.supplyAsync(() -> pckg).thenCompose(
                     pkg -> this.asto.list(new Key.From("metadata")).thenApply(
                         list -> list.stream()
-                            .filter(item -> item.string().contains(pckg.filename())).findFirst()
+                            .filter(item -> item.string().contains(pckg.lowercase())).findFirst()
                     ).thenCompose(
                         opt -> {
                             final Key key = new Key.From(pkg.name());
