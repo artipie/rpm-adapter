@@ -30,7 +30,7 @@ public interface NamingPolicy {
      * @param prefix Source prefix
      * @return File name
      */
-    String name(XmlPackage source, String prefix);
+    String fullName(XmlPackage source, String prefix);
 
     /**
      * Add hash prefix to names.
@@ -57,7 +57,7 @@ public interface NamingPolicy {
         }
 
         @Override
-        public String name(final XmlPackage source, final String prefix) {
+        public String fullName(final XmlPackage source, final String prefix) {
             return String.format("metadata/%s-%s.xml.gz", prefix, source.lowercase());
         }
     }

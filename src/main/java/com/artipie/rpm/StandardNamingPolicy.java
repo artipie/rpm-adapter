@@ -24,8 +24,8 @@ public enum StandardNamingPolicy implements NamingPolicy {
         }
 
         @Override
-        public String name(final XmlPackage source, final String prefix) {
-            return String.format("metadata/%s.xml.gz", source);
+        public String fullName(final XmlPackage source, final String prefix) {
+            return String.format("metadata/%s.xml.gz", source.lowercase());
         }
     }),
     /**
@@ -56,7 +56,7 @@ public enum StandardNamingPolicy implements NamingPolicy {
     }
 
     @Override
-    public String name(final XmlPackage source, final String prefix) {
-        return this.origin.name(source, prefix);
+    public String fullName(final XmlPackage source, final String prefix) {
+        return this.origin.fullName(source, prefix);
     }
 }

@@ -77,7 +77,7 @@ public final class AstoCreateRepomd {
                                                 data.gzipChecksum(gzsum);
                                                 data.openChecksum(this.checksum(open, type));
                                                 data.location(
-                                                    this.cnfg.naming().name(type, gzsum.hex())
+                                                    this.cnfg.naming().fullName(type, gzsum.hex())
                                                 );
                                                 data.gzipSize(AstoCreateRepomd.size(gziped, type));
                                                 data.openSize(AstoCreateRepomd.size(open, type));
