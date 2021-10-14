@@ -82,7 +82,7 @@ public final class MetadataFile implements Metadata {
         MetadataFile.gzip(open, gzip);
         gzip = Files.move(gzip, repodata.metadata(this.type, gzip));
         Logger.info(this, "gzipped %s to %s", open, gzip);
-        try (XmlRepomd.Data data = repomd.beginData(this.type.filename())) {
+        try (XmlRepomd.Data data = repomd.beginData(this.type.lowercase())) {
             data.gzipChecksum(new FileChecksum(gzip, digest));
             data.openChecksum(new FileChecksum(open, digest));
             data.location(String.format("repodata/%s", gzip.getFileName()));

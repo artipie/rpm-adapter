@@ -69,7 +69,7 @@ public interface PrecedingMetadata {
             final Optional<Path> res;
             if (metadata.isPresent()) {
                 final Path unziped = Files.createTempFile(
-                    this.dir, String.format("old-%s", this.type.filename()), ".xml"
+                    this.dir, String.format("old-%s", this.type.lowercase()), ".xml"
                 );
                 new Gzip(metadata.get()).unpack(unziped);
                 res = Optional.of(unziped);
@@ -88,7 +88,7 @@ public interface PrecedingMetadata {
             try (Stream<Path> files = Files.walk(this.dir)) {
                 return files.filter(
                     path -> path.getFileName().toString()
-                        .contains(String.format("%s.xml.gz", this.type.filename()))
+                        .contains(String.format("%s.xml.gz", this.type.lowercase()))
                 ).findFirst();
             }
         }

@@ -81,7 +81,7 @@ public final class StorageHasRepoMd extends AllOf<Storage> {
     private static boolean hasRecord(final Storage storage, final XmlPackage pckg,
         final Digest digest) {
         final Optional<Content> repomd = storage.list(StorageHasRepoMd.BASE).join().stream()
-            .filter(item -> item.string().contains(pckg.filename())).findFirst()
+            .filter(item -> item.string().contains(pckg.lowercase())).findFirst()
             .map(item -> storage.value(new Key.From(item)).join());
         boolean res = false;
         if (repomd.isPresent()) {

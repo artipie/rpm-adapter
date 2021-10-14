@@ -79,7 +79,7 @@ public class RpmMetadataAppendBench {
             final List<Path> flist = files.collect(Collectors.toList());
             this.items = flist.stream().map(
                 file -> new XmlPackage.Stream(true).get()
-                    .filter(xml -> file.toString().contains(xml.filename()))
+                    .filter(xml -> file.toString().contains(xml.lowercase()))
                     .findFirst().map(
                         item -> new MapEntry<>(
                             item,

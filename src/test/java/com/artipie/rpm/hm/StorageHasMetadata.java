@@ -75,7 +75,7 @@ public final class StorageHasMetadata extends AllOf<Storage> {
     ) throws Exception {
         final BlockingStorage bsto = new BlockingStorage(storage);
         final List<Key> repodata = bsto.list(new Key.From("repodata")).stream()
-            .filter(key -> key.string().contains(pckg.filename())).collect(Collectors.toList());
+            .filter(key -> key.string().contains(pckg.lowercase())).collect(Collectors.toList());
         final boolean res;
         if (repodata.size() == 1) {
             final Key meta = repodata.get(0);
