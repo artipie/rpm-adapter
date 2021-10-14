@@ -7,8 +7,10 @@ package com.artipie.rpm.meta;
 import com.artipie.rpm.pkg.Checksum;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 
@@ -38,6 +40,14 @@ public final class XmlRepomd implements Closeable {
      */
     public XmlRepomd(final Path path) {
         this(path, new XmlFile(path));
+    }
+
+    /**
+     * Ctor.
+     * @param out Repomd output stream
+     */
+    public XmlRepomd(final OutputStream out) {
+        this(Paths.get("any"), new XmlFile(out));
     }
 
     /**
