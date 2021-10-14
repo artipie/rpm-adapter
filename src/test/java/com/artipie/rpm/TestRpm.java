@@ -88,7 +88,7 @@ public interface TestRpm {
          */
         public Path metadata(final XmlPackage type) {
             return new TestResource(
-                String.format("repodata/abc-%s.xml.example", type.filename())
+                String.format("repodata/abc-%s.xml.example", type.lowercase())
             ).asPath();
         }
     }
@@ -114,7 +114,7 @@ public interface TestRpm {
          */
         public Path metadata(final XmlPackage type) {
             return new TestResource(
-                String.format("repodata/libdeflt-%s.xml.example", type.filename())
+                String.format("repodata/libdeflt-%s.xml.example", type.lowercase())
             ).asPath();
         }
     }

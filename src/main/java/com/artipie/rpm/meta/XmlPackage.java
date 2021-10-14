@@ -98,10 +98,10 @@ public enum XmlPackage {
     }
 
     /**
-     * Metadata file name.
-     * @return String file name.
+     * Lower-case metadata name.
+     * @return String lower-case name
      */
-    public String filename() {
+    public String lowercase() {
         return this.name().toLowerCase(Locale.getDefault());
     }
 
@@ -110,7 +110,7 @@ public enum XmlPackage {
      * @return String file prefix name.
      */
     public String tempPrefix() {
-        return String.format("%s-", this.filename());
+        return String.format("%s-", this.lowercase());
     }
 
     /**

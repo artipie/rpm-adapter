@@ -74,7 +74,7 @@ class PrecedingMetadataFromDirTest {
     private void copyExampleToTemp(final Path temp, final XmlPackage pckg) throws IOException {
         Files.copy(
             new TestResource("repodata/primary.xml.gz.example").asPath(),
-            temp.resolve(String.format("%s.xml.gz", pckg.filename()))
+            temp.resolve(String.format("%s.xml.gz", pckg.lowercase()))
         );
     }
 

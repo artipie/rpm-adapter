@@ -79,7 +79,7 @@ public interface Repodata {
         @Override
         public Path metadata(final XmlPackage type, final Path gzip) throws IOException {
             return this.tmp.resolve(
-                String.format("%s.xml.gz", this.policy.name(type.filename(), gzip))
+                String.format("%s.xml.gz", this.policy.name(type.lowercase(), gzip))
             );
         }
     }

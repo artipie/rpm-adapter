@@ -49,7 +49,7 @@ public final class MetadataFileTest {
                     "/*[local-name()='repomd']/*[local-name()='revision']",
                     String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='checksum' and @type='sha' and text()='%s']", hex),
                     String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='open-checksum' and @type='sha' and text()='%s']", openhex),
-                    String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='location' and @href='repodata/%s']", String.format("%s-%s.xml.gz", hex, XmlPackage.PRIMARY.filename())),
+                    String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='location' and @href='repodata/%s']", String.format("%s-%s.xml.gz", hex, XmlPackage.PRIMARY.lowercase())),
                     String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='size' and text()='%d']", Files.size(gzip)),
                     String.format("/*[local-name()='repomd']/*[local-name()='data' and @type='primary']/*[local-name()='open-size' and text()='%d']", size)
                 )
