@@ -96,7 +96,7 @@ public final class AstoCreateRepomd {
     }
 
     /**
-     * Reads open checksums from temp locations.
+     * Reads gziped checksums from temp locations.
      * @param temp Temp location
      * @return Map of the temp location key and value
      */
