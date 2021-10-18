@@ -43,7 +43,7 @@ public final class RpmRemove implements Slice {
     /**
      * Temp key for the packages to remove.
      */
-    private static final Key TO_RM = new Key.From(".remove");
+    public static final Key TO_RM = new Key.From(".remove");
 
     /**
      * Asto storage.
