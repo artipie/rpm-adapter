@@ -71,16 +71,28 @@ public final class AstoRepoRemove {
                 nothing -> this.newNames(temp).thenCompose(
                     keys -> {
                         final StorageLock lock = new StorageLock(this.asto, AstoRepoRemove.META);
-                        return lock.acquire().thenCompose(
-                            ignored -> CompletableFuture.allOf(
-                                keys.entrySet().stream()
-                                .map(entry -> this.asto.move(entry.getKey(), entry.getValue()))
-                                .toArray(CompletableFuture[]::new)
-                            )
-                        ).thenCompose(ignored -> lock.release()).thenCompose(
-                            ignored -> this.remove(temp)
-                        );
+                        return lock.acquire()
+                            .thenCompose(ignored -> this.remove(AstoRepoRemove.META))
+                            .thenCompose(
+                                ignored -> CompletableFuture.allOf(
+                                    keys.entrySet().stream()
+                                    .map(entry -> this.asto.move(entry.getKey(), entry.getValue()))
+                                    .toArray(CompletableFuture[]::new)
+                                )
+                            ).thenCompose(ignored -> lock.release()).thenCompose(
+                                ignored -> this.remove(temp)
+                            );
                     }
+                )
+            )
+        ).thenCompose(
+            ignored -> this.asto.list(RpmRemove.TO_RM).thenCompose(
+                list -> CompletableFuture.allOf(
+                    list.stream().map(
+                        key -> this.asto.delete(key).thenCompose(
+                            nothing -> this.asto.delete(AstoRepoRemove.removeTemp(key))
+                        )
+                    ).toArray(CompletableFuture[]::new)
                 )
             )
         );
@@ -109,8 +121,7 @@ public final class AstoRepoRemove {
         final RxStorageWrapper rxsto = new RxStorageWrapper(this.asto);
         return rxsto.list(RpmRemove.TO_RM)
             .flatMapObservable(Observable::fromIterable)
-            .map(key -> key.string().substring(RpmRemove.TO_RM.string().length() + 1))
-            .map(Key.From::new)
+            .map(AstoRepoRemove::removeTemp)
             .flatMapSingle(
                 key -> rxsto.value(key).flatMap(
                     val -> Single.fromFuture(
@@ -118,9 +129,7 @@ public final class AstoRepoRemove {
                             .hex().toCompletableFuture()
                     )
                 )
-            ).toList().to(SingleInterop.get()).thenCompose(
-                list -> this.remove(RpmRemove.TO_RM).thenApply(nothing -> list)
-            );
+            ).toList().to(SingleInterop.get());
     }
 
     /**
@@ -130,9 +139,12 @@ public final class AstoRepoRemove {
      */
     private CompletionStage<Map<Key, Key>> newNames(final Key temp) {
         final RxStorageWrapper rxsto = new RxStorageWrapper(this.asto);
-        return rxsto.list(RpmRemove.TO_RM)
+        return rxsto.list(temp)
             .flatMapObservable(Observable::fromIterable)
-            .filter(key -> key.string().endsWith("xml.gz"))
+            .filter(
+                key -> new XmlPackage.Stream(this.cnfg.filelists()).get()
+                    .anyMatch(item -> key.string().endsWith(item.name()))
+            )
             .<MapEntry<Key, Key>>flatMapSingle(
                 key -> rxsto.value(key).flatMap(
                     val -> Single.fromFuture(
@@ -168,6 +180,15 @@ public final class AstoRepoRemove {
                     );
                 }
             ).to(SingleInterop.get());
+    }
+
+    /**
+     * Removes first {@link RpmRemove#TO_RM} part from the key.
+     * @param key Origin key
+     * @return Key without {@link RpmRemove#TO_RM} part
+     */
+    private static Key removeTemp(final Key key) {
+        return new Key.From(key.string().substring(RpmRemove.TO_RM.string().length() + 1));
     }
 
 }
