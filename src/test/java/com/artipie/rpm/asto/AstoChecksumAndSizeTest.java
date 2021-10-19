@@ -4,7 +4,6 @@
  */
 package com.artipie.rpm.asto;
 
-import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.blocking.BlockingStorage;
@@ -29,11 +28,11 @@ class AstoChecksumAndSizeTest {
         final Charset charset = StandardCharsets.UTF_8;
         final String item = "storage_item";
         final byte[] bfirst = item.getBytes(charset);
-        asto.save(new Key.From(item), new Content.From(bfirst)).join();
+        final BlockingStorage blsto = new BlockingStorage(asto);
+        blsto.save(new Key.From(item), bfirst);
         final Digest dgst = Digest.SHA256;
         new AstoChecksumAndSize(asto, dgst).calculate(new Key.From(item))
             .toCompletableFuture().join();
-        final BlockingStorage blsto = new BlockingStorage(asto);
         MatcherAssert.assertThat(
             new String(blsto.value(new Key.From(item, dgst.name())), charset),
             new IsEqual<>(String.format("%s %s", DigestUtils.sha256Hex(bfirst), bfirst.length))
