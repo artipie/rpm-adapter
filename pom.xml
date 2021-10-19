@@ -130,11 +130,6 @@ SOFTWARE.
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>1.8.0-alpha2</version>
     </dependency>
@@ -233,12 +228,6 @@ SOFTWARE.
       <groupId>org.testcontainers</groupId>
       <artifactId>mockserver</artifactId>
       <version>1.14.3</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>1.7.30</version>
       <scope>test</scope>
     </dependency>
     <dependency>
