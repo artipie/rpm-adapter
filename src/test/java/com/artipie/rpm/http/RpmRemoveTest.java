@@ -27,6 +27,8 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
 
 /**
@@ -48,7 +50,7 @@ class RpmRemoveTest {
     }
 
     @Test
-    void returnsExceptedAndDoesNotRemoveAndDoNotCheckChecksum() {
+    void returnsAcceptedAndDoesNotRemoveAndDoNotCheckChecksum() {
         final String pckg = "my_package.rpm";
         this.asto.save(new Key.From(pckg), Content.EMPTY).join();
         MatcherAssert.assertThat(
@@ -67,8 +69,12 @@ class RpmRemoveTest {
         );
     }
 
-    @Test
-    void returnsExceptedAndDoesNotRemove() {
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/test_package.rpm?skip_update=true",
+        "/test_package.rpm?skip_update=true&force=false"
+    })
+    void returnsAcceptedAndDoesNotRemove(final String line) {
         final String pckg = "test_package.rpm";
         final byte[] bytes = "pkg".getBytes(StandardCharsets.US_ASCII);
         this.asto.save(new Key.From(pckg), new Content.From(bytes)).join();
@@ -77,7 +83,7 @@ class RpmRemoveTest {
             new RpmRemove(this.asto, new RepoConfig.Simple()),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.ACCEPTED),
-                new RequestLine(RqMethod.DELETE, "/test_package.rpm?skip_update=true"),
+                new RequestLine(RqMethod.DELETE, line),
                 new Headers.From("X-Checksum-sha-256", DigestUtils.sha256Hex(bytes)),
                 Content.EMPTY
             )
@@ -88,8 +94,12 @@ class RpmRemoveTest {
         );
     }
 
-    @Test
-    void returnsExceptedAndRemoves() throws IOException {
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "force=true&skip_update=false",
+        "force=true"
+    })
+    void returnsAcceptedAndRemoves(final String params) throws IOException {
         final String pckg = "abc-1.01-26.git20200127.fc32.ppc64le.rpm";
         new TestResource(pckg).saveTo(this.asto);
         new TestResource("RpmRemoveTest/primary.xml.gz")
@@ -99,9 +109,7 @@ class RpmRemoveTest {
             new RpmRemove(this.asto, new RepoConfig.Simple()),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.ACCEPTED),
-                new RequestLine(
-                    RqMethod.DELETE, String.format("/%s?force=true&skip_update=false", pckg)
-                ),
+                new RequestLine(RqMethod.DELETE, String.format("/%s?%s", pckg, params)),
                 Headers.EMPTY,
                 Content.EMPTY
             )
