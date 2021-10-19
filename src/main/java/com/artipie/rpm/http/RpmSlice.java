@@ -12,10 +12,13 @@ import com.artipie.http.auth.BasicAuthSlice;
 import com.artipie.http.auth.Permission;
 import com.artipie.http.auth.Permissions;
 import com.artipie.http.rq.RqMethod;
+import com.artipie.http.rs.StandardRs;
 import com.artipie.http.rt.ByMethodsRule;
+import com.artipie.http.rt.RtRule;
 import com.artipie.http.rt.RtRulePath;
 import com.artipie.http.rt.SliceRoute;
 import com.artipie.http.slice.SliceDownload;
+import com.artipie.http.slice.SliceSimple;
 import com.artipie.rpm.RepoConfig;
 
 /**
@@ -64,7 +67,16 @@ public final class RpmSlice extends Slice.Wrap {
                         auth,
                         new Permission.ByName(perms, Action.Standard.WRITE)
                     )
-                )
+                ),
+                new RtRulePath(
+                    new ByMethodsRule(RqMethod.DELETE),
+                    new BasicAuthSlice(
+                        new RpmRemove(storage, config),
+                        auth,
+                        new Permission.ByName(perms, Action.Standard.WRITE)
+                    )
+                ),
+                new RtRulePath(RtRule.FALLBACK, new SliceSimple(StandardRs.NOT_FOUND))
             )
         );
     }
