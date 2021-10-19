@@ -4,8 +4,8 @@
  */
 package com.artipie.rpm.pkg;
 
+import com.artipie.asto.ArtipieIOException;
 import com.artipie.rpm.Digest;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -115,7 +115,7 @@ public final class FilePackageHeadersTest {
     public void failParseNotExistingPackageFile(@TempDir final Path tmp) {
         final String fake = "not-exists.rpm";
         final FilePackage pack = new FilePackage(tmp.resolve(fake), fake);
-        Assertions.assertThrows(IOException.class, pack::parsed);
+        Assertions.assertThrows(ArtipieIOException.class, pack::parsed);
     }
 
     @Test
