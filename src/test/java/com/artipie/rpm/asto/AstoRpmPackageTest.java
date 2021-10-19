@@ -41,7 +41,7 @@ class AstoRpmPackageTest {
         final String name = "time-1.7-45.el7.x86_64.rpm";
         new TestResource(name).saveTo(this.storage);
         final Package.Meta meta = new AstoRpmPackage(this.storage, Digest.SHA256)
-            .getPackageMeta(new Key.From(name)).toCompletableFuture().join();
+            .packageMeta(new Key.From(name)).toCompletableFuture().join();
         MatcherAssert.assertThat(
             "Failed to calc checksum",
             meta.checksum().hex(),

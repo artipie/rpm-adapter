@@ -51,17 +51,17 @@ public final class AstoRpmPackage {
      * @param key Package key
      * @return Completable action
      */
-    public CompletionStage<Package.Meta> getPackageMeta(final Key key) {
-        return this.getPackageMeta(key, key.string());
+    public CompletionStage<Package.Meta> packageMeta(final Key key) {
+        return this.packageMeta(key, key.string());
     }
 
     /**
      * Obtain rpm package metadata, instance of {@link Package.Meta}.
      * @param key Package key
-     * @param loc Package repository relative location
+     * @param path Package repository relative path
      * @return Completable action
      */
-    public CompletionStage<Package.Meta> getPackageMeta(final Key key, final String loc) {
+    public CompletionStage<Package.Meta> packageMeta(final Key key, final String path) {
         return this.asto.value(key).thenCompose(
             val -> new ContentDigest(val, this.dgst::messageDigest).hex().thenApply(
                 hex -> new ImmutablePair<>(
@@ -75,7 +75,7 @@ public final class AstoRpmPackage {
                     new UncheckedIOFunc<>(input -> new FilePackageHeader(input).header())
                 ).thenApply(
                     header -> new RpmMetadata.RpmItem(
-                        header, pair.getValue(), new Checksum.Simple(this.dgst, pair.getKey()), loc
+                        header, pair.getValue(), new Checksum.Simple(this.dgst, pair.getKey()), path
                     )
                 )
             )
