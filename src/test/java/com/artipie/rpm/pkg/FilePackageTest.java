@@ -4,6 +4,7 @@
  */
 package com.artipie.rpm.pkg;
 
+import com.artipie.asto.ArtipieIOException;
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.TestRpm;
 import java.io.IOException;
@@ -44,7 +45,7 @@ class FilePackageTest {
     @Test
     void throwsExceptionIfFileDoesNotExists() {
         Assertions.assertThrows(
-            IOException.class,
+            ArtipieIOException.class,
             () -> new FilePackage(Paths.get("some/file"), "file").parsed()
         );
     }
