@@ -4,8 +4,11 @@
  */
 package com.artipie.rpm.pkg;
 
+import com.artipie.ArtipieException;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -18,6 +21,7 @@ class HeaderTagsVersionTest {
 
     @ParameterizedTest
     @CsvSource({
+        "5,5",
         "1.0,1.0",
         "1.0.1-26.git20200127.fc32,1.0.1",
         "2.0_1-2.jfh.sdd,2.0_1",
@@ -66,6 +70,14 @@ class HeaderTagsVersionTest {
         MatcherAssert.assertThat(
             new HeaderTags.Version(val).rel().isPresent(),
             new IsEqual<>(false)
+        );
+    }
+
+    @Test
+    void throwsExceptionWhenVersionNotValid() {
+        Assertions.assertThrows(
+            ArtipieException.class,
+            () -> new HeaderTags.Version("-").ver()
         );
     }
 

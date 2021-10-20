@@ -4,6 +4,7 @@
  */
 package com.artipie.rpm.pkg;
 
+import com.artipie.ArtipieException;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -270,7 +271,7 @@ public final class HeaderTags {
          */
         public String ver() {
             return this.part("ver").orElseThrow(
-                () -> new IllegalArgumentException("Invali version value")
+                () -> new ArtipieException(new IllegalArgumentException("Invalid version value"))
             );
         }
 
@@ -301,7 +302,7 @@ public final class HeaderTags {
             if (matcher.matches()) {
                 return Optional.ofNullable(matcher.group(name));
             }
-            throw new IllegalArgumentException("Provided version is invalid");
+            throw new ArtipieException(new IllegalArgumentException("Provided version is invalid"));
         }
     }
 }
