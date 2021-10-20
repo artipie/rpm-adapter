@@ -4,7 +4,6 @@
  */
 package com.artipie.rpm.asto;
 
-import com.artipie.asto.ArtipieIOException;
 import com.artipie.asto.Copy;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
@@ -19,7 +18,6 @@ import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryMaid;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,7 +27,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 import org.cactoos.set.SetOf;
 
 /**
@@ -102,7 +99,7 @@ public final class AstoMetadataRemove {
                                             this.asto, this.cnfg.digest()
                                         ).calculate(tmpkey)
                                     )
-                                    .thenCompose(hex -> this.compress(tmpkey));
+                                    .thenCompose(hex -> new AstoArchive(this.asto).gzip(tmpkey));
                             }
                             return result;
                         }
@@ -135,32 +132,6 @@ public final class AstoMetadataRemove {
                     maid = new XmlMaid.ByPkgidAttr.Stream(input, out);
                 }
                 return new UncheckedIOScalar<>(() -> maid.clean(checksums)).value();
-            }
-        );
-    }
-
-    /**
-     * Compress storage item in gz.
-     * @param key The item to compress
-     * @return Completable action
-     */
-    private CompletionStage<Void> compress(final Key key) {
-        return new StorageValuePipeline<>(this.asto, key).process(
-            (inpt, out) -> {
-                try (GZIPOutputStream gzos = new GZIPOutputStream(out)) {
-                    // @checkstyle MagicNumberCheck (1 line)
-                    final byte[] buffer = new byte[1024 * 8];
-                    while (true) {
-                        final int length = inpt.get().read(buffer);
-                        if (length < 0) {
-                            break;
-                        }
-                        gzos.write(buffer, 0, length);
-                    }
-                    gzos.finish();
-                } catch (final IOException err) {
-                    throw new ArtipieIOException(err);
-                }
             }
         );
     }
