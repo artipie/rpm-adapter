@@ -4,14 +4,11 @@
  */
 package com.artipie.rpm.asto;
 
-import com.artipie.ArtipieException;
 import com.artipie.asto.ArtipieIOException;
-import com.artipie.asto.Content;
 import com.artipie.asto.Copy;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.SubStorage;
-import com.artipie.asto.ext.ContentDigest;
 import com.artipie.asto.misc.UncheckedIOFunc;
 import com.artipie.asto.misc.UncheckedIOScalar;
 import com.artipie.asto.streams.StorageValuePipeline;
@@ -24,7 +21,6 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -101,7 +97,11 @@ public final class AstoMetadataRemove {
                                                     new BufferedOutputStream(out)
                                                 ).pkgAttr(pckg.tag(), String.valueOf(cnt))
                                         )
-                                    ).thenCompose(nothing -> this.checksumAndSize(tmpkey))
+                                    ).thenCompose(
+                                        nothing -> new AstoChecksumAndSize(
+                                            this.asto, this.cnfg.digest()
+                                        ).calculate(tmpkey)
+                                    )
                                     .thenCompose(hex -> this.compress(tmpkey));
                             }
                             return result;
@@ -165,28 +165,4 @@ public final class AstoMetadataRemove {
         );
     }
 
-    /**
-     * Calculates checksum and digest of the not packed xml size.
-     * @param key Item key
-     * @return Completable action
-     */
-    private CompletableFuture<Void> checksumAndSize(final Key key) {
-        return this.asto.value(key).thenCompose(
-            val -> new ContentDigest(
-                val, () -> this.cnfg.digest().messageDigest()
-            ).hex().thenCompose(
-                hex -> this.asto.save(
-                    new Key.From(key, this.cnfg.digest().name()),
-                    new Content.From(
-                        String.format(
-                            "%s %d", hex,
-                            val.size().orElseThrow(
-                                () -> new ArtipieException("Content size unknown!")
-                            )
-                        ).getBytes(StandardCharsets.US_ASCII)
-                    )
-                )
-            )
-        );
-    }
 }

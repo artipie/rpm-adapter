@@ -15,6 +15,7 @@ import com.artipie.http.async.AsyncResponse;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.rpm.RepoConfig;
+import com.artipie.rpm.asto.AstoRepoRemove;
 import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.Map;
@@ -37,6 +38,7 @@ import org.reactivestreams.Publisher;
  * If request is not valid (see {@link RpmRemove#validate(Key, Pair)}),
  * `BAD_REQUEST` status is returned.
  * @since 1.9
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class RpmRemove implements Slice {
 
@@ -80,9 +82,8 @@ public final class RpmRemove implements Slice {
                                     .completedFuture(RsStatus.ACCEPTED);
                                 if (valid && this.cnfg.mode() == RepoConfig.UpdateMode.UPLOAD
                                     && !request.skipUpdate()) {
-                                    // @checkstyle MethodBodyCommentsCheck (2 lines)
-                                    // initiate removing file process
-                                    res = CompletableFuture.completedFuture(RsStatus.ACCEPTED);
+                                    res = new AstoRepoRemove(this.asto, this.cnfg).perform()
+                                        .thenApply(ignored -> RsStatus.ACCEPTED);
                                 } else if (!valid) {
                                     res = this.asto.delete(temp)
                                         .thenApply(nothing -> RsStatus.BAD_REQUEST);
