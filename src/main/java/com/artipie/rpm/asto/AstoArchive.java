@@ -16,7 +16,7 @@ import java.util.zip.GZIPOutputStream;
  * Archive storage item.
  * @since 1.9
  */
-public final class AstoArchive {
+final class AstoArchive {
 
     /**
      * Asto storage.
@@ -27,7 +27,7 @@ public final class AstoArchive {
      * Ctor.
      * @param asto Asto storage
      */
-    public AstoArchive(final Storage asto) {
+    AstoArchive(final Storage asto) {
         this.asto = asto;
     }
 
