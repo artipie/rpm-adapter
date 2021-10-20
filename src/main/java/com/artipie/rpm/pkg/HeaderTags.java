@@ -5,6 +5,9 @@
 package com.artipie.rpm.pkg;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.redline_rpm.header.Header;
 
 /**
@@ -197,6 +200,14 @@ public final class HeaderTags {
     }
 
     /**
+     * Get the require version header.
+     * @return Value of header tag REQUIREVERSION.
+     */
+    public List<String> requiresVer() {
+        return this.meta.header(Header.HeaderTag.REQUIREVERSION).asStrings();
+    }
+
+    /**
      * Get the base names header.
      * @return Value of header tag BASENAMES.
      */
@@ -226,5 +237,71 @@ public final class HeaderTags {
      */
     public List<String> changelog() {
         return this.meta.header(Header.HeaderTag.CHANGELOG).asStrings();
+    }
+
+    /**
+     * Rpm package version, format is [epoch]:[version]-[release].
+     * @since 1.9
+     */
+    static final class Version {
+
+        /**
+         * Version format pattern.
+         */
+        private static final Pattern PTRN =
+            Pattern.compile("((?<epoch>\\d+):)?(?<ver>[\\w.]+)(-(?<rel>.*))?");
+
+        /**
+         * Value from version header.
+         */
+        private final String val;
+
+        /**
+         * Ctor.
+         * @param val Value from version header
+         */
+        Version(final String val) {
+            this.val = val;
+        }
+
+        /**
+         * Return version value.
+         * @return String version
+         */
+        public String ver() {
+            return this.part("ver").orElseThrow(
+                () -> new IllegalArgumentException("Invali version value")
+            );
+        }
+
+        /**
+         * Release value.
+         * @return String release, empty if not present
+         */
+        public Optional<String> rel() {
+            return this.part("rel");
+        }
+
+        /**
+         * Epoch value or default 0.
+         * @return String epoch
+         */
+        public String epoch() {
+            return this.part("epoch").orElse("0");
+        }
+
+        /**
+         * Get version part by name.
+         * @param name Part group name, see {@link Version#PTRN}
+         * @return Part value if found
+         * @throws IllegalArgumentException If does not match
+         */
+        private Optional<String> part(final String name) {
+            final Matcher matcher = Version.PTRN.matcher(this.val);
+            if (matcher.matches()) {
+                return Optional.ofNullable(matcher.group(name));
+            }
+            throw new IllegalArgumentException("Provided version is invalid");
+        }
     }
 }
