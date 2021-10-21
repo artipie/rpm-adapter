@@ -4,6 +4,8 @@
  */
 package com.artipie.rpm.meta;
 
+import com.artipie.rpm.misc.UncheckedConsumer;
+import com.artipie.rpm.pkg.HeaderTags;
 import java.io.Closeable;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -421,14 +423,14 @@ public final class XmlPrimary implements Closeable {
          *  Find a way to obtain this information from rpm and add it here. Do not forget about
          *  test.
          */
-        public Format provides(final List<String> names, final List<String> versions)
+        public Format provides(final List<String> names, final List<HeaderTags.Version> versions)
             throws XMLStreamException {
             this.xml.writeStartElement(XmlPrimary.NAMESPACE, "provides");
             for (int ind = 0; ind < names.size(); ind = ind + 1) {
                 this.xml.writeStartElement(XmlPrimary.NAMESPACE, "entry");
                 this.xml.writeAttribute("name", names.get(ind));
-                if (ind < versions.size()) {
-                    this.xml.writeAttribute("ver", versions.get(ind));
+                if (ind < versions.size() && !versions.get(ind).ver().isEmpty()) {
+                    this.writeEntryAttr(versions, ind);
                 }
                 this.xml.writeEndElement();
             }
@@ -439,18 +441,22 @@ public final class XmlPrimary implements Closeable {
         /**
          * Add list of requires.
          * @param requires Requires entries
+         * @param versions Versions entries
          * @return Self
          * @throws XMLStreamException On XML error
          */
-        public Format requires(final List<String> requires) throws XMLStreamException {
+        public Format requires(final List<String> requires,
+            final List<HeaderTags.Version> versions) throws XMLStreamException {
             this.xml.writeStartElement(XmlPrimary.NAMESPACE, "requires");
-            final List<String> filtered = requires.stream()
-                .filter(nme -> !nme.startsWith("rpmlib("))
-                .collect(Collectors.toList());
-            for (final String name : filtered) {
-                this.xml.writeStartElement(XmlPrimary.NAMESPACE, "entry");
-                this.xml.writeAttribute("name", name);
-                this.xml.writeEndElement();
+            for (int ind = 0; ind < requires.size(); ind = ind + 1) {
+                if (!requires.get(ind).startsWith("rpmlib(")) {
+                    this.xml.writeStartElement(XmlPrimary.NAMESPACE, "entry");
+                    this.xml.writeAttribute("name", requires.get(ind));
+                    if (ind < versions.size() && !versions.get(ind).ver().isEmpty()) {
+                        this.writeEntryAttr(versions, ind);
+                    }
+                    this.xml.writeEndElement();
+                }
             }
             this.xml.writeEndElement();
             return this;
@@ -478,6 +484,21 @@ public final class XmlPrimary implements Closeable {
             this.xml.writeCharacters(value);
             this.xml.writeEndElement();
             return this;
+        }
+
+        /**
+         * Write entry tag attributes ver, epoch and rel.
+         * @param versions Versions list
+         * @param ind Current index
+         * @throws XMLStreamException On error
+         */
+        private void writeEntryAttr(final List<HeaderTags.Version> versions, final int ind)
+            throws XMLStreamException {
+            this.xml.writeAttribute("ver", versions.get(ind).ver());
+            this.xml.writeAttribute("epoch", versions.get(ind).epoch());
+            versions.get(ind).rel().ifPresent(
+                new UncheckedConsumer<>(rel -> this.xml.writeAttribute("rel", rel))
+            );
         }
     }
 }

@@ -87,7 +87,7 @@ public final class PrimaryOutput implements PackageOutput.FileOutput {
                 .sourceRpm(tags.sourceRmp())
                 .headerRange(meta.range()[0], meta.range()[1])
                 .provides(tags.providesNames(), tags.providesVer())
-                .requires(tags.requires())
+                .requires(tags.requires(), tags.requiresVer())
                 .close()
                 .files(
                     tags.baseNames().toArray(new String[0]),

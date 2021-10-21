@@ -61,8 +61,7 @@ public class RpmUploadTest {
     @Test
     void canReplaceArtifact() throws Exception {
         final Storage storage = new InMemoryStorage();
-        final byte[] content =
-            "replaced package bytes".getBytes(StandardCharsets.UTF_8);
+        final byte[] content = Files.readAllBytes(new TestRpm.Abc().path());
         final Key key = new Key.From("replaced.rpm");
         new BlockingStorage(storage).save(key, "uploaded package".getBytes());
         MatcherAssert.assertThat(

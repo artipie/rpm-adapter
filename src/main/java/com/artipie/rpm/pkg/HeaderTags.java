@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.redline_rpm.header.Header;
 
 /**
@@ -188,8 +189,9 @@ public final class HeaderTags {
      * Get the provides libraries versions.
      * @return Value of header tag PROVIDEVERSION.
      */
-    public List<String> providesVer() {
-        return this.meta.header(Header.HeaderTag.PROVIDEVERSION).asStrings();
+    public List<HeaderTags.Version> providesVer() {
+        return this.meta.header(Header.HeaderTag.PROVIDEVERSION).asStrings().stream()
+            .map(HeaderTags.Version::new).collect(Collectors.toList());
     }
 
     /**
@@ -204,8 +206,9 @@ public final class HeaderTags {
      * Get the require version header.
      * @return Value of header tag REQUIREVERSION.
      */
-    public List<String> requiresVer() {
-        return this.meta.header(Header.HeaderTag.REQUIREVERSION).asStrings();
+    public List<HeaderTags.Version> requiresVer() {
+        return this.meta.header(Header.HeaderTag.REQUIREVERSION).asStrings().stream()
+            .map(HeaderTags.Version::new).collect(Collectors.toList());
     }
 
     /**
@@ -244,13 +247,13 @@ public final class HeaderTags {
      * Rpm package version, format is [epoch]:[version]-[release].
      * @since 1.9
      */
-    static final class Version {
+    public static final class Version {
 
         /**
          * Version format pattern.
          */
         private static final Pattern PTRN =
-            Pattern.compile("((?<epoch>\\d+):)?(?<ver>[\\w.]+)(-(?<rel>.*))?");
+            Pattern.compile("((?<epoch>\\d+):)?(?<ver>[\\w.]+|^(?!.))(-(?<rel>.*))?");
 
         /**
          * Value from version header.
@@ -259,9 +262,9 @@ public final class HeaderTags {
 
         /**
          * Ctor.
-         * @param val Value from version header
+         * @param val Value from version header, can be empty
          */
-        Version(final String val) {
+        public Version(final String val) {
             this.val = val;
         }
 
