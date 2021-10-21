@@ -265,7 +265,7 @@ public interface XmlEvent {
             final XMLEventFactory events = XMLEventFactory.newFactory();
             writer.add(events.createStartElement(Primary.PRFX, Primary.NS_URL, "requires"));
             final List<String> names = tags.requires();
-            final List<HeaderTags.Version> versions = tags.providesVer();
+            final List<HeaderTags.Version> versions = tags.requiresVer();
             for (int ind = 0; ind < names.size(); ind = ind + 1) {
                 if (!names.get(ind).startsWith("rpmlib(")) {
                     writer.add(events.createStartElement(Primary.PRFX, Primary.NS_URL, "entry"));
