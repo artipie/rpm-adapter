@@ -4,6 +4,7 @@
  */
 package com.artipie.rpm.meta;
 
+import com.artipie.rpm.pkg.HeaderTags;
 import com.jcabi.matchers.XhtmlMatchers;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -48,12 +49,14 @@ public final class XmlPrimaryTest {
                 .sourceRpm("primary.src.rpm")
                 .headerRange(3, 8)
                 .provides(
-                    new ListOf<String>("abs"), new ListOf<String>("1.0.0")
+                    new ListOf<String>("abs"),
+                    new ListOf<HeaderTags.Version>(new HeaderTags.Version("1.0.0"))
                 )
                 .requires(
                     new ListOf<>(
                         "ld-linux-aarch64.so.1()(64bit)"
-                    )
+                    ),
+                    new ListOf<HeaderTags.Version>(new HeaderTags.Version("1.2.0"))
                 )
                 .close()
                 .close();
@@ -80,8 +83,8 @@ public final class XmlPrimaryTest {
                 "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='format']/*[name()='rpm:buildhost' and text()='http://giuthub.com/artipie/rpm-adapter/buildhost']",
                 "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='format']/*[name()='rpm:sourcerpm' and text()='primary.src.rpm']",
                 "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='format']/*[name()='rpm:header-range' and @start='3' and @end='8']",
-                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='format']/*[name()='rpm:requires']/*[name()='rpm:entry' and @name='ld-linux-aarch64.so.1()(64bit)']",
-                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='format']/*[name()='rpm:provides']/*[name()='rpm:entry' and @name='abs' and @ver='1.0.0']"
+                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='format']/*[name()='rpm:requires']/*[name()='rpm:entry' and @name='ld-linux-aarch64.so.1()(64bit)' and @ver='1.2.0' and @epoch='0']",
+                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='format']/*[name()='rpm:provides']/*[name()='rpm:entry' and @name='abs' and @ver='1.0.0' and @epoch='0']"
             )
         );
     }

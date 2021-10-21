@@ -4,6 +4,7 @@
  */
 package com.artipie.rpm.meta;
 
+import com.artipie.rpm.misc.UncheckedConsumer;
 import com.artipie.rpm.pkg.HeaderTags;
 import com.artipie.rpm.pkg.Package;
 import java.io.IOException;
@@ -223,7 +224,7 @@ public interface XmlEvent {
                     )
                 );
                 Primary.addProvides(writer, tags);
-                Primary.addRequires(writer, tags.requires());
+                Primary.addRequires(writer, tags);
                 new Files().add(writer, meta);
                 writer.add(events.createEndElement("", "", "format"));
                 writer.add(events.createEndElement("", "", "package"));
@@ -243,13 +244,11 @@ public interface XmlEvent {
             final XMLEventFactory events = XMLEventFactory.newFactory();
             writer.add(events.createStartElement(Primary.PRFX, Primary.NS_URL, "provides"));
             final List<String> names = tags.providesNames();
-            final List<String> versions = tags.providesVer();
+            final List<HeaderTags.Version> versions = tags.providesVer();
             for (int ind = 0; ind < names.size(); ind = ind + 1) {
                 writer.add(events.createStartElement(Primary.PRFX, Primary.NS_URL, "entry"));
                 writer.add(events.createAttribute("name", names.get(ind)));
-                if (ind < versions.size()) {
-                    writer.add(events.createAttribute("ver", versions.get(ind)));
-                }
+                Primary.addEntryAttr(writer, events, versions, ind);
                 writer.add(events.createEndElement(Primary.PRFX, Primary.NS_URL, "entry"));
             }
             writer.add(events.createEndElement(Primary.PRFX, Primary.NS_URL, "provides"));
@@ -258,20 +257,22 @@ public interface XmlEvent {
         /**
          * Builds `requires` tag.
          * @param writer Xml event writer
-         * @param requires Required dependencies list
+         * @param tags Tag info
          * @throws XMLStreamException On error
          */
-        private static void addRequires(final XMLEventWriter writer, final List<String> requires)
+        private static void addRequires(final XMLEventWriter writer, final HeaderTags tags)
             throws XMLStreamException {
             final XMLEventFactory events = XMLEventFactory.newFactory();
             writer.add(events.createStartElement(Primary.PRFX, Primary.NS_URL, "requires"));
-            final List<String> filtered = requires.stream()
-                .filter(nme -> !nme.startsWith("rpmlib("))
-                .collect(Collectors.toList());
-            for (final String name : filtered) {
-                writer.add(events.createStartElement(Primary.PRFX, Primary.NS_URL, "entry"));
-                writer.add(events.createAttribute("name", name));
-                writer.add(events.createEndElement(Primary.PRFX, Primary.NS_URL, "entry"));
+            final List<String> names = tags.requires();
+            final List<HeaderTags.Version> versions = tags.providesVer();
+            for (int ind = 0; ind < names.size(); ind = ind + 1) {
+                if (!names.get(ind).startsWith("rpmlib(")) {
+                    writer.add(events.createStartElement(Primary.PRFX, Primary.NS_URL, "entry"));
+                    writer.add(events.createAttribute("name", names.get(ind)));
+                    Primary.addEntryAttr(writer, events, versions, ind);
+                    writer.add(events.createEndElement(Primary.PRFX, Primary.NS_URL, "entry"));
+                }
             }
             writer.add(events.createEndElement(Primary.PRFX, Primary.NS_URL, "requires"));
         }
@@ -337,6 +338,26 @@ public interface XmlEvent {
         private static void addAttributes(final XMLEventWriter writer, final String tag,
             final Map<String, String> attrs) throws XMLStreamException {
             Primary.addAttributes(writer, tag, "", "", attrs);
+        }
+
+        /**
+         * Write entry attributes ver, epoch and rel.
+         * @param writer Where to write
+         * @param events Xml events
+         * @param versions Versions
+         * @param ind Current index
+         * @throws XMLStreamException On error
+         * @checkstyle ParameterNumberCheck (5 lines)
+         */
+        private static void addEntryAttr(final XMLEventWriter writer, final XMLEventFactory events,
+            final List<HeaderTags.Version> versions, final int ind) throws XMLStreamException {
+            if (ind < versions.size() && !versions.get(ind).ver().isEmpty()) {
+                writer.add(events.createAttribute("ver", versions.get(ind).ver()));
+                writer.add(events.createAttribute("epoch", versions.get(ind).epoch()));
+                versions.get(ind).rel().ifPresent(
+                    new UncheckedConsumer<>(rel -> writer.add(events.createAttribute("rel", rel)))
+                );
+            }
         }
     }
 }

@@ -21,6 +21,7 @@ class HeaderTagsVersionTest {
 
     @ParameterizedTest
     @CsvSource({
+        "'',''",
         "5,5",
         "1.0,1.0",
         "1.0.1-26.git20200127.fc32,1.0.1",
@@ -64,7 +65,8 @@ class HeaderTagsVersionTest {
     @ParameterizedTest
     @ValueSource(strings = {
         "1.0.1_26.git20200127.fc32",
-        "3:1.2.3pc"
+        "3:1.2.3pc",
+        ""
     })
     void returnsEmptyWhenRelIsNotPresent(final String val) {
         MatcherAssert.assertThat(
