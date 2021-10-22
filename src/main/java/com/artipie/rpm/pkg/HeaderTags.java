@@ -5,6 +5,7 @@
 package com.artipie.rpm.pkg;
 
 import com.artipie.ArtipieException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -195,6 +196,16 @@ public final class HeaderTags {
     }
 
     /**
+     * Get the provides flags header.
+     * @return Value of header tag PROVIDEFLAGS.
+     */
+    public List<Optional<String>> providesFlags() {
+        final int[] array = this.meta.header(Header.HeaderTag.PROVIDEFLAGS).asInts();
+        return Arrays.stream(array)
+            .mapToObj(Flags::find).collect(Collectors.toList());
+    }
+
+    /**
      * Get the require name header.
      * @return Value of header tag REQUIRENAME.
      */
@@ -209,6 +220,16 @@ public final class HeaderTags {
     public List<HeaderTags.Version> requiresVer() {
         return this.meta.header(Header.HeaderTag.REQUIREVERSION).asStrings().stream()
             .map(HeaderTags.Version::new).collect(Collectors.toList());
+    }
+
+    /**
+     * Get the require flags header.
+     * @return Value of header tag REQUIREFLAGS.
+     */
+    public List<Optional<String>> requireFlags() {
+        final int[] array = this.meta.header(Header.HeaderTag.REQUIREFLAGS).asInts();
+        return Arrays.stream(array)
+            .mapToObj(Flags::find).collect(Collectors.toList());
     }
 
     /**
@@ -306,6 +327,65 @@ public final class HeaderTags {
                 return Optional.ofNullable(matcher.group(name));
             }
             throw new ArtipieException(new IllegalArgumentException("Provided version is invalid"));
+        }
+    }
+
+    /**
+     * Rpm package dependency flags.
+     * @since 1.10
+     * @checkstyle JavadocVariableCheck (10 lines)
+     */
+    public enum Flags {
+        EQUAL(8, "EQ"),
+        GREATER(4, "GT"),
+        LESS(2, "LT"),
+        GREATER_OR_EQUAL(12, "GE"),
+        LESS_OR_EQUAL(10, "LE");
+
+        /**
+         * Flag integer code.
+         */
+        private final int icode;
+
+        /**
+         * Flag short name.
+         */
+        private final String name;
+
+        /**
+         * Ctor.
+         * @param icode Flag integer code
+         * @param name Flag short name
+         */
+        Flags(final int icode, final String name) {
+            this.icode = icode;
+            this.name = name;
+        }
+
+        /**
+         * Flag notation, short name.
+         * @return String notation
+         */
+        public String notation() {
+            return this.name;
+        }
+
+        /**
+         * Flag integer code.
+         * @return Flag code
+         */
+        public int code() {
+            return this.icode;
+        }
+
+        /**
+         * Find flag by code and return notation if found.
+         * @param code Code to search for
+         * @return Notation
+         */
+        static Optional<String> find(final int code) {
+            return Arrays.stream(Flags.values()).filter(item -> code == item.icode)
+                .findFirst().map(Flags::notation);
         }
     }
 }
