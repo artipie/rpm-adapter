@@ -27,7 +27,8 @@ class HeaderTagsVersionTest {
         "1.0.1-26.git20200127.fc32,1.0.1",
         "2.0_1-2.jfh.sdd,2.0_1",
         "2:9.0.2,9.0.2",
-        "1:1-9.878,1"
+        "1:1-9.878,1",
+        "2.9+9(7),2.9+9(7)"
     })
     void readsVersion(final String val, final String res) {
         MatcherAssert.assertThat(
