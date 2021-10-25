@@ -8,7 +8,6 @@ import com.artipie.ArtipieException;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -27,7 +26,8 @@ class HeaderTagsVersionTest {
         "1.0.1-26.git20200127.fc32,1.0.1",
         "2.0_1-2.jfh.sdd,2.0_1",
         "2:9.0.2,9.0.2",
-        "1:1-9.878,1"
+        "1:1-9.878,1",
+        "2.9+9(7),2.9+9(7)"
     })
     void readsVersion(final String val, final String res) {
         MatcherAssert.assertThat(
@@ -75,11 +75,17 @@ class HeaderTagsVersionTest {
         );
     }
 
-    @Test
-    void throwsExceptionWhenVersionNotValid() {
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "-",
+        "3:sd/sd-2.3alpha",
+        "1/5",
+        "3:1-1-1"
+    })
+    void throwsExceptionWhenVersionNotValid(final String param) {
         Assertions.assertThrows(
             ArtipieException.class,
-            () -> new HeaderTags.Version("-").ver()
+            () -> new HeaderTags.Version(param).ver()
         );
     }
 
