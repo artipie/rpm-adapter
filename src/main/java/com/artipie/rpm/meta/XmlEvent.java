@@ -398,8 +398,7 @@ public interface XmlEvent {
          */
         private static String findFlag(final List<Optional<String>> flags,
             final Map<String, Integer> items, final String item) {
-            return Optional.ofNullable(items.get(item))
-                .map(index -> flags.get(index).orElse(HeaderTags.Flags.EQUAL.notation()))
+            return Optional.ofNullable(items.get(item)).flatMap(flags::get)
                 .orElse(HeaderTags.Flags.EQUAL.notation());
         }
     }
