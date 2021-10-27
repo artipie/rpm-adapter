@@ -58,9 +58,7 @@ class XmlEventPrimaryTest {
                 .ignoreElementContentWhitespace()
                 .normalizeWhitespace()
                 .withNodeFilter(node -> !"file".equals(node.getLocalName()))
-                .withAttributeFilter(
-                    attr -> !"flags".equals(attr.getName()) && !"pre".equals(attr.getName())
-                )
+                .withAttributeFilter(attr -> !"pre".equals(attr.getName()))
         );
     }
 

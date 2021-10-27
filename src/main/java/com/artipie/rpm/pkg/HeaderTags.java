@@ -315,6 +315,11 @@ public final class HeaderTags {
             return this.part("epoch").orElse("0");
         }
 
+        @Override
+        public String toString() {
+            return this.val;
+        }
+
         /**
          * Get version part by name.
          * @param name Part group name, see {@link Version#PTRN}
