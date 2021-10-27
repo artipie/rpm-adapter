@@ -83,11 +83,10 @@
                 <rpm:entry name="libdeflt.so.1.0"/>
                 <rpm:entry name="libdeflt.so.1.0(SCHILY_1.0)"/>
                 <rpm:entry name="libdeflt.so.1.0(SCHILY_1.1)"/>
-                <rpm:entry name="libdeflt1_0" ver="2020.03.27" epoch="0" rel="25.1"/>
-                <rpm:entry name="libdeflt1_0(armv7hl-32)" ver="2020.03.27" epoch="0" rel="25.1"/>
+                <rpm:entry name="libdeflt1_0" flags="EQ" ver="2020.03.27" epoch="0" rel="25.1"/>
+                <rpm:entry name="libdeflt1_0(armv7hl-32)" flags="EQ" ver="2020.03.27" epoch="0" rel="25.1"/>
             </rpm:provides>
             <rpm:requires>
-                <rpm:entry name="/sbin/ldconfig"/>
                 <rpm:entry name="/sbin/ldconfig"/>
                 <rpm:entry name="ld-linux-armhf.so.3"/>
                 <rpm:entry name="ld-linux-armhf.so.3(GLIBC_2.4)"/>
@@ -133,11 +132,11 @@
             <rpm:sourcerpm>abc-1.01-26.git20200127.fc32.src.rpm</rpm:sourcerpm>
             <rpm:header-range start="4504" end="10412"/>
             <rpm:provides>
-                <rpm:entry name="abc" ver="1.01" epoch="0" rel="26.git20200127.fc32"/>
-                <rpm:entry name="abc(ppc-64)" ver="1.01" epoch="0" rel="26.git20200127.fc32"/>
+                <rpm:entry name="abc" flags="EQ" ver="1.01" epoch="0" rel="26.git20200127.fc32"/>
+                <rpm:entry name="abc(ppc-64)" flags="EQ" ver="1.01" epoch="0" rel="26.git20200127.fc32"/>
             </rpm:provides>
             <rpm:requires>
-                <rpm:entry name="abc-libs(ppc-64)" ver="1.01" epoch="0" rel="26.git20200127.fc32"/>
+                <rpm:entry name="abc-libs(ppc-64)" flags="EQ" ver="1.01" epoch="0" rel="26.git20200127.fc32"/>
                 <rpm:entry name="libabc.so.0()(64bit)"/>
                 <rpm:entry name="libc.so.6()(64bit)"/>
                 <rpm:entry name="libc.so.6(GLIBC_2.17)(64bit)"/>
