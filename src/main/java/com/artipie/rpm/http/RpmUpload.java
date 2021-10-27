@@ -38,11 +38,6 @@ import org.reactivestreams.Publisher;
 final class RpmUpload implements Slice {
 
     /**
-     * Temp key for the packages to add.
-     */
-    public static final Key TO_ADD = new Key.From(".add");
-
-    /**
      * Asto storage.
      */
     private final Storage asto;
