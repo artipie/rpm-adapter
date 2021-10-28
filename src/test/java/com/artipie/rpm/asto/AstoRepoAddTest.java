@@ -117,21 +117,9 @@ class AstoRepoAddTest {
             this.storage.exists(new Key.From("lib", lib)).join(),
             new IsEqual<>(true)
         );
-        MatcherAssert.assertThat(
-            "Failed to generate primary xml",
-            new TestResource("AstoRepoAddTest/primary-res.xml").asPath(),
-            new IsXmlEqual(this.readAndUnpack(XmlPackage.PRIMARY))
-        );
-        MatcherAssert.assertThat(
-            "Failed to generate other xml",
-            new TestResource("AstoRepoAddTest/other-res.xml").asPath(),
-            new IsXmlEqual(this.readAndUnpack(XmlPackage.OTHER))
-        );
-        MatcherAssert.assertThat(
-            "Failed to generate filelists xml",
-            new TestResource("AstoRepoAddTest/filelists-res.xml").asPath(),
-            new IsXmlEqual(this.readAndUnpack(XmlPackage.FILELISTS))
-        );
+        this.checkMeta("primary-res.xml", XmlPackage.PRIMARY);
+        this.checkMeta("other-res.xml", XmlPackage.OTHER);
+        this.checkMeta("filelists-res.xml", XmlPackage.FILELISTS);
         MatcherAssert.assertThat(
             "Failed to generate repomd xml",
             new String(
@@ -145,6 +133,14 @@ class AstoRepoAddTest {
                 "/*[local-name()='repomd']/*[local-name()='data' and @type='other']",
                 "/*[local-name()='repomd']/*[local-name()='data' and @type='filelists']"
             )
+        );
+    }
+
+    private void checkMeta(final String file, final XmlPackage primary) throws IOException {
+        MatcherAssert.assertThat(
+            String.format("Failed to generate %s xml", primary.lowercase()),
+            new TestResource(String.format("AstoRepoAddTest/%s", file)).asPath(),
+            new IsXmlEqual(this.readAndUnpack(primary))
         );
     }
 
