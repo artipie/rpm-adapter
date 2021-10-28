@@ -79,6 +79,14 @@ class AstoRepoAddTest {
         );
     }
 
+    /**
+     * Reads and unpack metadata.
+     * @param type Metadata type
+     * @return Unpacked bytes
+     * @throws IOException On error
+     * @todo #440:30min This method is duplicated in many of test classes of asto package. Extract
+     *  this method into class in the test scope and use this class instead of repeated methods.
+     */
     private byte[] readAndUnpack(final XmlPackage type) throws IOException {
         final BlockingStorage bsto = new BlockingStorage(this.storage);
         return IOUtils.toByteArray(
