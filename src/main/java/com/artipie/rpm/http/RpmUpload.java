@@ -35,7 +35,12 @@ import org.reactivestreams.Publisher;
  *
  * @since 0.8.3
  */
-final class RpmUpload implements Slice {
+public final class RpmUpload implements Slice {
+
+    /**
+     * Temp key for the packages to remove.
+     */
+    public static final Key TO_ADD = new Key.From(".add");
 
     /**
      * Asto storage.
