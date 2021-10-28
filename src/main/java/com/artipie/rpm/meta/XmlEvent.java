@@ -9,8 +9,11 @@ import com.artipie.rpm.pkg.HeaderTags;
 import com.artipie.rpm.pkg.Package;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.xml.stream.XMLEventFactory;
@@ -234,7 +237,8 @@ public interface XmlEvent {
         }
 
         /**
-         * Builds `provides` tag.
+         * Builds `provides` tag. Attribute `flags` should be present if the version is present and
+         * in `provides` the only possible flag value is `EQ`.
          * @param writer Xml event writer
          * @param tags Tag info
          * @throws XMLStreamException On error
@@ -244,18 +248,23 @@ public interface XmlEvent {
             final XMLEventFactory events = XMLEventFactory.newFactory();
             writer.add(events.createStartElement(Primary.PRFX, Primary.NS_URL, "provides"));
             final List<String> names = tags.providesNames();
+            final List<Optional<String>> flags = tags.providesFlags();
             final List<HeaderTags.Version> versions = tags.providesVer();
             for (int ind = 0; ind < names.size(); ind = ind + 1) {
                 writer.add(events.createStartElement(Primary.PRFX, Primary.NS_URL, "entry"));
                 writer.add(events.createAttribute("name", names.get(ind)));
-                Primary.addEntryAttr(writer, events, versions, ind);
+                Primary.addEntryAttr(
+                    writer, events, versions, ind, flags, HeaderTags.Flags.EQUAL.notation()
+                );
                 writer.add(events.createEndElement(Primary.PRFX, Primary.NS_URL, "entry"));
             }
             writer.add(events.createEndElement(Primary.PRFX, Primary.NS_URL, "provides"));
         }
 
         /**
-         * Builds `requires` tag.
+         * Builds `requires` tag. Items with names started on `rpmlib(` or `config(` are excluded,
+         * duplicates without version are also excluded.
+         * About `flags` attribute check {@link Primary#findFlag(List, Map, String)}.
          * @param writer Xml event writer
          * @param tags Tag info
          * @throws XMLStreamException On error
@@ -265,13 +274,27 @@ public interface XmlEvent {
             final XMLEventFactory events = XMLEventFactory.newFactory();
             writer.add(events.createStartElement(Primary.PRFX, Primary.NS_URL, "requires"));
             final List<String> names = tags.requires();
+            final List<Optional<String>> flags = tags.requireFlags();
             final List<HeaderTags.Version> versions = tags.requiresVer();
+            final Map<String, Integer> items = new HashMap<>(names.size());
+            final Set<String> duplicates = new HashSet<>(names.size());
             for (int ind = 0; ind < names.size(); ind = ind + 1) {
-                if (!names.get(ind).startsWith("rpmlib(")) {
+                final String name = names.get(ind);
+                if (!name.startsWith("rpmlib(")
+                    && !name.startsWith("config(") && !duplicates.contains(name)) {
                     writer.add(events.createStartElement(Primary.PRFX, Primary.NS_URL, "entry"));
-                    writer.add(events.createAttribute("name", names.get(ind)));
-                    Primary.addEntryAttr(writer, events, versions, ind);
+                    writer.add(events.createAttribute("name", name));
+                    final String item = String.join(
+                        "", name, versions.get(ind).toString()
+                    );
+                    Primary.addEntryAttr(
+                        writer, events, versions, ind, flags, Primary.findFlag(flags, items, item)
+                    );
+                    items.put(item, ind);
                     writer.add(events.createEndElement(Primary.PRFX, Primary.NS_URL, "entry"));
+                    if (versions.get(ind).ver().isEmpty()) {
+                        duplicates.add(name);
+                    }
                 }
             }
             writer.add(events.createEndElement(Primary.PRFX, Primary.NS_URL, "requires"));
@@ -346,18 +369,37 @@ public interface XmlEvent {
          * @param events Xml events
          * @param versions Versions
          * @param ind Current index
+         * @param flags Entries flags
+         * @param def Default flag
          * @throws XMLStreamException On error
          * @checkstyle ParameterNumberCheck (5 lines)
          */
         private static void addEntryAttr(final XMLEventWriter writer, final XMLEventFactory events,
-            final List<HeaderTags.Version> versions, final int ind) throws XMLStreamException {
+            final List<HeaderTags.Version> versions, final int ind,
+            final List<Optional<String>> flags, final String def)
+            throws XMLStreamException {
             if (ind < versions.size() && !versions.get(ind).ver().isEmpty()) {
                 writer.add(events.createAttribute("ver", versions.get(ind).ver()));
                 writer.add(events.createAttribute("epoch", versions.get(ind).epoch()));
                 versions.get(ind).rel().ifPresent(
                     new UncheckedConsumer<>(rel -> writer.add(events.createAttribute("rel", rel)))
                 );
+                writer.add(events.createAttribute("flags", flags.get(ind).orElse(def)));
             }
+        }
+
+        /**
+         * Try to find flag for `requires` entry: if there en entry with such name and version,
+         * use the flag it has. If there is no such entry, write `EQ`.
+         * @param flags Flags list
+         * @param items Items: names and versions
+         * @param item Current name and version
+         * @return Flag value
+         */
+        private static String findFlag(final List<Optional<String>> flags,
+            final Map<String, Integer> items, final String item) {
+            return Optional.ofNullable(items.get(item)).flatMap(flags::get)
+                .orElse(HeaderTags.Flags.EQUAL.notation());
         }
     }
 }

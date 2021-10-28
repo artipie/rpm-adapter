@@ -35,11 +35,11 @@
             <rpm:sourcerpm>abc-1.01-26.git20200127.fc32.src.rpm</rpm:sourcerpm>
             <rpm:header-range start="4504" end="10412"/>
             <rpm:provides>
-                <rpm:entry name="abc" ver="1.01" epoch="0" rel="26.git20200127.fc32"/>
-                <rpm:entry name="abc(ppc-64)" ver="1.01" epoch="0" rel="26.git20200127.fc32"/>
+                <rpm:entry name="abc" flags="EQ" ver="1.01" epoch="0" rel="26.git20200127.fc32"/>
+                <rpm:entry name="abc(ppc-64)" flags="EQ" ver="1.01" epoch="0" rel="26.git20200127.fc32"/>
             </rpm:provides>
             <rpm:requires>
-                <rpm:entry name="abc-libs(ppc-64)" ver="1.01" epoch="0" rel="26.git20200127.fc32"/>
+                <rpm:entry name="abc-libs(ppc-64)" flags="EQ" ver="1.01" epoch="0" rel="26.git20200127.fc32"/>
                 <rpm:entry name="libabc.so.0()(64bit)"/>
                 <rpm:entry name="libc.so.6()(64bit)"/>
                 <rpm:entry name="libc.so.6(GLIBC_2.17)(64bit)"/>
