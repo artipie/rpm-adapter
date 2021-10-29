@@ -43,9 +43,15 @@ class AstoRepoAddTest {
      */
     private Storage storage;
 
+    /**
+     * Reader of metadata bytes.
+     */
+    private MetadataBytes mbytes;
+
     @BeforeEach
     void init() {
         this.storage = new InMemoryStorage();
+        this.mbytes = new MetadataBytes(this.storage);
     }
 
     @Test
@@ -62,7 +68,7 @@ class AstoRepoAddTest {
         MatcherAssert.assertThat(
             "Failed to generate empty primary xml",
             new String(
-                new MetadataBytes(this.storage, XmlPackage.PRIMARY).value(),
+                this.mbytes.value(XmlPackage.PRIMARY),
                 StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths("/*[local-name()='metadata' and @packages='0']")
@@ -70,7 +76,7 @@ class AstoRepoAddTest {
         MatcherAssert.assertThat(
             "Failed to generate empty other xml",
             new String(
-                new MetadataBytes(this.storage, XmlPackage.OTHER).value(),
+                this.mbytes.value(XmlPackage.OTHER),
                 StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths("/*[local-name()='otherdata' and @packages='0']")
@@ -140,7 +146,7 @@ class AstoRepoAddTest {
             String.format("Failed to generate %s xml", primary.lowercase()),
             new TestResource(String.format("AstoRepoAddTest/%s", file)).asPath(),
             new IsXmlEqual(
-                new MetadataBytes(this.storage, primary).value()
+                this.mbytes.value(primary)
             )
         );
     }

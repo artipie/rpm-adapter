@@ -41,9 +41,15 @@ class AstoMetadataRemoveTest {
      */
     private RepoConfig conf;
 
+    /**
+     * Reader of metadata bytes.
+     */
+    private MetadataBytes mbytes;
+
     @BeforeEach
     void init() {
         this.storage = new InMemoryStorage();
+        this.mbytes = new MetadataBytes(this.storage);
         this.conf = new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.PLAIN, true);
     }
 
@@ -78,30 +84,21 @@ class AstoMetadataRemoveTest {
             "Failed to update primary.xml correctly",
             new TestResource(String.join("/", path, "primary.xml")).asPath(),
             new IsXmlEqual(
-                new MetadataBytes(
-                    this.storage,
-                    new Key.From(res, XmlPackage.PRIMARY.name())
-                ).value()
+                this.mbytes.value(res, XmlPackage.PRIMARY)
             )
         );
         MatcherAssert.assertThat(
             "Failed to update other.xml correctly",
             new TestResource(String.join("/", path, "other.xml")).asPath(),
             new IsXmlEqual(
-                new MetadataBytes(
-                    this.storage,
-                    new Key.From(res, XmlPackage.OTHER.name())
-                ).value()
+                this.mbytes.value(res, XmlPackage.OTHER)
             )
         );
         MatcherAssert.assertThat(
             "Failed to update filelists.xml correctly",
             new TestResource(String.join("/", path, "filelists.xml")).asPath(),
             new IsXmlEqual(
-                new MetadataBytes(
-                    this.storage,
-                    new Key.From(res, XmlPackage.FILELISTS.name())
-                ).value()
+                this.mbytes.value(res, XmlPackage.FILELISTS)
             )
         );
         this.checksumCheck(res, XmlPackage.PRIMARY);
@@ -127,20 +124,14 @@ class AstoMetadataRemoveTest {
             "Primary metadata should be not changed",
             new TestResource(String.join("/", path, "primary.xml")).asPath(),
             new IsXmlEqual(
-                new MetadataBytes(
-                    this.storage,
-                    new Key.From(res, XmlPackage.PRIMARY.name())
-                ).value()
+                this.mbytes.value(res, XmlPackage.PRIMARY)
             )
         );
         MatcherAssert.assertThat(
             "Other metadata should be not changed",
             new TestResource(String.join("/", path, "other.xml")).asPath(),
             new IsXmlEqual(
-                new MetadataBytes(
-                    this.storage,
-                    new Key.From(res, XmlPackage.OTHER.name())
-                ).value()
+                this.mbytes.value(res, XmlPackage.OTHER)
             )
         );
         this.checksumCheck(res, XmlPackage.PRIMARY);

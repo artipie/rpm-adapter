@@ -26,53 +26,55 @@ public final class MetadataBytes {
     private final Storage storage;
 
     /**
-     * Key.
-     */
-    private final Key key;
-
-    /**
      * Ctor.
      * @param storage Storage
-     * @param type Type of metadata
      */
-    public MetadataBytes(final Storage storage, final XmlPackage type) {
-        this(
-            storage,
-            MetadataBytes.findKey(storage, type)
-        );
-    }
-
-    /**
-     * Ctor.
-     * @param storage Storage
-     * @param key Key
-     */
-    public MetadataBytes(final Storage storage, final Key key) {
+    public MetadataBytes(final Storage storage) {
         this.storage = storage;
-        this.key = key;
     }
 
     /**
      * Reads and unpacks data in bytes.
+     * @param key Key
      * @return Bytes
      * @throws IOException If fails
      */
-    public byte[] value() throws IOException {
+    public byte[] value(final Key key) throws IOException {
         return IOUtils.toByteArray(
             new GZIPInputStream(
-                new ByteArrayInputStream(new BlockingStorage(this.storage).value(this.key))
+                new ByteArrayInputStream(new BlockingStorage(this.storage).value(key))
             )
         );
     }
 
     /**
+     * Reads and unpacks data in bytes.
+     * @param type Type of metadata
+     * @return Bytes
+     * @throws IOException If fails
+     */
+    public byte[] value(final XmlPackage type) throws IOException {
+        return this.value(this.findKey(type));
+    }
+
+    /**
+     * Reads and unpacks data in bytes.
+     * @param base Base path
+     * @param type Type of metadata
+     * @return Bytes
+     * @throws IOException If fails
+     */
+    public byte[] value(final Key base, final XmlPackage type) throws IOException {
+        return this.value(new Key.From(base, type.name()));
+    }
+
+    /**
      * Finds key.
-     * @param storage Storage
      * @param type Type of metadata
      * @return Key
      */
-    private static Key findKey(final Storage storage, final XmlPackage type) {
-        return new BlockingStorage(storage)
+    private Key findKey(final XmlPackage type) {
+        return new BlockingStorage(this.storage)
             .list(new Key.From("metadata")).stream()
             .filter(
                 item -> item.string().contains(type.lowercase())

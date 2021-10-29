@@ -98,10 +98,11 @@ class AstoRepoRemoveTest {
             this.storage.list(Key.ROOT).join(),
             Matchers.iterableWithSize(4)
         );
+        final MetadataBytes mbytes = new MetadataBytes(this.storage);
         MatcherAssert.assertThat(
             "Primary xml should have `abc` record",
             new String(
-                new MetadataBytes(this.storage, XmlPackage.PRIMARY).value(),
+                mbytes.value(XmlPackage.PRIMARY),
                 StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths(
@@ -113,7 +114,7 @@ class AstoRepoRemoveTest {
         MatcherAssert.assertThat(
             "Other xml should have `abc` record",
             new String(
-                new MetadataBytes(this.storage, XmlPackage.OTHER).value(),
+                mbytes.value(XmlPackage.OTHER),
                 StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths(

@@ -47,9 +47,15 @@ class AstoMetadataAddTest {
      */
     private Storage storage;
 
+    /**
+     * Reader of metadata bytes.
+     */
+    private MetadataBytes mbytes;
+
     @BeforeEach
     void init() {
         this.storage = new InMemoryStorage();
+        this.mbytes = new MetadataBytes(this.storage);
     }
 
     @Test
@@ -66,10 +72,7 @@ class AstoMetadataAddTest {
         MatcherAssert.assertThat(
             "Failed to generate empty primary xml",
             new String(
-                new MetadataBytes(
-                    this.storage,
-                    new Key.From(temp, XmlPackage.PRIMARY.name())
-                ).value(),
+                this.mbytes.value(temp, XmlPackage.PRIMARY),
                 StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths("/*[local-name()='metadata' and @packages='0']")
@@ -77,10 +80,7 @@ class AstoMetadataAddTest {
         MatcherAssert.assertThat(
             "Failed to generate empty other xml",
             new String(
-                new MetadataBytes(
-                    this.storage,
-                    new Key.From(temp, XmlPackage.OTHER.name())
-                ).value(),
+                this.mbytes.value(temp, XmlPackage.OTHER),
                 StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths("/*[local-name()='otherdata' and @packages='0']")
@@ -121,30 +121,21 @@ class AstoMetadataAddTest {
             "Failed to generate correct primary xml",
             new TestResource("AstoMetadataAddTest/primary-res.xml").asPath(),
             new IsXmlEqual(
-                new MetadataBytes(
-                    this.storage,
-                    new Key.From(temp, XmlPackage.PRIMARY.name())
-                ).value()
+                this.mbytes.value(temp, XmlPackage.PRIMARY)
             )
         );
         MatcherAssert.assertThat(
             "Failed to generate correct other xml",
             new TestResource("AstoMetadataAddTest/other-res.xml").asPath(),
             new IsXmlEqual(
-                new MetadataBytes(
-                    this.storage,
-                    new Key.From(temp, XmlPackage.OTHER.name())
-                ).value()
+                this.mbytes.value(temp, XmlPackage.OTHER)
             )
         );
         MatcherAssert.assertThat(
             "Failed to generate correct filelists xml",
             new TestResource("AstoMetadataAddTest/filelists-res.xml").asPath(),
             new IsXmlEqual(
-                new MetadataBytes(
-                    this.storage,
-                    new Key.From(temp, XmlPackage.FILELISTS.name())
-                ).value()
+                this.mbytes.value(temp, XmlPackage.FILELISTS)
             )
         );
         this.checksumCheck(temp, XmlPackage.PRIMARY);
