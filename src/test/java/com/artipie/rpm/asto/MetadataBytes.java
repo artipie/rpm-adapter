@@ -75,7 +75,7 @@ public final class MetadataBytes {
      */
     private Key findKey(final XmlPackage type) {
         return new BlockingStorage(this.storage)
-            .list(new Key.From("metadata")).stream()
+            .list(new Key.From("repodata")).stream()
             .filter(
                 item -> item.string().contains(type.lowercase())
             )
