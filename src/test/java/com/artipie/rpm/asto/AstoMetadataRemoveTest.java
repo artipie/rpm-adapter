@@ -14,16 +14,13 @@ import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.StandardNamingPolicy;
 import com.artipie.rpm.hm.IsXmlEqual;
 import com.artipie.rpm.meta.XmlPackage;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.zip.GZIPInputStream;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
 
 /**
  * Test for {@link AstoMetadataRemove}.
@@ -44,9 +41,15 @@ class AstoMetadataRemoveTest {
      */
     private RepoConfig conf;
 
+    /**
+     * Reader of metadata bytes.
+     */
+    private MetadataBytes mbytes;
+
     @BeforeEach
     void init() {
         this.storage = new InMemoryStorage();
+        this.mbytes = new MetadataBytes(this.storage);
         this.conf = new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.PLAIN, true);
     }
 
@@ -80,17 +83,23 @@ class AstoMetadataRemoveTest {
         MatcherAssert.assertThat(
             "Failed to update primary.xml correctly",
             new TestResource(String.join("/", path, "primary.xml")).asPath(),
-            new IsXmlEqual(this.readAndUnpack(new Key.From(res, XmlPackage.PRIMARY.name())))
+            new IsXmlEqual(
+                this.mbytes.value(res, XmlPackage.PRIMARY)
+            )
         );
         MatcherAssert.assertThat(
             "Failed to update other.xml correctly",
             new TestResource(String.join("/", path, "other.xml")).asPath(),
-            new IsXmlEqual(this.readAndUnpack(new Key.From(res, XmlPackage.OTHER.name())))
+            new IsXmlEqual(
+                this.mbytes.value(res, XmlPackage.OTHER)
+            )
         );
         MatcherAssert.assertThat(
             "Failed to update filelists.xml correctly",
             new TestResource(String.join("/", path, "filelists.xml")).asPath(),
-            new IsXmlEqual(this.readAndUnpack(new Key.From(res, XmlPackage.FILELISTS.name())))
+            new IsXmlEqual(
+                this.mbytes.value(res, XmlPackage.FILELISTS)
+            )
         );
         this.checksumCheck(res, XmlPackage.PRIMARY);
         this.checksumCheck(res, XmlPackage.OTHER);
@@ -114,12 +123,16 @@ class AstoMetadataRemoveTest {
         MatcherAssert.assertThat(
             "Primary metadata should be not changed",
             new TestResource(String.join("/", path, "primary.xml")).asPath(),
-            new IsXmlEqual(this.readAndUnpack(new Key.From(res, XmlPackage.PRIMARY.name())))
+            new IsXmlEqual(
+                this.mbytes.value(res, XmlPackage.PRIMARY)
+            )
         );
         MatcherAssert.assertThat(
             "Other metadata should be not changed",
             new TestResource(String.join("/", path, "other.xml")).asPath(),
-            new IsXmlEqual(this.readAndUnpack(new Key.From(res, XmlPackage.OTHER.name())))
+            new IsXmlEqual(
+                this.mbytes.value(res, XmlPackage.OTHER)
+            )
         );
         this.checksumCheck(res, XmlPackage.PRIMARY);
         this.checksumCheck(res, XmlPackage.OTHER);
@@ -134,14 +147,6 @@ class AstoMetadataRemoveTest {
                 StandardCharsets.UTF_8
             ),
             Matchers.matchesPattern("[0-9a-z]* \\d+")
-        );
-    }
-
-    private byte[] readAndUnpack(final Key key) throws IOException {
-        return IOUtils.toByteArray(
-            new GZIPInputStream(
-                new ByteArrayInputStream(new BlockingStorage(this.storage).value(key))
-            )
         );
     }
 
