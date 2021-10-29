@@ -16,14 +16,13 @@ import com.artipie.rpm.hm.IsXmlEqual;
 import com.artipie.rpm.http.RpmUpload;
 import com.artipie.rpm.meta.XmlPackage;
 import com.jcabi.matchers.XhtmlMatchers;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Test for {@link AstoRepoAdd}.
@@ -141,7 +140,7 @@ class AstoRepoAddTest {
             String.format("Failed to generate %s xml", primary.lowercase()),
             new TestResource(String.format("AstoRepoAddTest/%s", file)).asPath(),
             new IsXmlEqual(
-                new MetadataBytes(storage, primary).value()
+                new MetadataBytes(this.storage, primary).value()
             )
         );
     }

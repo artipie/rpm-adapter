@@ -14,14 +14,13 @@ import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.StandardNamingPolicy;
 import com.artipie.rpm.hm.IsXmlEqual;
 import com.artipie.rpm.meta.XmlPackage;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Test for {@link AstoMetadataRemove}.

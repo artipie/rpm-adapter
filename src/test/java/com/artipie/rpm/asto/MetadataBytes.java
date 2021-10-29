@@ -18,7 +18,7 @@ import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
  *
  * @since 1.9.4
  */
-public class MetadataBytes {
+public final class MetadataBytes {
 
     /**
      * Storage.
@@ -52,14 +52,25 @@ public class MetadataBytes {
         this.key = key;
     }
 
+    /**
+     * Reads and unpacks data in bytes.
+     * @return Bytes
+     * @throws IOException If fails
+     */
     public byte[] value() throws IOException {
         return IOUtils.toByteArray(
             new GZIPInputStream(
-                new ByteArrayInputStream(new BlockingStorage(this.storage).value(key))
+                new ByteArrayInputStream(new BlockingStorage(this.storage).value(this.key))
             )
         );
     }
 
+    /**
+     * Finds key.
+     * @param storage Storage
+     * @param type Type of metadata
+     * @return Key
+     */
     private static Key findKey(final Storage storage, final XmlPackage type) {
         return new BlockingStorage(storage)
             .list(new Key.From("metadata")).stream()

@@ -19,15 +19,14 @@ import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.FilePackageHeader;
 import com.artipie.rpm.pkg.Package;
 import com.jcabi.matchers.XhtmlMatchers;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 
 /**
  * Test for {@link AstoMetadataAdd}.
