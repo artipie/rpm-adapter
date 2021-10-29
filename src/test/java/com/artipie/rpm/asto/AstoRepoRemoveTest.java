@@ -16,16 +16,13 @@ import com.artipie.rpm.StandardNamingPolicy;
 import com.artipie.rpm.http.RpmRemove;
 import com.artipie.rpm.meta.XmlPackage;
 import com.jcabi.matchers.XhtmlMatchers;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.zip.GZIPInputStream;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
 
 /**
  * Test for {@link AstoRepoRemove}.
@@ -104,7 +101,7 @@ class AstoRepoRemoveTest {
         MatcherAssert.assertThat(
             "Primary xml should have `abc` record",
             new String(
-                this.readAndUnpack(this.findKey(XmlPackage.PRIMARY)),
+                new MetadataBytes(this.storage, XmlPackage.PRIMARY).value(),
                 StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths(
@@ -116,7 +113,7 @@ class AstoRepoRemoveTest {
         MatcherAssert.assertThat(
             "Other xml should have `abc` record",
             new String(
-                this.readAndUnpack(this.findKey(XmlPackage.OTHER)),
+                new MetadataBytes(this.storage, XmlPackage.OTHER).value(),
                 StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths(
@@ -134,19 +131,6 @@ class AstoRepoRemoveTest {
                 "/*[local-name()='repomd']/*[local-name()='revision']",
                 "/*[local-name()='repomd']/*[local-name()='data' and @type='primary']",
                 "/*[local-name()='repomd']/*[local-name()='data' and @type='other']"
-            )
-        );
-    }
-
-    private Key findKey(final XmlPackage pkg) {
-        return new BlockingStorage(this.storage).list(new Key.From("metadata"))
-            .stream().filter(key -> key.string().contains(pkg.lowercase())).findFirst().get();
-    }
-
-    private byte[] readAndUnpack(final Key key) throws IOException {
-        return IOUtils.toByteArray(
-            new GZIPInputStream(
-                new ByteArrayInputStream(new BlockingStorage(this.storage).value(key))
             )
         );
     }
