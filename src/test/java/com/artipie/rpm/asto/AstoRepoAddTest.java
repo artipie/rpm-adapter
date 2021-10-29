@@ -24,7 +24,6 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
 
@@ -35,7 +34,6 @@ import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-@Disabled
 class AstoRepoAddTest {
 
     /**
