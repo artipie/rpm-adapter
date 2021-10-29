@@ -63,7 +63,7 @@ class AstoRepoRemoveTest {
         MatcherAssert.assertThat(
             "Repomd xml should be created",
             new String(
-                new BlockingStorage(this.storage).value(new Key.From("metadata", "repomd.xml")),
+                new BlockingStorage(this.storage).value(new Key.From("repodata", "repomd.xml")),
                 StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths(
@@ -80,11 +80,11 @@ class AstoRepoRemoveTest {
             new Key.From(RpmRemove.TO_RM, "libdeflt1_0-2020.03.27-25.1.armv7hl.rpm"), Content.EMPTY
         ).join();
         new TestResource("AstoRepoRemoveTest/other.xml.gz")
-            .saveTo(this.storage, new Key.From("metadata", "other.xml.gz"));
+            .saveTo(this.storage, new Key.From("repodata", "other.xml.gz"));
         new TestResource("AstoRepoRemoveTest/primary.xml.gz")
-            .saveTo(this.storage, new Key.From("metadata", "primary.xml.gz"));
+            .saveTo(this.storage, new Key.From("repodata", "primary.xml.gz"));
         new TestResource("AstoRepoRemoveTest/repomd.xml")
-            .saveTo(this.storage, new Key.From("metadata", "repomd.xml"));
+            .saveTo(this.storage, new Key.From("repodata", "repomd.xml"));
         new AstoRepoRemove(this.storage, this.conf).perform().toCompletableFuture().join();
         MatcherAssert.assertThat(
             "Package libdeflt should not exist",
@@ -127,7 +127,7 @@ class AstoRepoRemoveTest {
         MatcherAssert.assertThat(
             "Repomd xml should be created",
             new String(
-                new BlockingStorage(this.storage).value(new Key.From("metadata", "repomd.xml")),
+                new BlockingStorage(this.storage).value(new Key.From("repodata", "repomd.xml")),
                 StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths(
@@ -139,7 +139,7 @@ class AstoRepoRemoveTest {
     }
 
     private Key findKey(final XmlPackage pkg) {
-        return new BlockingStorage(this.storage).list(new Key.From("metadata"))
+        return new BlockingStorage(this.storage).list(new Key.From("repodata"))
             .stream().filter(key -> key.string().contains(pkg.lowercase())).findFirst().get();
     }
 

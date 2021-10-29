@@ -31,7 +31,7 @@ public final class AstoRepoRemove {
     /**
      * Metadata key.
      */
-    private static final Key META = new Key.From("metadata");
+    private static final Key META = new Key.From("repodata");
 
     /**
      * Repomd xml key.

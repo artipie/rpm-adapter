@@ -58,7 +58,7 @@ public interface NamingPolicy {
 
         @Override
         public String fullName(final XmlPackage source, final String prefix) {
-            return String.format("metadata/%s-%s.xml.gz", prefix, source.lowercase());
+            return String.format("repodata/%s-%s.xml.gz", prefix, source.lowercase());
         }
     }
 }
