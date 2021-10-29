@@ -6,26 +6,21 @@ package com.artipie.rpm.asto;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.asto.ext.ContentDigest;
 import com.artipie.asto.lock.storage.StorageLock;
 import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.http.RpmUpload;
-import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.pkg.Package;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import org.cactoos.map.MapEntry;
 
 /**
  * Add packages to metadata and repository.
  * @since 1.10
- * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class AstoRepoAdd {
 
@@ -33,11 +28,6 @@ public final class AstoRepoAdd {
      * Metadata key.
      */
     private static final Key META = new Key.From("metadata");
-
-    /**
-     * Repomd xml key.
-     */
-    private static final Key REPOMD = new Key.From("repomd.xml");
 
     /**
      * Asto storage.
@@ -69,34 +59,36 @@ public final class AstoRepoAdd {
             list -> new AstoMetadataAdd(this.asto, this.cnfg).perform(list)
         ).thenCompose(
             temp -> new AstoCreateRepomd(this.asto, this.cnfg).perform(temp).thenCompose(
-                nothing -> this.newNames(temp).thenCompose(
-                    keys -> {
-                        final StorageLock lock = new StorageLock(this.asto, AstoRepoAdd.META);
-                        return lock.acquire()
-                            .thenCompose(ignored -> this.remove(AstoRepoAdd.META))
-                            .thenCompose(
-                                ignored -> CompletableFuture.allOf(
-                                    keys.entrySet().stream().map(
-                                        entry -> this.asto.move(entry.getKey(), entry.getValue())
-                                    ).toArray(CompletableFuture[]::new)
-                                )
-                            )
-                            .thenCompose(
-                                ignored -> this.asto.list(RpmUpload.TO_ADD).thenCompose(
-                                    list -> CompletableFuture.allOf(
-                                        list.stream().map(
-                                            key -> this.asto.move(
-                                                key, AstoRepoAdd.removeTempPart(key)
-                                            )
+                nothing -> new AstoMetadataNames(this.asto, this.cnfg).prepareNames(temp)
+                    .thenCompose(
+                        keys -> {
+                            final StorageLock lock = new StorageLock(this.asto, AstoRepoAdd.META);
+                            return lock.acquire()
+                                .thenCompose(ignored -> this.remove(AstoRepoAdd.META))
+                                .thenCompose(
+                                    ignored -> CompletableFuture.allOf(
+                                        keys.entrySet().stream().map(
+                                            entry -> this.asto
+                                                .move(entry.getKey(), entry.getValue())
                                         ).toArray(CompletableFuture[]::new)
                                     )
                                 )
-                            )
-                            .thenCompose(ignored -> lock.release()).thenCompose(
-                                ignored -> this.remove(temp)
-                            );
-                    }
-                )
+                                .thenCompose(
+                                    ignored -> this.asto.list(RpmUpload.TO_ADD).thenCompose(
+                                        list -> CompletableFuture.allOf(
+                                            list.stream().map(
+                                                key -> this.asto.move(
+                                                    key, AstoRepoAdd.removeTempPart(key)
+                                                )
+                                            ).toArray(CompletableFuture[]::new)
+                                        )
+                                    )
+                                )
+                                .thenCompose(ignored -> lock.release()).thenCompose(
+                                    ignored -> this.remove(temp)
+                                );
+                        }
+                    )
             )
         );
     }
@@ -130,56 +122,6 @@ public final class AstoRepoAdd {
                     .toArray(CompletableFuture[]::new)
             )
         );
-    }
-
-    /**
-     * Creates map of the storage item in temp location and where is should be moved.
-     * @param temp Temp location
-     * @return Map of the temp and permanent keys
-     */
-    private CompletionStage<Map<Key, Key>> newNames(final Key temp) {
-        final RxStorageWrapper rxsto = new RxStorageWrapper(this.asto);
-        return rxsto.list(temp)
-            .flatMapObservable(Observable::fromIterable)
-            .filter(
-                key -> new XmlPackage.Stream(this.cnfg.filelists()).get()
-                    .anyMatch(item -> key.string().endsWith(item.name()))
-            )
-            .<MapEntry<Key, Key>>flatMapSingle(
-                key -> rxsto.value(key).flatMap(
-                    val -> Single.fromFuture(
-                        new ContentDigest(val, () -> this.cnfg.digest().messageDigest()).hex()
-                            .thenApply(
-                                hex -> new MapEntry<Key, Key>(
-                                    key,
-                                    new Key.From(
-                                        this.cnfg.naming().fullName(
-                                            new XmlPackage.Stream(this.cnfg.filelists()).get()
-                                                .filter(item -> key.string().contains(item.name()))
-                                                .findFirst().get(),
-                                            hex
-                                        )
-                                    )
-                                )
-                            ).toCompletableFuture()
-                    )
-                )
-            ).toMap(MapEntry::getKey, MapEntry::getValue)
-            .flatMap(
-                map -> {
-                    final Key.From repomd = new Key.From(temp, AstoRepoAdd.REPOMD);
-                    return rxsto.exists(repomd).map(
-                        exists -> {
-                            if (exists) {
-                                map.put(
-                                    repomd, new Key.From(AstoRepoAdd.META, AstoRepoAdd.REPOMD)
-                                );
-                            }
-                            return map;
-                        }
-                    );
-                }
-            ).to(SingleInterop.get());
     }
 
     /**
