@@ -19,17 +19,14 @@ import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.FilePackageHeader;
 import com.artipie.rpm.pkg.Package;
 import com.jcabi.matchers.XhtmlMatchers;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.zip.GZIPInputStream;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
 
 /**
  * Test for {@link AstoMetadataAdd}.
@@ -50,9 +47,15 @@ class AstoMetadataAddTest {
      */
     private Storage storage;
 
+    /**
+     * Reader of metadata bytes.
+     */
+    private MetadataBytes mbytes;
+
     @BeforeEach
     void init() {
         this.storage = new InMemoryStorage();
+        this.mbytes = new MetadataBytes(this.storage);
     }
 
     @Test
@@ -69,7 +72,7 @@ class AstoMetadataAddTest {
         MatcherAssert.assertThat(
             "Failed to generate empty primary xml",
             new String(
-                this.readAndUnpack(new Key.From(temp, XmlPackage.PRIMARY.name())),
+                this.mbytes.value(temp, XmlPackage.PRIMARY),
                 StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths("/*[local-name()='metadata' and @packages='0']")
@@ -77,7 +80,7 @@ class AstoMetadataAddTest {
         MatcherAssert.assertThat(
             "Failed to generate empty other xml",
             new String(
-                this.readAndUnpack(new Key.From(temp, XmlPackage.OTHER.name())),
+                this.mbytes.value(temp, XmlPackage.OTHER),
                 StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths("/*[local-name()='otherdata' and @packages='0']")
@@ -117,29 +120,27 @@ class AstoMetadataAddTest {
         MatcherAssert.assertThat(
             "Failed to generate correct primary xml",
             new TestResource("AstoMetadataAddTest/primary-res.xml").asPath(),
-            new IsXmlEqual(this.readAndUnpack(new Key.From(temp, XmlPackage.PRIMARY.name())))
+            new IsXmlEqual(
+                this.mbytes.value(temp, XmlPackage.PRIMARY)
+            )
         );
         MatcherAssert.assertThat(
             "Failed to generate correct other xml",
             new TestResource("AstoMetadataAddTest/other-res.xml").asPath(),
-            new IsXmlEqual(this.readAndUnpack(new Key.From(temp, XmlPackage.OTHER.name())))
+            new IsXmlEqual(
+                this.mbytes.value(temp, XmlPackage.OTHER)
+            )
         );
         MatcherAssert.assertThat(
             "Failed to generate correct filelists xml",
             new TestResource("AstoMetadataAddTest/filelists-res.xml").asPath(),
-            new IsXmlEqual(this.readAndUnpack(new Key.From(temp, XmlPackage.FILELISTS.name())))
+            new IsXmlEqual(
+                this.mbytes.value(temp, XmlPackage.FILELISTS)
+            )
         );
         this.checksumCheck(temp, XmlPackage.PRIMARY);
         this.checksumCheck(temp, XmlPackage.OTHER);
         this.checksumCheck(temp, XmlPackage.FILELISTS);
-    }
-
-    private byte[] readAndUnpack(final Key key) throws IOException {
-        return IOUtils.toByteArray(
-            new GZIPInputStream(
-                new ByteArrayInputStream(new BlockingStorage(this.storage).value(key))
-            )
-        );
     }
 
     private void checksumCheck(final Key res, final XmlPackage other) {
