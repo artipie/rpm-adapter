@@ -180,22 +180,49 @@ public interface RepoConfig {
         private final boolean filelist;
 
         /**
+         * Is filelist needed?
+         */
+        private final RepoConfig.UpdateMode umode;
+
+        /**
+         * Ctor.
+         * @param dgst Digest
+         * @param npolicy Naming policy
+         * @param filelist Filelist
+         * @param umode Update mode
+         * @checkstyle ParameterNumberCheck (5 lines)
+         */
+        public Simple(final Digest dgst, final NamingPolicy npolicy, final boolean filelist,
+            final RepoConfig.UpdateMode umode) {
+            this.dgst = dgst;
+            this.npolicy = npolicy;
+            this.filelist = filelist;
+            this.umode = umode;
+        }
+
+        /**
          * Ctor.
          * @param dgst Digest
          * @param npolicy Naming policy
          * @param filelist Filelist
          */
         public Simple(final Digest dgst, final NamingPolicy npolicy, final boolean filelist) {
-            this.dgst = dgst;
-            this.npolicy = npolicy;
-            this.filelist = filelist;
+            this(dgst, npolicy, filelist, UpdateMode.UPLOAD);
         }
 
         /**
          * Ctor.
          */
         public Simple() {
-            this(Digest.SHA256, StandardNamingPolicy.PLAIN, false);
+            this(Digest.SHA256, StandardNamingPolicy.PLAIN, false, UpdateMode.UPLOAD);
+        }
+
+        /**
+         * Ctor.
+         * @param umode Update mode
+         */
+        public Simple(final RepoConfig.UpdateMode umode) {
+            this(Digest.SHA256, StandardNamingPolicy.PLAIN, false, umode);
         }
 
         @Override
@@ -215,7 +242,7 @@ public interface RepoConfig {
 
         @Override
         public UpdateMode mode() {
-            return UpdateMode.UPLOAD;
+            return this.umode;
         }
 
         @Override

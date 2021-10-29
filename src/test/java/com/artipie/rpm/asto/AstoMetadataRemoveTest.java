@@ -67,11 +67,11 @@ class AstoMetadataRemoveTest {
     void removesPackageAndSavesChecksum() throws IOException {
         final String path = "AstoMetadataRemoveTest/removesPackageAndSavesChecksum";
         new TestResource(String.join("/", path, "primary.xml.gz"))
-            .saveTo(this.storage, new Key.From("metadata", "primary.xml.gz"));
+            .saveTo(this.storage, new Key.From("repodata", "primary.xml.gz"));
         new TestResource(String.join("/", path, "other.xml.gz"))
-            .saveTo(this.storage, new Key.From("metadata", "other.xml.gz"));
+            .saveTo(this.storage, new Key.From("repodata", "other.xml.gz"));
         new TestResource(String.join("/", path, "filelists.xml.gz"))
-            .saveTo(this.storage, new Key.From("metadata", "filelists.xml.gz"));
+            .saveTo(this.storage, new Key.From("repodata", "filelists.xml.gz"));
         final Key res = new AstoMetadataRemove(this.storage, this.conf).perform(
             new ListOf<String>("7eaefd1cb4f9740558da7f12f9cb5a6141a47f5d064a98d46c29959869af1a44")
         ).toCompletableFuture().join();
@@ -110,9 +110,9 @@ class AstoMetadataRemoveTest {
     void savesTheSameContentIfPackageNotFound() throws IOException {
         final String path = "AstoMetadataRemoveTest/savesTheSameContentIfPackageNotFound";
         new TestResource(String.join("/", path, "primary.xml.gz"))
-            .saveTo(this.storage, new Key.From("metadata", "primary.xml.gz"));
+            .saveTo(this.storage, new Key.From("repodata", "primary.xml.gz"));
         new TestResource(String.join("/", path, "other.xml.gz"))
-            .saveTo(this.storage, new Key.From("metadata", "other.xml.gz"));
+            .saveTo(this.storage, new Key.From("repodata", "other.xml.gz"));
         final Key res = new AstoMetadataRemove(this.storage, this.conf)
             .perform(new ListOf<String>("abc123")).toCompletableFuture().join();
         MatcherAssert.assertThat(

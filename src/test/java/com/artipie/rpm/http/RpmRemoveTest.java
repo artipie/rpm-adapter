@@ -103,7 +103,7 @@ class RpmRemoveTest {
         final String pckg = "abc-1.01-26.git20200127.fc32.ppc64le.rpm";
         new TestResource(pckg).saveTo(this.asto);
         new TestResource("RpmRemoveTest/primary.xml.gz")
-            .saveTo(this.asto, new Key.From("metadata", "primary.xml.gz"));
+            .saveTo(this.asto, new Key.From("repodata", "primary.xml.gz"));
         MatcherAssert.assertThat(
             "Response status is not `ACCEPTED`",
             new RpmRemove(this.asto, new RepoConfig.Simple()),
@@ -121,7 +121,7 @@ class RpmRemoveTest {
         MatcherAssert.assertThat(
             "Repomd xml should be created",
             new String(
-                new BlockingStorage(this.asto).value(new Key.From("metadata", "repomd.xml")),
+                new BlockingStorage(this.asto).value(new Key.From("repodata", "repomd.xml")),
                 StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths(
@@ -132,7 +132,7 @@ class RpmRemoveTest {
         MatcherAssert.assertThat(
             "Primary xml should have `nginx` record",
             new String(
-                this.readAndUnpack(new Key.From("metadata", "primary.xml.gz")),
+                this.readAndUnpack(new Key.From("repodata", "primary.xml.gz")),
                 StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths(

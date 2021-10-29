@@ -100,7 +100,7 @@ public class RpmUploadTest {
     }
 
     @Test
-    void skipsUpdate() throws Exception {
+    void skipsUpdateWhenParamSkipIsTrue() throws Exception {
         final Storage storage = new InMemoryStorage();
         final byte[] content = Files.readAllBytes(new TestRpm.Abc().path());
         MatcherAssert.assertThat(
@@ -114,7 +114,32 @@ public class RpmUploadTest {
         );
         MatcherAssert.assertThat(
             "Content saved to storage",
-            new BlockingStorage(storage).value(new Key.From("my-package.rpm")),
+            new BlockingStorage(storage).value(new Key.From(RpmUpload.TO_ADD, "my-package.rpm")),
+            new IsEqual<>(content)
+        );
+        MatcherAssert.assertThat(
+            "Metadata not updated",
+            new BlockingStorage(storage).list(new Key.From("repodata")).isEmpty(),
+            new IsEqual<>(true)
+        );
+    }
+
+    @Test
+    void skipsUpdateIfModeIsCron() throws Exception {
+        final Storage storage = new InMemoryStorage();
+        final byte[] content = Files.readAllBytes(new TestRpm.Abc().path());
+        MatcherAssert.assertThat(
+            "ACCEPTED 202 returned",
+            new RpmUpload(storage, new RepoConfig.Simple(RepoConfig.UpdateMode.CRON)).response(
+                new RequestLine("PUT", "/abc-package.rpm").toString(),
+                Headers.EMPTY,
+                Flowable.fromArray(ByteBuffer.wrap(content))
+            ),
+            new RsHasStatus(RsStatus.ACCEPTED)
+        );
+        MatcherAssert.assertThat(
+            "Content saved to temp location",
+            new BlockingStorage(storage).value(new Key.From(RpmUpload.TO_ADD, "abc-package.rpm")),
             new IsEqual<>(content)
         );
         MatcherAssert.assertThat(

@@ -36,7 +36,7 @@ class AstoRepoAddTest {
     /**
      * Metadata key.
      */
-    private static final Key MTD = new Key.From("metadata");
+    private static final Key MTD = new Key.From("repodata");
 
     /**
      * Test storage.

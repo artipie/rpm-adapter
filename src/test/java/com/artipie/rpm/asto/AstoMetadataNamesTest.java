@@ -66,7 +66,7 @@ class AstoMetadataNamesTest {
             )
         ).collect(Collectors.toList());
         expected.add(
-            new MapEntry<>(repomd, new Key.From("metadata", "repomd.xml"))
+            new MapEntry<>(repomd, new Key.From("repodata", "repomd.xml"))
         );
         MatcherAssert.assertThat(
             res.entrySet(),

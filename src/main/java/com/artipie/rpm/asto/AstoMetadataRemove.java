@@ -71,7 +71,7 @@ public final class AstoMetadataRemove {
             .get().collect(Collectors.toList())) {
             res.add(
                 CompletableFuture.supplyAsync(() -> pckg).thenCompose(
-                    pkg -> this.asto.list(new Key.From("metadata")).thenApply(
+                    pkg -> this.asto.list(new Key.From("repodata")).thenApply(
                         list -> list.stream()
                             .filter(item -> item.string().contains(pckg.lowercase())).findFirst()
                     ).thenCompose(

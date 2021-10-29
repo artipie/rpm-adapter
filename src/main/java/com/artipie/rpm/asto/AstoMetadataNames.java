@@ -91,7 +91,7 @@ final class AstoMetadataNames {
                     return rxsto.exists(repomd).map(
                         exists -> {
                             if (exists) {
-                                map.put(repomd, new Key.From("metadata", AstoMetadataNames.REPOMD));
+                                map.put(repomd, new Key.From("repodata", AstoMetadataNames.REPOMD));
                             }
                             return map;
                         }

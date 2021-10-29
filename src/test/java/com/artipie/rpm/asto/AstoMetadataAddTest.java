@@ -90,11 +90,11 @@ class AstoMetadataAddTest {
     @Test
     void addsPackagesMetadata() throws IOException {
         new TestResource("AstoMetadataAddTest/primary.xml.gz")
-            .saveTo(this.storage, new Key.From("metadata", "primary.xml.gz"));
+            .saveTo(this.storage, new Key.From("repodata", "primary.xml.gz"));
         new TestResource("AstoMetadataAddTest/other.xml.gz")
-            .saveTo(this.storage, new Key.From("metadata", "other.xml.gz"));
+            .saveTo(this.storage, new Key.From("repodata", "other.xml.gz"));
         new TestResource("AstoMetadataAddTest/filelists.xml.gz")
-            .saveTo(this.storage, new Key.From("metadata", "filelists.xml.gz"));
+            .saveTo(this.storage, new Key.From("repodata", "filelists.xml.gz"));
         final TestRpm.Libdeflt libdeflt = new TestRpm.Libdeflt();
         final TestRpm.Abc abc = new TestRpm.Abc();
         final Key temp = new AstoMetadataAdd(
