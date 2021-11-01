@@ -82,7 +82,7 @@ class HeaderTagsVersionTest {
         "-",
         "3:sd/sd-2.3alpha",
         "1/5",
-        "3:1-1-1"
+        "3:1-1/1"
     })
     void throwsExceptionWhenVersionNotValid(final String param) {
         Assertions.assertThrows(
