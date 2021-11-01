@@ -16,16 +16,13 @@ import com.artipie.rpm.hm.IsXmlEqual;
 import com.artipie.rpm.http.RpmUpload;
 import com.artipie.rpm.meta.XmlPackage;
 import com.jcabi.matchers.XhtmlMatchers;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.zip.GZIPInputStream;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
 
 /**
  * Test for {@link AstoRepoAdd}.
@@ -39,16 +36,22 @@ class AstoRepoAddTest {
     /**
      * Metadata key.
      */
-    private static final Key MTD = new Key.From("metadata");
+    private static final Key MTD = new Key.From("repodata");
 
     /**
      * Test storage.
      */
     private Storage storage;
 
+    /**
+     * Reader of metadata bytes.
+     */
+    private MetadataBytes mbytes;
+
     @BeforeEach
     void init() {
         this.storage = new InMemoryStorage();
+        this.mbytes = new MetadataBytes(this.storage);
     }
 
     @Test
@@ -65,14 +68,16 @@ class AstoRepoAddTest {
         MatcherAssert.assertThat(
             "Failed to generate empty primary xml",
             new String(
-                this.readAndUnpack(XmlPackage.PRIMARY), StandardCharsets.UTF_8
+                this.mbytes.value(XmlPackage.PRIMARY),
+                StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths("/*[local-name()='metadata' and @packages='0']")
         );
         MatcherAssert.assertThat(
             "Failed to generate empty other xml",
             new String(
-                this.readAndUnpack(XmlPackage.OTHER), StandardCharsets.UTF_8
+                this.mbytes.value(XmlPackage.OTHER),
+                StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths("/*[local-name()='otherdata' and @packages='0']")
         );
@@ -140,29 +145,8 @@ class AstoRepoAddTest {
         MatcherAssert.assertThat(
             String.format("Failed to generate %s xml", primary.lowercase()),
             new TestResource(String.format("AstoRepoAddTest/%s", file)).asPath(),
-            new IsXmlEqual(this.readAndUnpack(primary))
-        );
-    }
-
-    /**
-     * Reads and unpack metadata.
-     * @param type Metadata type
-     * @return Unpacked bytes
-     * @throws IOException On error
-     * @todo #440:30min This method is duplicated in many of test classes of asto package. Extract
-     *  this method into class in the test scope and use this class instead of repeated methods.
-     */
-    private byte[] readAndUnpack(final XmlPackage type) throws IOException {
-        final BlockingStorage bsto = new BlockingStorage(this.storage);
-        return IOUtils.toByteArray(
-            new GZIPInputStream(
-                new ByteArrayInputStream(
-                    bsto.value(
-                        bsto.list(new Key.From("metadata")).stream()
-                            .filter(item -> item.string().contains(type.lowercase()))
-                            .findFirst().get()
-                    )
-                )
+            new IsXmlEqual(
+                this.mbytes.value(primary)
             )
         );
     }
