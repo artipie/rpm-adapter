@@ -167,7 +167,7 @@ public final class AstoMetadataAdd {
      * @return Completable action with the key
      */
     private CompletionStage<Optional<Key>> getExistingKey(final XmlPackage type) {
-        return this.asto.list(new Key.From("metadata")).thenApply(
+        return this.asto.list(new Key.From("repodata")).thenApply(
             list -> list.stream().filter(
                 item -> item.string().endsWith(String.format("%s.xml.gz", type.lowercase()))
             ).findFirst()

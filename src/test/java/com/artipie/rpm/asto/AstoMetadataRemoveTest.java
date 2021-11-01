@@ -14,16 +14,13 @@ import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.StandardNamingPolicy;
 import com.artipie.rpm.hm.IsXmlEqual;
 import com.artipie.rpm.meta.XmlPackage;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.zip.GZIPInputStream;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
 
 /**
  * Test for {@link AstoMetadataRemove}.
@@ -44,9 +41,15 @@ class AstoMetadataRemoveTest {
      */
     private RepoConfig conf;
 
+    /**
+     * Reader of metadata bytes.
+     */
+    private MetadataBytes mbytes;
+
     @BeforeEach
     void init() {
         this.storage = new InMemoryStorage();
+        this.mbytes = new MetadataBytes(this.storage);
         this.conf = new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.PLAIN, true);
     }
 
@@ -64,11 +67,11 @@ class AstoMetadataRemoveTest {
     void removesPackageAndSavesChecksum() throws IOException {
         final String path = "AstoMetadataRemoveTest/removesPackageAndSavesChecksum";
         new TestResource(String.join("/", path, "primary.xml.gz"))
-            .saveTo(this.storage, new Key.From("metadata", "primary.xml.gz"));
+            .saveTo(this.storage, new Key.From("repodata", "primary.xml.gz"));
         new TestResource(String.join("/", path, "other.xml.gz"))
-            .saveTo(this.storage, new Key.From("metadata", "other.xml.gz"));
+            .saveTo(this.storage, new Key.From("repodata", "other.xml.gz"));
         new TestResource(String.join("/", path, "filelists.xml.gz"))
-            .saveTo(this.storage, new Key.From("metadata", "filelists.xml.gz"));
+            .saveTo(this.storage, new Key.From("repodata", "filelists.xml.gz"));
         final Key res = new AstoMetadataRemove(this.storage, this.conf).perform(
             new ListOf<String>("7eaefd1cb4f9740558da7f12f9cb5a6141a47f5d064a98d46c29959869af1a44")
         ).toCompletableFuture().join();
@@ -80,17 +83,23 @@ class AstoMetadataRemoveTest {
         MatcherAssert.assertThat(
             "Failed to update primary.xml correctly",
             new TestResource(String.join("/", path, "primary.xml")).asPath(),
-            new IsXmlEqual(this.readAndUnpack(new Key.From(res, XmlPackage.PRIMARY.name())))
+            new IsXmlEqual(
+                this.mbytes.value(res, XmlPackage.PRIMARY)
+            )
         );
         MatcherAssert.assertThat(
             "Failed to update other.xml correctly",
             new TestResource(String.join("/", path, "other.xml")).asPath(),
-            new IsXmlEqual(this.readAndUnpack(new Key.From(res, XmlPackage.OTHER.name())))
+            new IsXmlEqual(
+                this.mbytes.value(res, XmlPackage.OTHER)
+            )
         );
         MatcherAssert.assertThat(
             "Failed to update filelists.xml correctly",
             new TestResource(String.join("/", path, "filelists.xml")).asPath(),
-            new IsXmlEqual(this.readAndUnpack(new Key.From(res, XmlPackage.FILELISTS.name())))
+            new IsXmlEqual(
+                this.mbytes.value(res, XmlPackage.FILELISTS)
+            )
         );
         this.checksumCheck(res, XmlPackage.PRIMARY);
         this.checksumCheck(res, XmlPackage.OTHER);
@@ -101,9 +110,9 @@ class AstoMetadataRemoveTest {
     void savesTheSameContentIfPackageNotFound() throws IOException {
         final String path = "AstoMetadataRemoveTest/savesTheSameContentIfPackageNotFound";
         new TestResource(String.join("/", path, "primary.xml.gz"))
-            .saveTo(this.storage, new Key.From("metadata", "primary.xml.gz"));
+            .saveTo(this.storage, new Key.From("repodata", "primary.xml.gz"));
         new TestResource(String.join("/", path, "other.xml.gz"))
-            .saveTo(this.storage, new Key.From("metadata", "other.xml.gz"));
+            .saveTo(this.storage, new Key.From("repodata", "other.xml.gz"));
         final Key res = new AstoMetadataRemove(this.storage, this.conf)
             .perform(new ListOf<String>("abc123")).toCompletableFuture().join();
         MatcherAssert.assertThat(
@@ -114,12 +123,16 @@ class AstoMetadataRemoveTest {
         MatcherAssert.assertThat(
             "Primary metadata should be not changed",
             new TestResource(String.join("/", path, "primary.xml")).asPath(),
-            new IsXmlEqual(this.readAndUnpack(new Key.From(res, XmlPackage.PRIMARY.name())))
+            new IsXmlEqual(
+                this.mbytes.value(res, XmlPackage.PRIMARY)
+            )
         );
         MatcherAssert.assertThat(
             "Other metadata should be not changed",
             new TestResource(String.join("/", path, "other.xml")).asPath(),
-            new IsXmlEqual(this.readAndUnpack(new Key.From(res, XmlPackage.OTHER.name())))
+            new IsXmlEqual(
+                this.mbytes.value(res, XmlPackage.OTHER)
+            )
         );
         this.checksumCheck(res, XmlPackage.PRIMARY);
         this.checksumCheck(res, XmlPackage.OTHER);
@@ -134,14 +147,6 @@ class AstoMetadataRemoveTest {
                 StandardCharsets.UTF_8
             ),
             Matchers.matchesPattern("[0-9a-z]* \\d+")
-        );
-    }
-
-    private byte[] readAndUnpack(final Key key) throws IOException {
-        return IOUtils.toByteArray(
-            new GZIPInputStream(
-                new ByteArrayInputStream(new BlockingStorage(this.storage).value(key))
-            )
         );
     }
 

@@ -16,16 +16,13 @@ import com.artipie.rpm.StandardNamingPolicy;
 import com.artipie.rpm.http.RpmRemove;
 import com.artipie.rpm.meta.XmlPackage;
 import com.jcabi.matchers.XhtmlMatchers;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.zip.GZIPInputStream;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
 
 /**
  * Test for {@link AstoRepoRemove}.
@@ -63,7 +60,7 @@ class AstoRepoRemoveTest {
         MatcherAssert.assertThat(
             "Repomd xml should be created",
             new String(
-                new BlockingStorage(this.storage).value(new Key.From("metadata", "repomd.xml")),
+                new BlockingStorage(this.storage).value(new Key.From("repodata", "repomd.xml")),
                 StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths(
@@ -80,11 +77,11 @@ class AstoRepoRemoveTest {
             new Key.From(RpmRemove.TO_RM, "libdeflt1_0-2020.03.27-25.1.armv7hl.rpm"), Content.EMPTY
         ).join();
         new TestResource("AstoRepoRemoveTest/other.xml.gz")
-            .saveTo(this.storage, new Key.From("metadata", "other.xml.gz"));
+            .saveTo(this.storage, new Key.From("repodata", "other.xml.gz"));
         new TestResource("AstoRepoRemoveTest/primary.xml.gz")
-            .saveTo(this.storage, new Key.From("metadata", "primary.xml.gz"));
+            .saveTo(this.storage, new Key.From("repodata", "primary.xml.gz"));
         new TestResource("AstoRepoRemoveTest/repomd.xml")
-            .saveTo(this.storage, new Key.From("metadata", "repomd.xml"));
+            .saveTo(this.storage, new Key.From("repodata", "repomd.xml"));
         new AstoRepoRemove(this.storage, this.conf).perform().toCompletableFuture().join();
         MatcherAssert.assertThat(
             "Package libdeflt should not exist",
@@ -101,10 +98,11 @@ class AstoRepoRemoveTest {
             this.storage.list(Key.ROOT).join(),
             Matchers.iterableWithSize(4)
         );
+        final MetadataBytes mbytes = new MetadataBytes(this.storage);
         MatcherAssert.assertThat(
             "Primary xml should have `abc` record",
             new String(
-                this.readAndUnpack(this.findKey(XmlPackage.PRIMARY)),
+                mbytes.value(XmlPackage.PRIMARY),
                 StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths(
@@ -116,7 +114,7 @@ class AstoRepoRemoveTest {
         MatcherAssert.assertThat(
             "Other xml should have `abc` record",
             new String(
-                this.readAndUnpack(this.findKey(XmlPackage.OTHER)),
+                mbytes.value(XmlPackage.OTHER),
                 StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths(
@@ -127,26 +125,13 @@ class AstoRepoRemoveTest {
         MatcherAssert.assertThat(
             "Repomd xml should be created",
             new String(
-                new BlockingStorage(this.storage).value(new Key.From("metadata", "repomd.xml")),
+                new BlockingStorage(this.storage).value(new Key.From("repodata", "repomd.xml")),
                 StandardCharsets.UTF_8
             ),
             XhtmlMatchers.hasXPaths(
                 "/*[local-name()='repomd']/*[local-name()='revision']",
                 "/*[local-name()='repomd']/*[local-name()='data' and @type='primary']",
                 "/*[local-name()='repomd']/*[local-name()='data' and @type='other']"
-            )
-        );
-    }
-
-    private Key findKey(final XmlPackage pkg) {
-        return new BlockingStorage(this.storage).list(new Key.From("metadata"))
-            .stream().filter(key -> key.string().contains(pkg.lowercase())).findFirst().get();
-    }
-
-    private byte[] readAndUnpack(final Key key) throws IOException {
-        return IOUtils.toByteArray(
-            new GZIPInputStream(
-                new ByteArrayInputStream(new BlockingStorage(this.storage).value(key))
             )
         );
     }

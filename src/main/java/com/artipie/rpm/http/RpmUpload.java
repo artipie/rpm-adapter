@@ -14,12 +14,9 @@ import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.rpm.RepoConfig;
-import com.artipie.rpm.Rpm;
+import com.artipie.rpm.asto.AstoRepoAdd;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Streams;
-import hu.akarnokd.rxjava2.interop.CompletableInterop;
-import io.reactivex.Completable;
-import io.reactivex.Single;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Optional;
@@ -48,9 +45,9 @@ public final class RpmUpload implements Slice {
     private final Storage asto;
 
     /**
-     * Rpm instance.
+     * Repo config.
      */
-    private final Rpm rpm;
+    private final RepoConfig config;
 
     /**
      * RPM repository HTTP API.
@@ -60,7 +57,7 @@ public final class RpmUpload implements Slice {
      */
     RpmUpload(final Storage storage, final RepoConfig config) {
         this.asto = storage;
-        this.rpm = new Rpm(storage, config);
+        this.config = config;
     }
 
     @Override
@@ -76,35 +73,30 @@ public final class RpmUpload implements Slice {
             conflict = this.asto.exists(key);
         }
         return new AsyncResponse(
-            conflict.thenApply(
+            conflict.thenCompose(
                 conflicts -> {
-                    final Response response;
+                    final CompletionStage<RsStatus> status;
                     if (conflicts) {
-                        response = new RsWithStatus(RsStatus.CONFLICT);
+                        status = CompletableFuture.completedFuture(RsStatus.CONFLICT);
                     } else {
-                        response = new AsyncResponse(
-                            CompletableInterop.fromFuture(
-                                this.asto.save(key, new Content.From(body))
-                            ).andThen(
-                                Completable.defer(
-                                    () -> {
-                                        final Completable result;
-                                        if (request.skipUpdate()) {
-                                            result = Completable.complete();
-                                        } else {
-                                            result = this.rpm.batchUpdate(Key.ROOT);
-                                        }
-                                        return result;
-                                    }
-                                )
-                            ).andThen(
-                                Single.just(new RsWithStatus(RsStatus.ACCEPTED))
-                            )
-                        );
+                        status = this.asto.save(
+                            new Key.From(RpmUpload.TO_ADD, key), new Content.From(body)
+                        ).thenCompose(
+                            ignored -> {
+                                final CompletionStage<Void> result;
+                                if (request.skipUpdate()
+                                    || this.config.mode() == RepoConfig.UpdateMode.CRON) {
+                                    result = CompletableFuture.allOf();
+                                } else {
+                                    result = new AstoRepoAdd(this.asto, this.config).perform();
+                                }
+                                return result;
+                            }
+                        ).thenApply(nothing -> RsStatus.ACCEPTED);
                     }
-                    return response;
+                    return status;
                 }
-            )
+            ).thenApply(RsWithStatus::new)
         );
     }
 
