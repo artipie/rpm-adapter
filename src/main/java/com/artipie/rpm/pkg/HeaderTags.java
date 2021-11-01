@@ -274,7 +274,7 @@ public final class HeaderTags {
          * Version format pattern.
          */
         private static final Pattern PTRN =
-            Pattern.compile("((?<epoch>\\d+):)?(?<ver>[^/-]+|^(?!.))(-(?<rel>[^/-]*))?");
+            Pattern.compile("((?<epoch>\\d+):)?(?<ver>[^/-]+|^(?!.))(-(?<rel>[^/]*))?");
 
         /**
          * Value from version header.
