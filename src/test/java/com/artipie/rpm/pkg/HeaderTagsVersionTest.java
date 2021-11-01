@@ -27,7 +27,8 @@ class HeaderTagsVersionTest {
         "2.0_1-2.jfh.sdd,2.0_1",
         "2:9.0.2,9.0.2",
         "1:1-9.878,1",
-        "2.9+9(7),2.9+9(7)"
+        "2.9+9(7),2.9+9(7)",
+        "20120211-x86-64,20120211"
     })
     void readsVersion(final String val, final String res) {
         MatcherAssert.assertThat(
@@ -53,7 +54,8 @@ class HeaderTagsVersionTest {
     @ParameterizedTest
     @CsvSource({
         "1.0.1-26.git20200127.fc32,26.git20200127.fc32",
-        "1:1-9.878,9.878"
+        "1:1-9.878,9.878",
+        "20120211-x86-64,x86-64"
     })
     void readsRel(final String val, final String res) {
         MatcherAssert.assertThat(
