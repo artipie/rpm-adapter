@@ -37,9 +37,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -384,8 +386,10 @@ public final class Rpm {
      */
     private ModifiableRepository mdfRepository(final Path dir) throws IOException {
         return new ModifiableRepository(
-            new PrecedingMetadata.FromDir(XmlPackage.PRIMARY, dir).findAndUnzip().map(
-                new UncheckedFunc<>(file -> new XmlPrimaryChecksums(file).read())
+            new PrecedingMetadata.FromDir(XmlPackage.PRIMARY, dir).findAndUnzip().<List<String>>map(
+                new UncheckedFunc<>(
+                    file -> new ArrayList<>(new XmlPrimaryChecksums(file).read().values())
+                )
             ).orElse(Collections.emptyList()),
             new XmlPackage.Stream(this.config.filelists()).get().map(
                 new UncheckedFunc<>(

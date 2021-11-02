@@ -4,18 +4,22 @@
  */
 package com.artipie.rpm.meta;
 
-import java.io.IOException;
+import com.artipie.asto.ArtipieIOException;
+import com.artipie.asto.misc.UncheckedIOConsumer;
+import com.artipie.asto.misc.UncheckedIOScalar;
+import com.fasterxml.aalto.stax.InputFactoryImpl;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import javax.xml.stream.XMLEventReader;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.events.XMLEvent;
 
 /**
- * Extracts checksums from primary xml.
+ * Extracts packages names and checksums from primary xml.
  * @since 0.8
  */
 public final class XmlPrimaryChecksums {
@@ -23,34 +27,67 @@ public final class XmlPrimaryChecksums {
     /**
      * File path.
      */
-    private final Path path;
+    private final InputStream inp;
 
     /**
      * Ctor.
      * @param path Primary file path
      */
     public XmlPrimaryChecksums(final Path path) {
-        this.path = path;
+        this(new UncheckedIOScalar<>(() -> Files.newInputStream(path)).value());
+    }
+
+    /**
+     * Ctor.
+     * @param inp Primary input stream
+     */
+    public XmlPrimaryChecksums(final InputStream inp) {
+        this.inp = inp;
     }
 
     /**
      * Reads xml.
-     * @return List of checksums.
+     * @return Map of packages names and checksums.
      */
-    public List<String> read() {
-        final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        final List<String> res = new ArrayList<>(1);
+    public Map<String, String> read() {
+        final Map<String, String> res = new HashMap<>();
         try {
-            final Document document = factory.newDocumentBuilder().parse(this.path.toFile());
-            document.getDocumentElement().normalize();
-            document.getDocumentElement();
-            final NodeList pkgs = document.getElementsByTagName("checksum");
-            for (int idx = 0; idx < pkgs.getLength(); idx = idx + 1) {
-                res.add(pkgs.item(idx).getTextContent());
+            final XMLEventReader reader = new InputFactoryImpl().createXMLEventReader(this.inp);
+            XMLEvent event;
+            String name = "";
+            String checksum = "";
+            while (reader.hasNext()) {
+                event = reader.nextEvent();
+                if (XmlPrimaryChecksums.isTag(event, "name")) {
+                    event = reader.nextEvent();
+                    name = event.asCharacters().getData();
+                }
+                if (XmlPrimaryChecksums.isTag(event, "checksum")) {
+                    event = reader.nextEvent();
+                    checksum = event.asCharacters().getData();
+                }
+                if (event.isEndElement()
+                    && event.asEndElement().getName().getLocalPart().equals("package")) {
+                    res.put(name, checksum);
+                }
             }
-        } catch (final ParserConfigurationException | SAXException | IOException ex) {
-            throw new XmlException("Invalid primary file", ex);
+            reader.close();
+        } catch (final XMLStreamException err) {
+            throw new ArtipieIOException(err);
+        } finally {
+            Optional.of(this.inp).ifPresent(new UncheckedIOConsumer<>(InputStream::close));
         }
         return res;
+    }
+
+    /**
+     * Checks event.
+     * @param event Event
+     * @param tag Xml tag name
+     * @return True is this event is xml tag with given tag name
+     */
+    private static boolean isTag(final XMLEvent event, final String tag) {
+        return event.isStartElement()
+            && event.asStartElement().getName().getLocalPart().equals(tag);
     }
 }
