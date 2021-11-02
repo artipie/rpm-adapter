@@ -45,7 +45,7 @@ public final class XmlPrimaryChecksums {
 
     /**
      * Reads xml.
-     * @return List of checksums.
+     * @return Map of packages names and checksums.
      */
     public Map<String, String> read() {
         final Map<String, String> res = new HashMap<>();
@@ -79,8 +79,8 @@ public final class XmlPrimaryChecksums {
     /**
      * Checks event.
      * @param event Event
-     * @param tag Xml tag
-     * @return True is this event is given xml tag
+     * @param tag Xml tag name
+     * @return True is this event is xml tag with given tag name
      */
     private static boolean isTag(final XMLEvent event, final String tag) {
         return event.isStartElement()
