@@ -5,6 +5,7 @@
 package com.artipie.rpm.meta;
 
 import com.artipie.asto.ArtipieIOException;
+import com.artipie.asto.misc.UncheckedIOConsumer;
 import com.artipie.asto.misc.UncheckedIOScalar;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import java.io.InputStream;
@@ -12,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
@@ -72,6 +74,8 @@ public final class XmlPrimaryChecksums {
             reader.close();
         } catch (final XMLStreamException err) {
             throw new ArtipieIOException(err);
+        } finally {
+            Optional.of(this.inp).ifPresent(new UncheckedIOConsumer<>(InputStream::close));
         }
         return res;
     }
