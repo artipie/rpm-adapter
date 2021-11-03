@@ -3,28 +3,22 @@
  * https://github.com/artipie/rpm-adapter/LICENSE.txt
  */
 
-package com.artipie.rpm.benchmarks;
+package com.artipie.rpm;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.fs.FileStorage;
-import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.asto.memory.BenchmarkStorage;
-import com.artipie.asto.rx.RxStorageWrapper;
-import com.artipie.rpm.Rpm;
+import com.artipie.asto.memory.InMemoryStorage;
 import hu.akarnokd.rxjava2.interop.CompletableInterop;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
@@ -43,6 +37,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
  * @checkstyle MagicNumberCheck (500 lines)
  * @checkstyle DesignForExtensionCheck (500 lines)
  * @checkstyle JavadocMethodCheck (500 lines)
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
