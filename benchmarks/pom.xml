@@ -29,13 +29,13 @@ SOFTWARE.
     <version>0.5.1</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.artipie</groupId>
   <artifactId>rpm-bench</artifactId>
+  <groupId>benchmarks</groupId>
   <version>1.0-SNAPSHOT</version>
-  <packaging>jar</packaging>
   <properties>
     <jmh.version>1.29</jmh.version>
-    <asto.version>1.2.0</asto.version>
+    <asto.version>v1.8.0</asto.version>
+    <qulice.license>${project.basedir}/LICENSE.header</qulice.license>
   </properties>
   <dependencies>
     <dependency>
