@@ -3,27 +3,21 @@
  * https://github.com/artipie/rpm-adapter/LICENSE.txt
  */
 
-package com.artipie.rpm.benchmarks;
+package com.artipie.rpm;
 
-import com.artipie.rpm.Digest;
-import com.artipie.rpm.RpmMetadata;
 import com.artipie.rpm.meta.XmlPackage;
-import com.artipie.rpm.pkg.FilePackage;
-import com.artipie.rpm.pkg.FilePackageHeader;
-import com.artipie.rpm.pkg.Package;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.cactoos.list.ListOf;
 import org.cactoos.map.MapEntry;
 import org.cactoos.scalar.Unchecked;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -41,7 +35,7 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
- * Benchmark for {@link RpmMetadata.Append}.
+ * Benchmark for {@link com.artipie.rpm.RpmMetadata.Remove}.
  * @since 1.4
  * @checkstyle MagicNumberCheck (500 lines)
  * @checkstyle DesignForExtensionCheck (500 lines)
@@ -53,7 +47,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @State(Scope.Benchmark)
 @Warmup(iterations = 5)
 @Measurement(iterations = 20)
-public class RpmMetadataAppendBench {
+public class RpmMetadataRemoveBench {
 
     /**
      * Benchmark directory.
@@ -65,19 +59,13 @@ public class RpmMetadataAppendBench {
      */
     private Map<XmlPackage, byte[]> items;
 
-    /**
-     * Benchmark rpms.
-     */
-    private Collection<Package.Meta> rpms;
-
     @Setup
     public void setup() throws IOException {
-        if (RpmMetadataAppendBench.BENCH_DIR == null) {
+        if (RpmMetadataRemoveBench.BENCH_DIR == null) {
             throw new IllegalStateException("BENCH_DIR environment variable must be set");
         }
-        try (Stream<Path> files = Files.list(Paths.get(RpmMetadataAppendBench.BENCH_DIR))) {
-            final List<Path> flist = files.collect(Collectors.toList());
-            this.items = flist.stream().map(
+        try (Stream<Path> files = Files.list(Paths.get(RpmMetadataRemoveBench.BENCH_DIR))) {
+            this.items = files.map(
                 file -> new XmlPackage.Stream(true).get()
                     .filter(xml -> file.toString().contains(xml.lowercase()))
                     .findFirst().map(
@@ -88,19 +76,12 @@ public class RpmMetadataAppendBench {
                     )
             ).filter(Optional::isPresent).map(Optional::get)
                 .collect(Collectors.toMap(MapEntry::getKey, MapEntry::getValue));
-            this.rpms = flist.stream().filter(item -> item.endsWith(".rpm"))
-                .map(
-                    item -> new FilePackage.Headers(
-                        new Unchecked<>(() -> new FilePackageHeader(item).header()).value(),
-                        item, Digest.SHA256, item.getFileName().toString()
-                    )
-                ).collect(Collectors.toList());
         }
     }
 
     @Benchmark
     public void run(final Blackhole bhl) throws IOException {
-        new RpmMetadata.Append(
+        new RpmMetadata.Remove(
             this.items.entrySet().stream()
             .map(
                 entry -> new RpmMetadata.MetadataItem(
@@ -109,7 +90,21 @@ public class RpmMetadataAppendBench {
                     new ByteArrayOutputStream()
                 )
             ).toArray(RpmMetadata.MetadataItem[]::new)
-        ).perform(this.rpms);
+        ).perform(
+            new ListOf<String>(
+                "35f6b7ceecb3b66d41991358113ae019dbabbac21509afbe770c06d6999d75c7",
+                "8dad6a68a8868c7e4595634affbad8677e48e259dac9180dd73a41ae8414305a",
+                "0ab1a22f716b480392a3fe28e9fafebd61ff8afe3196aa35ccc937413e0a3c4a",
+                "8440d6772087e9b4f0c3db57eb328594d1c18cdacd52f3565cba87fb0ce0cc0d",
+                "3f7e099180803c182194a5277fe6d7e2561550ca51598d5bc3334c11361090af",
+                "2cbe8499cd1c48e0440bcf0a8e4a1e4a336142d521db91e35a546ec99f7c50ac",
+                "05c37cb7b04bfe885f139340fb58aa8e0051b62e4215feded619a8cc726609a3",
+                "3d81ad4030684e997772d2bdf1dd5d8253fb66df68e30a09507aafb49ae359f6",
+                "5eb3cc0a41ea8770c2c4491e7d574e263aa3ae3bb1006a4b9b883abbd58cbfd9",
+                "2b068b878a023ebd9bec65767dea211035dbb2d72470fba08b8ca36a130cc5ec",
+                "5104d2c1feecedc2f19778219530f2f7731b296c5957659aaddc5968a555a020"
+            )
+        );
     }
 
     /**
@@ -120,7 +115,9 @@ public class RpmMetadataAppendBench {
     public static void main(final String... args) throws RunnerException {
         new Runner(
             new OptionsBuilder()
-                .include(RpmMetadataAppendBench.class.getSimpleName()).forks(1).build()
+                .include(RpmMetadataRemoveBench.class.getSimpleName())
+                .forks(1)
+                .build()
         ).run();
     }
 

@@ -7,4 +7,4 @@
  * RPM benchmarks.
  * @since 1.4
  */
-package com.artipie.rpm.benchmarks;
+package com.artipie.rpm;
