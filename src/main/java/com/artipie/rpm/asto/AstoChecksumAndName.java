@@ -20,7 +20,7 @@ import org.cactoos.map.MapEntry;
  * Checksums and names of the storage items.
  * @since 1.10
  */
-public final class AstoChecksumAndName {
+final class AstoChecksumAndName {
 
     /**
      * Asto storage.
@@ -37,7 +37,7 @@ public final class AstoChecksumAndName {
      * @param asto Asto storage
      * @param dgst Digest algorithm
      */
-    public AstoChecksumAndName(final Storage asto, final Digest dgst) {
+    AstoChecksumAndName(final Storage asto, final Digest dgst) {
         this.asto = asto;
         this.dgst = dgst;
     }
@@ -63,14 +63,14 @@ public final class AstoChecksumAndName {
 
     /**
      * Key part without initial part.
-     * @param key Initial key
+     * @param exclude Initial key part to exclude
      * @param item Item key
-     * @return Item string name name
+     * @return Item key without part to exclude
      */
-    private static String keyPart(final Key key, final Key item) {
+    private static String keyPart(final Key exclude, final Key item) {
         String res = item.string();
-        if (!key.equals(Key.ROOT)) {
-            res = item.string().substring(key.string().length() + 1);
+        if (!exclude.equals(Key.ROOT)) {
+            res = item.string().substring(exclude.string().length() + 1);
         }
         return res;
     }
