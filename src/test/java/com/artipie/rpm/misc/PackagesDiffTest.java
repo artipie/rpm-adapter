@@ -21,13 +21,13 @@ class PackagesDiffTest {
     @Test
     void returnsItemsToDelete() {
         final Map<String, String> primary = new MapOf<>(
-            new MapEntry<>("abc.rpm", "abc-checksum"),
-            new MapEntry<>("nginx.rpm", "nginx-checksum")
+            new MapEntry<String, String>("abc.rpm", "abc-checksum"),
+            new MapEntry<String, String>("nginx.rpm", "nginx-checksum")
         );
         final Map<String, String> repo = new MapOf<>(
-            new MapEntry<>("httpd.rpm", "httpd-checksum"),
-            new MapEntry<>("nginx.rpm", "nginx-checksum"),
-            new MapEntry<>("openssh.rpm", "openssh-checksum")
+            new MapEntry<String, String>("httpd.rpm", "httpd-checksum"),
+            new MapEntry<String, String>("nginx.rpm", "nginx-checksum"),
+            new MapEntry<String, String>("openssh.rpm", "openssh-checksum")
         );
         MatcherAssert.assertThat(
             new PackagesDiff(primary, repo).toDelete().entrySet(),
@@ -38,14 +38,14 @@ class PackagesDiffTest {
     @Test
     void returnsItemsToAdd() {
         final Map<String, String> primary = new MapOf<>(
-            new MapEntry<>("abc.rpm", "abc-checksum"),
-            new MapEntry<>("nginx.rpm", "nginx-checksum")
+            new MapEntry<String, String>("abc.rpm", "abc-checksum"),
+            new MapEntry<String, String>("nginx.rpm", "nginx-checksum")
         );
         final Map<String, String> repo = new MapOf<>(
-            new MapEntry<>("httpd.rpm", "httpd-checksum"),
-            new MapEntry<>("nginx.rpm", "nginx-checksum"),
-            new MapEntry<>("openssh.rpm", "openssh-checksum"),
-            new MapEntry<>("abc.rpm", "abc-other-checksum")
+            new MapEntry<String, String>("httpd.rpm", "httpd-checksum"),
+            new MapEntry<String, String>("nginx.rpm", "nginx-checksum"),
+            new MapEntry<String, String>("openssh.rpm", "openssh-checksum"),
+            new MapEntry<String, String>("abc.rpm", "abc-other-checksum")
         );
         MatcherAssert.assertThat(
             new PackagesDiff(primary, repo).toAdd().entrySet(),
