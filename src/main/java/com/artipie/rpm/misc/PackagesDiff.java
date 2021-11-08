@@ -17,13 +17,13 @@ public final class PackagesDiff {
 
     /**
      * Packages, written in primary xml.
-     * Packages file name <-> checksum map.
+     * Packages file name &lt;-&gt; checksum map.
      */
     private final Map<String, String> primary;
 
     /**
      * Packages, located in the repository.
-     * Packages file name <-> checksum map.
+     * Packages file name &lt;-&gt; checksum map.
      */
     private final Map<String, String> repo;
 
@@ -39,15 +39,15 @@ public final class PackagesDiff {
 
     /**
      * Packages that should be removed from the repo.
-     * @return Package name <-> checksum
+     * @return Package name &lt;-&gt; checksum
      */
     public Map<String, String> toDelete() {
         return Maps.difference(this.primary, this.repo).entriesOnlyOnLeft();
     }
 
     /**
-     * Return packages, that should be added/updated in the repository. These packages are:
-     * 1) packages, that are present in repo and not present in primary
+     * Return packages, that should be added/updated in the repository. These packages are:<br/>
+     * 1) packages, that are present in repo and not present in primary<br/>
      * 2) packages, that are present both in repo and primary, but have different checksums
      * @return Map with different (by value) items
      */
