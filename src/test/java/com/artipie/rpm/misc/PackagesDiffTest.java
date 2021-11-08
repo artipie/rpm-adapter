@@ -14,34 +14,35 @@ import org.junit.jupiter.api.Test;
 /**
  * Test for {@link PackagesDiff}.
  * @since 1.10
+ * @checkstyle DiamondOperatorCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class PackagesDiffTest {
 
     @Test
     void returnsItemsToDelete() {
-        final Map<String, String> primary = new MapOf<>(
+        final Map<String, String> primary = new MapOf<String, String>(
             new MapEntry<>("abc.rpm", "abc-checksum"),
             new MapEntry<>("nginx.rpm", "nginx-checksum")
         );
-        final Map<String, String> repo = new MapOf<>(
+        final Map<String, String> repo = new MapOf<String, String>(
             new MapEntry<>("httpd.rpm", "httpd-checksum"),
             new MapEntry<>("nginx.rpm", "nginx-checksum"),
             new MapEntry<>("openssh.rpm", "openssh-checksum")
         );
         MatcherAssert.assertThat(
             new PackagesDiff(primary, repo).toDelete().entrySet(),
-            Matchers.hasItems(new MapEntry<String, String>("abc.rpm", "abc-checksum"))
+            Matchers.hasItems(new MapEntry<>("abc.rpm", "abc-checksum"))
         );
     }
 
     @Test
     void returnsItemsToAdd() {
-        final Map<String, String> primary = new MapOf<>(
+        final Map<String, String> primary = new MapOf<String, String>(
             new MapEntry<>("abc.rpm", "abc-checksum"),
             new MapEntry<>("nginx.rpm", "nginx-checksum")
         );
-        final Map<String, String> repo = new MapOf<>(
+        final Map<String, String> repo = new MapOf<String, String>(
             new MapEntry<>("httpd.rpm", "httpd-checksum"),
             new MapEntry<>("nginx.rpm", "nginx-checksum"),
             new MapEntry<>("openssh.rpm", "openssh-checksum"),
@@ -50,9 +51,9 @@ class PackagesDiffTest {
         MatcherAssert.assertThat(
             new PackagesDiff(primary, repo).toAdd().entrySet(),
             Matchers.hasItems(
-                new MapEntry<String, String>("abc.rpm", "abc-checksum"),
-                new MapEntry<String, String>("httpd.rpm", "httpd-checksum"),
-                new MapEntry<String, String>("openssh.rpm", "openssh-checksum")
+                new MapEntry<>("abc.rpm", "abc-checksum"),
+                new MapEntry<>("httpd.rpm", "httpd-checksum"),
+                new MapEntry<>("openssh.rpm", "openssh-checksum")
             )
         );
     }
