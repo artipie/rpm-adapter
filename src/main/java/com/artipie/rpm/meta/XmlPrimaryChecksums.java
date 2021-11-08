@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import javax.xml.namespace.QName;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
@@ -58,9 +59,8 @@ public final class XmlPrimaryChecksums {
             String checksum = "";
             while (reader.hasNext()) {
                 event = reader.nextEvent();
-                if (XmlPrimaryChecksums.isTag(event, "name")) {
-                    event = reader.nextEvent();
-                    name = event.asCharacters().getData();
+                if (XmlPrimaryChecksums.isTag(event, "location")) {
+                    name = event.asStartElement().getAttributeByName(new QName("href")).getValue();
                 }
                 if (XmlPrimaryChecksums.isTag(event, "checksum")) {
                     event = reader.nextEvent();
