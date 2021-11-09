@@ -144,6 +144,7 @@ final class RpmTest {
     }
 
     @Test
+    @Disabled
     void doesNotTouchMetadataIfInvalidRpmIsSent() throws Exception {
         final RepoConfig cnfg =
             new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.PLAIN, true);
