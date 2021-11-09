@@ -5,23 +5,30 @@
 package com.artipie.rpm;
 
 import com.artipie.asto.ArtipieIOException;
+import com.artipie.asto.Content;
+import com.artipie.asto.Copy;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.SubStorage;
-import com.artipie.asto.ext.KeyLastPart;
 import com.artipie.asto.fs.FileStorage;
 import com.artipie.asto.lock.Lock;
 import com.artipie.asto.lock.storage.StorageLock;
+import com.artipie.asto.misc.UncheckedIOScalar;
 import com.artipie.asto.rx.RxStorageWrapper;
+import com.artipie.asto.streams.ContentAsStream;
+import com.artipie.rpm.asto.AstoChecksumAndName;
+import com.artipie.rpm.asto.AstoRepoAdd;
+import com.artipie.rpm.asto.AstoRepoRemove;
+import com.artipie.rpm.http.RpmRemove;
+import com.artipie.rpm.http.RpmUpload;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryChecksums;
+import com.artipie.rpm.misc.PackagesDiff;
 import com.artipie.rpm.misc.UncheckedFunc;
 import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.InvalidPackageException;
 import com.artipie.rpm.pkg.MetadataFile;
-import com.artipie.rpm.pkg.ModifiableMetadata;
 import com.artipie.rpm.pkg.Package;
-import com.artipie.rpm.pkg.PrecedingMetadata;
 import com.artipie.rpm.pkg.Repodata;
 import com.jcabi.log.Logger;
 import hu.akarnokd.rxjava2.interop.CompletableInterop;
@@ -37,14 +44,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
 import org.apache.commons.io.FileUtils;
 
 /**
@@ -230,56 +239,15 @@ public final class Rpm {
      * @throws ArtipieIOException On IO-operation errors
      */
     public Completable batchUpdateIncrementally(final Key prefix) {
-        final Path tmpdir;
-        final Path metadir;
-        try {
-            tmpdir = Files.createTempDirectory("repo-");
-            metadir = Files.createTempDirectory("meta-");
-        } catch (final IOException err) {
-            throw new ArtipieIOException("Failed to create temp dir", err);
-        }
-        final Storage local = new FileStorage(tmpdir);
-        return this.doWithLock(
-            prefix,
-            () -> SingleInterop.fromFuture(this.storage.list(prefix))
-                .flatMapPublisher(Flowable::fromIterable)
-                .filter(key -> key.string().endsWith("xml.gz"))
-                .flatMapCompletable(
-                    key -> new RxStorageWrapper(this.storage)
-                        .value(key)
-                        .flatMapCompletable(
-                            content -> new RxStorageWrapper(local)
-                                .save(new Key.From(new KeyLastPart(key).get()), content)
-                        )
-                ).andThen(Single.fromCallable(() -> this.mdfRepository(tmpdir)))
-                .flatMap(
-                    repo -> this.filePackageFromRpm(prefix, tmpdir, local)
-                        .parallel().runOn(Schedulers.io())
-                        .sequential().observeOn(Schedulers.io())
-                        .reduce(repo, (ignored, pkg) -> repo.update(pkg))
+        return Completable.fromFuture(
+            this.calcDiff(prefix)
+            .thenApply(nothing -> new SubStorage(prefix, this.storage))
+            .thenCompose(
+                sub -> new AstoRepoAdd(sub, this.config).perform().thenCompose(
+                    nothing -> new AstoRepoRemove(sub, this.config).perform()
                 )
-                .doOnSuccess(rep -> Logger.info(this, "repository updated"))
-                .doOnSuccess(ModifiableRepository::close)
-                .doOnSuccess(rep -> Logger.info(this, "repository closed"))
-                .doOnSuccess(ModifiableRepository::clear)
-                .doOnSuccess(rep -> Logger.info(this, "repository cleared"))
-                .flatMapObservable(
-                    rep -> Observable.fromIterable(
-                        rep.save(new Repodata.Temp(this.config.naming(), metadir))
-                    )
-                )
-                .flatMapSingle(
-                    path -> this.moveRepodataToStorage(new FileStorage(metadir), path, prefix)
-                )
-                .map(path -> path.getFileName().toString())
-                .toList().map(HashSet::new)
-                .flatMapCompletable(preserve -> this.removeOldMetadata(preserve, prefix))
-            ).doOnTerminate(
-                () -> {
-                    Rpm.cleanup(tmpdir);
-                    Rpm.cleanup(metadir);
-                }
-            );
+            ).toCompletableFuture()
+        );
     }
 
     /**
@@ -379,32 +347,6 @@ public final class Rpm {
     }
 
     /**
-     * Get modifiable repository for file updates.
-     * @param dir Temp directory
-     * @return Repository
-     * @throws IOException On error
-     */
-    private ModifiableRepository mdfRepository(final Path dir) throws IOException {
-        return new ModifiableRepository(
-            new PrecedingMetadata.FromDir(XmlPackage.PRIMARY, dir).findAndUnzip().<List<String>>map(
-                new UncheckedFunc<>(
-                    file -> new ArrayList<>(new XmlPrimaryChecksums(file).read().values())
-                )
-            ).orElse(Collections.emptyList()),
-            new XmlPackage.Stream(this.config.filelists()).get().map(
-                new UncheckedFunc<>(
-                    item ->
-                        new ModifiableMetadata(
-                            new MetadataFile(item, item.output().start()),
-                            new PrecedingMetadata.FromDir(item, dir)
-                        )
-                )
-            ).collect(Collectors.toList()),
-            this.config.digest()
-        );
-    }
-
-    /**
      * Performs operation under root lock with one hour expiration time.
      *
      * @param target Lock target key.
@@ -423,5 +365,86 @@ public final class Rpm {
                 .thenCompose(nothing -> lock.release())
                 .toCompletableFuture()
         );
+    }
+
+    /**
+     * Calculate differences between current metadata and storage rpms, prepare
+     * packages to add or to remove.
+     * @param prefix Prefix key
+     * @return Completable action
+     */
+    private CompletionStage<Void> calcDiff(final Key prefix) {
+        return this.storage.list(new Key.From(prefix, "repodata"))
+            .thenApply(
+                list -> list.stream().filter(
+                    item -> item.string().contains(XmlPackage.PRIMARY.lowercase())
+                        && item.string().endsWith("xml.gz")
+                ).findFirst()
+            ).thenCompose(
+                opt -> {
+                    final CompletionStage<Void> res;
+                    final SubStorage sub = new SubStorage(prefix, this.storage);
+                    if (opt.isPresent()) {
+                        res = this.storage.value(opt.get()).thenCompose(
+                            val -> new ContentAsStream<Map<String, String>>(val).process(
+                                input -> new XmlPrimaryChecksums(
+                                    new UncheckedIOScalar<>(() -> new GZIPInputStream(input))
+                                        .value()
+                                ).read()
+                            )
+                        ).thenCompose(
+                            primary -> new AstoChecksumAndName(this.storage, this.config.digest())
+                                .calculate(prefix)
+                                .thenApply(repo -> new PackagesDiff(primary, repo))
+                        ).thenCompose(
+                            diff -> CompletableFuture.allOf(
+                                this.handlePackagesToRemove(prefix, diff.toDelete())
+                                    .toCompletableFuture(),
+                                Rpm.copyPackagesToAdd(
+                                    new SubStorage(prefix, this.storage),
+                                    diff.toAdd().keySet().stream().map(Key.From::new)
+                                        .collect(Collectors.toList())
+                                ).toCompletableFuture()
+                            )
+                        );
+                    } else {
+                        res = sub.list(Key.ROOT).thenApply(
+                            list -> list.stream().filter(item -> item.string().endsWith("rpm"))
+                        ).thenCompose(
+                            rpms -> copyPackagesToAdd(sub, rpms.collect(Collectors.toList()))
+                        );
+                    }
+                    return res;
+                }
+            );
+    }
+
+    /**
+     * Handles packages that should be removed from the metadata.
+     * @param prefix Prefix key
+     * @param packages Packages list
+     * @return Completable action
+     */
+    private CompletionStage<Void> handlePackagesToRemove(
+        final Key prefix, final Map<String, String> packages
+    ) {
+        return CompletableFuture.allOf(
+            packages.keySet().stream().map(
+                key -> new SubStorage(prefix, this.storage)
+                    .save(new Key.From(RpmRemove.TO_RM, key), Content.EMPTY)
+            ).toArray(CompletableFuture[]::new)
+        );
+    }
+
+    /**
+     * Handles packages that should be added to metadata.
+     * @param asto Storage
+     * @param rpms Packages
+     * @return Completable action
+     */
+    private static CompletableFuture<Void> copyPackagesToAdd(
+        final Storage asto, final List<Key> rpms
+    ) {
+        return new Copy(asto, rpms).copy(new SubStorage(RpmUpload.TO_ADD, asto));
     }
 }

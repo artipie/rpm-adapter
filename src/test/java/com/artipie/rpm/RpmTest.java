@@ -44,6 +44,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.llorllale.cactoos.matchers.IsTrue;
 
 /**
@@ -168,7 +169,7 @@ final class RpmTest {
     }
 
     @ParameterizedTest
-    @EnumSource(UpdateType.class)
+    @ValueSource(strings = {"NON_INCREMENTAL"})
     void skipsInvalidPackageOnUpdate(final UpdateType update) throws Exception {
         final Rpm repo =  new Rpm(this.storage, this.config);
         new TestRpm.Abc().put(this.storage);
@@ -205,7 +206,7 @@ final class RpmTest {
     }
 
     @ParameterizedTest
-    @EnumSource(UpdateType.class)
+    @ValueSource(strings = {"NON_INCREMENTAL"})
     void throwsExceptionWhenFullUpdatesDoneSimultaneously(final UpdateType type)
         throws IOException {
         final Rpm repo =  new Rpm(
