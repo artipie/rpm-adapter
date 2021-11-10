@@ -95,7 +95,7 @@ public final class AstoMetadataAdd {
     private CompletionStage<MergedXml.Result> addToPrimary(
         final Key temp, final Collection<Package.Meta> metas
     ) {
-        return this.getExistingOfDefaultKey(XmlPackage.PRIMARY).thenCompose(
+        return this.getExistingOrDefaultKey(XmlPackage.PRIMARY).thenCompose(
             key -> {
                 final Key tempkey = new Key.From(temp, XmlPackage.PRIMARY.name());
                 return new StorageValuePipeline<MergedXml.Result>(this.asto, key, tempkey)
@@ -129,7 +129,7 @@ public final class AstoMetadataAdd {
      */
     private CompletableFuture<Void> add(final Key temp, final Collection<Package.Meta> metas,
         final MergedXml.Result primary, final XmlPackage type, final XmlEvent event) {
-        return this.getExistingOfDefaultKey(type).thenCompose(
+        return this.getExistingOrDefaultKey(type).thenCompose(
             key -> {
                 final Key tempkey = new Key.From(temp, type.name());
                 return new StorageValuePipeline<>(this.asto, key, tempkey).process(
@@ -151,7 +151,7 @@ public final class AstoMetadataAdd {
      * @param type Metadata type
      * @return Completable action with the key
      */
-    private CompletionStage<Key> getExistingOfDefaultKey(final XmlPackage type) {
+    private CompletionStage<Key> getExistingOrDefaultKey(final XmlPackage type) {
         final String key = String.format("%s.xml.gz", type.lowercase());
         return this.asto.list(new Key.From("repodata")).thenApply(
             list -> list.stream().filter(item -> item.string().endsWith(key))
