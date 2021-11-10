@@ -10,6 +10,7 @@ import com.artipie.asto.Storage;
 import com.artipie.asto.SubStorage;
 import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.memory.InMemoryStorage;
+import com.artipie.rpm.asto.MetadataBytes;
 import com.artipie.rpm.files.Gzip;
 import com.artipie.rpm.hm.StorageHasMetadata;
 import com.artipie.rpm.hm.StorageHasRepoMd;
@@ -46,6 +47,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.llorllale.cactoos.matchers.IsTrue;
+import org.xmlunit.matchers.CompareMatcher;
 
 /**
  * Unit tests for {@link Rpm}.
@@ -144,7 +146,6 @@ final class RpmTest {
     }
 
     @Test
-    @Disabled
     void doesNotTouchMetadataIfInvalidRpmIsSent() throws Exception {
         final RepoConfig cnfg =
             new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.PLAIN, true);
@@ -162,15 +163,15 @@ final class RpmTest {
         for (final Key key : stash.list(Key.ROOT).join()) {
             MatcherAssert.assertThat(
                 String.format("%s xmls are equal", key.string()),
-                new BlockingStorage(stash).value(key),
-                new IsEqual<>(new BlockingStorage(this.storage).value(key))
+                new MetadataBytes(this.storage).value(key),
+                CompareMatcher.isSimilarTo(new MetadataBytes(stash).value(key))
+                    .ignoreWhitespace().normalizeWhitespace()
             );
         }
-        this.verifyThatTempDirIsCleanedUp();
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"NON_INCREMENTAL"})
+    @EnumSource(UpdateType.class)
     void skipsInvalidPackageOnUpdate(final UpdateType update) throws Exception {
         final Rpm repo =  new Rpm(this.storage, this.config);
         new TestRpm.Abc().put(this.storage);
