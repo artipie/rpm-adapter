@@ -7,6 +7,7 @@ package com.artipie.rpm.asto;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.ext.ContentDigest;
+import com.artipie.asto.key.KeyExcludeFirst;
 import com.artipie.asto.lock.storage.StorageLock;
 import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.rpm.RepoConfig;
@@ -21,6 +22,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * Workflow to remove packages from repository.
  * @since 1.9
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class AstoRepoRemove {
 
@@ -132,7 +134,7 @@ public final class AstoRepoRemove {
      * @return Key without {@link RpmRemove#TO_RM} part
      */
     private static Key removeTemp(final Key key) {
-        return new Key.From(key.string().substring(RpmRemove.TO_RM.string().length() + 1));
+        return new KeyExcludeFirst(key, RpmRemove.TO_RM.string());
     }
 
 }

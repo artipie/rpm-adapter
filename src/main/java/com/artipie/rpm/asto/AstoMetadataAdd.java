@@ -20,7 +20,6 @@ import com.artipie.rpm.pkg.Package;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -96,26 +95,24 @@ public final class AstoMetadataAdd {
     private CompletionStage<MergedXml.Result> addToPrimary(
         final Key temp, final Collection<Package.Meta> metas
     ) {
-        return this.getExistingKey(XmlPackage.PRIMARY).thenCompose(
-            opt -> {
+        return this.getExistingOrDefaultKey(XmlPackage.PRIMARY).thenCompose(
+            key -> {
                 final Key tempkey = new Key.From(temp, XmlPackage.PRIMARY.name());
-                return this.copy(tempkey, opt).thenCompose(
-                    nothing -> new StorageValuePipeline<MergedXml.Result>(this.asto, tempkey)
-                        .processWithResult(
-                            (input, out) -> new UncheckedScalar<>(
-                                () -> new MergedXmlPrimary(
-                                    input.map(new UncheckedIOFunc<>(GZIPInputStream::new)), out
-                                ).merge(metas, new XmlEvent.Primary())
-                            ).value()
-                        )
-                ).thenCompose(
-                    res -> new StorageValuePipeline<>(this.asto, tempkey).process(
-                        (input, out) -> new XmlAlter.Stream(
-                            new BufferedInputStream(input.get()),
-                            new BufferedOutputStream(out)
-                        ).pkgAttr(XmlPackage.PRIMARY.tag(), String.valueOf(res.count()))
-                    ).thenApply(nothing -> res)
-                );
+                return new StorageValuePipeline<MergedXml.Result>(this.asto, key, tempkey)
+                    .processWithResult(
+                        (input, out) -> new UncheckedScalar<>(
+                            () -> new MergedXmlPrimary(
+                                input.map(new UncheckedIOFunc<>(GZIPInputStream::new)), out
+                            ).merge(metas, new XmlEvent.Primary())
+                        ).value()
+                    ).thenCompose(
+                        res -> new StorageValuePipeline<>(this.asto, tempkey).process(
+                            (input, out) -> new XmlAlter.Stream(
+                                new BufferedInputStream(input.get()),
+                                new BufferedOutputStream(out)
+                            ).pkgAttr(XmlPackage.PRIMARY.tag(), String.valueOf(res.count()))
+                        ).thenApply(nothing -> res)
+                    );
             }
         );
     }
@@ -132,45 +129,33 @@ public final class AstoMetadataAdd {
      */
     private CompletableFuture<Void> add(final Key temp, final Collection<Package.Meta> metas,
         final MergedXml.Result primary, final XmlPackage type, final XmlEvent event) {
-        return this.getExistingKey(type).thenCompose(
-            opt -> {
+        return this.getExistingOrDefaultKey(type).thenCompose(
+            key -> {
                 final Key tempkey = new Key.From(temp, type.name());
-                return this.copy(tempkey, opt).thenCompose(
-                    nothing -> new StorageValuePipeline<>(this.asto, tempkey).process(
-                        (input, out) -> new UncheckedScalar<>(
-                            () -> new MergedXmlPackage(
-                                input.map(new UncheckedIOFunc<>(GZIPInputStream::new)),
-                                out, type, primary
-                            ).merge(metas, event)
-                        ).value()
-                    )
+                return new StorageValuePipeline<>(this.asto, key, tempkey).process(
+                    (input, out) -> new UncheckedScalar<>(
+                        () -> new MergedXmlPackage(
+                            input.map(new UncheckedIOFunc<>(GZIPInputStream::new)),
+                            out, type, primary
+                        ).merge(metas, event)
+                    ).value()
                 );
             }
         ).toCompletableFuture();
     }
 
     /**
-     * Copy existing metadata file to temp location.
-     * @param temp Temp location
-     * @param opt Optional metadata key
-     * @return Completable action
-     */
-    private CompletionStage<Void> copy(final Key temp, final Optional<Key> opt) {
-        return opt.map(
-            key -> this.asto.value(key).thenCompose(val -> this.asto.save(temp, val))
-        ).orElse(CompletableFuture.allOf());
-    }
-
-    /**
-     * Find existing metadata key.
+     * Find existing metadata key or return default key. Item with default key does not actually
+     * exist in storage, but later this key is used in {@link StorageValuePipeline}
+     * which handle the situation correctly.
      * @param type Metadata type
      * @return Completable action with the key
      */
-    private CompletionStage<Optional<Key>> getExistingKey(final XmlPackage type) {
+    private CompletionStage<Key> getExistingOrDefaultKey(final XmlPackage type) {
+        final String key = String.format("%s.xml.gz", type.lowercase());
         return this.asto.list(new Key.From("repodata")).thenApply(
-            list -> list.stream().filter(
-                item -> item.string().endsWith(String.format("%s.xml.gz", type.lowercase()))
-            ).findFirst()
+            list -> list.stream().filter(item -> item.string().endsWith(key))
+                .findFirst().orElse(new Key.From(key))
         );
     }
 }
