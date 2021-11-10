@@ -6,6 +6,7 @@ package com.artipie.rpm.asto;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.asto.key.KeyExcludeFirst;
 import com.artipie.asto.lock.storage.StorageLock;
 import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.rpm.RepoConfig;
@@ -21,6 +22,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * Add packages to metadata and repository.
  * @since 1.10
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class AstoRepoAdd {
 
@@ -138,6 +140,6 @@ public final class AstoRepoAdd {
      * @return Key without {@link RpmUpload#TO_ADD} part
      */
     private static Key removeTempPart(final Key key) {
-        return new Key.From(key.string().substring(RpmUpload.TO_ADD.string().length() + 1));
+        return new KeyExcludeFirst(key, RpmUpload.TO_ADD.string());
     }
 }
