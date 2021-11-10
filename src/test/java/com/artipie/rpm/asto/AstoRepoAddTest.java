@@ -4,14 +4,17 @@
  */
 package com.artipie.rpm.asto;
 
+import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.blocking.BlockingStorage;
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.asto.test.TestResource;
 import com.artipie.rpm.Digest;
+import com.artipie.rpm.NamingPolicy;
 import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.StandardNamingPolicy;
+import com.artipie.rpm.TestRpm;
 import com.artipie.rpm.hm.IsXmlEqual;
 import com.artipie.rpm.http.RpmUpload;
 import com.artipie.rpm.meta.XmlPackage;
@@ -103,6 +106,10 @@ class AstoRepoAddTest {
         new TestResource(time).saveTo(this.storage, new Key.From(RpmUpload.TO_ADD, time));
         final String lib = "libnss-mymachines2-245-1.x86_64.rpm";
         new TestResource(lib).saveTo(this.storage, new Key.From(RpmUpload.TO_ADD, "lib", lib));
+        this.storage.save(
+            new Key.From(RpmUpload.TO_ADD, "invalid.rpm"),
+            new Content.From(new TestRpm.Invalid().bytes())
+        ).join();
         new AstoRepoAdd(
             this.storage,
             new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.PLAIN, true)
@@ -137,6 +144,44 @@ class AstoRepoAddTest {
                 "/*[local-name()='repomd']/*[local-name()='data' and @type='primary']",
                 "/*[local-name()='repomd']/*[local-name()='data' and @type='other']",
                 "/*[local-name()='repomd']/*[local-name()='data' and @type='filelists']"
+            )
+        );
+    }
+
+    @Test
+    void doesNothingIfOnlyInvalidPackageIsInUpdate() throws IOException {
+        new TestResource("AstoRepoAddTest/other.xml.gz")
+            .saveTo(this.storage, new Key.From(AstoRepoAddTest.MTD, "other.xml.gz"));
+        new TestResource("AstoRepoAddTest/primary.xml.gz")
+            .saveTo(this.storage, new Key.From(AstoRepoAddTest.MTD, "primary.xml.gz"));
+        this.storage.save(
+            new Key.From(RpmUpload.TO_ADD, "invalid.rpm"),
+            new Content.From(new TestRpm.Invalid().bytes())
+        ).join();
+        new AstoRepoAdd(
+            this.storage,
+            new RepoConfig.Simple(
+                Digest.SHA256, new NamingPolicy.HashPrefixed(Digest.SHA256), false
+            )
+        ).perform().toCompletableFuture().join();
+        MatcherAssert.assertThat(
+            "Failed to have 3 items in storage: primary, other, and repomd",
+            this.storage.list(Key.ROOT).join(),
+            Matchers.iterableWithSize(3)
+        );
+        this.checkMeta("primary.xml", XmlPackage.PRIMARY);
+        this.checkMeta("other.xml", XmlPackage.OTHER);
+        MatcherAssert.assertThat(
+            "Failed to generate repomd xml",
+            new String(
+                new BlockingStorage(this.storage)
+                    .value(new Key.From(AstoRepoAddTest.MTD, "repomd.xml")),
+                StandardCharsets.UTF_8
+            ),
+            XhtmlMatchers.hasXPaths(
+                "/*[local-name()='repomd']/*[local-name()='revision']",
+                "/*[local-name()='repomd']/*[local-name()='data' and @type='primary']",
+                "/*[local-name()='repomd']/*[local-name()='data' and @type='other']"
             )
         );
     }
