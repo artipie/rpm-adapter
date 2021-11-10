@@ -6,14 +6,15 @@ package com.artipie.rpm.asto;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.asto.key.KeyExcludeFirst;
 import com.artipie.asto.lock.storage.StorageLock;
 import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.http.RpmUpload;
 import com.artipie.rpm.pkg.Package;
+import com.jcabi.log.Logger;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
-import io.reactivex.Observable;
-import io.reactivex.Single;
+import io.reactivex.Flowable;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -21,6 +22,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * Add packages to metadata and repository.
  * @since 1.10
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class AstoRepoAdd {
 
@@ -98,14 +100,22 @@ public final class AstoRepoAdd {
      * @return Completable action with the list of packages metadata to add
      */
     private CompletionStage<List<Package.Meta>> read() {
-        final RxStorageWrapper rxsto = new RxStorageWrapper(this.asto);
-        return rxsto.list(RpmUpload.TO_ADD)
-            .flatMapObservable(Observable::fromIterable)
-            .flatMapSingle(
-                key -> Single.fromFuture(
+        return SingleInterop.fromFuture(this.asto.list(RpmUpload.TO_ADD))
+            .flatMapPublisher(Flowable::fromIterable)
+            .flatMap(
+                key -> Flowable.fromFuture(
                     new AstoRpmPackage(this.asto, this.cnfg.digest()).packageMeta(
                         key, AstoRepoAdd.removeTempPart(key).string()
                     ).toCompletableFuture()
+                ).onErrorResumeNext(
+                    throwable -> {
+                        Logger.warn(
+                            this, "Failed to parse rpm package %s\n%s",
+                            key.string(), throwable.getMessage()
+                        );
+                        return new RxStorageWrapper(this.asto).delete(key)
+                            .andThen(Flowable.empty());
+                    }
                 )
             ).toList().to(SingleInterop.get());
     }
@@ -130,6 +140,6 @@ public final class AstoRepoAdd {
      * @return Key without {@link RpmUpload#TO_ADD} part
      */
     private static Key removeTempPart(final Key key) {
-        return new Key.From(key.string().substring(RpmUpload.TO_ADD.string().length() + 1));
+        return new KeyExcludeFirst(key, RpmUpload.TO_ADD.string());
     }
 }
