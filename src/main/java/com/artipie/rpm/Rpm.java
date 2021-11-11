@@ -10,11 +10,9 @@ import com.artipie.asto.Copy;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.SubStorage;
-import com.artipie.asto.fs.FileStorage;
 import com.artipie.asto.lock.Lock;
 import com.artipie.asto.lock.storage.StorageLock;
 import com.artipie.asto.misc.UncheckedIOScalar;
-import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.asto.streams.ContentAsStream;
 import com.artipie.rpm.asto.AstoChecksumAndName;
 import com.artipie.rpm.asto.AstoRepoAdd;
@@ -24,37 +22,18 @@ import com.artipie.rpm.http.RpmUpload;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryChecksums;
 import com.artipie.rpm.misc.PackagesDiff;
-import com.artipie.rpm.misc.UncheckedFunc;
-import com.artipie.rpm.pkg.FilePackage;
-import com.artipie.rpm.pkg.InvalidPackageException;
-import com.artipie.rpm.pkg.MetadataFile;
-import com.artipie.rpm.pkg.Package;
-import com.artipie.rpm.pkg.Repodata;
-import com.jcabi.log.Logger;
 import hu.akarnokd.rxjava2.interop.CompletableInterop;
-import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Completable;
-import io.reactivex.Flowable;
-import io.reactivex.Observable;
-import io.reactivex.Single;
-import io.reactivex.schedulers.Schedulers;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
-import org.apache.commons.io.FileUtils;
 
 /**
  * The RPM front.
@@ -75,7 +54,7 @@ import org.apache.commons.io.FileUtils;
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle ClassFanOutComplexityCheck (500 lines)
  */
-@SuppressWarnings({"PMD.AvoidDuplicateLiterals", "PMD.TooManyMethods"})
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class Rpm {
 
     /**
@@ -181,169 +160,30 @@ public final class Rpm {
      * @throws ArtipieIOException On IO-operation errors
      */
     public Completable batchUpdate(final Key prefix) {
-        final Path tmpdir;
-        final Path metadir;
-        try {
-            tmpdir = Files.createTempDirectory("repo-");
-            metadir = Files.createTempDirectory("meta-");
-        } catch (final IOException err) {
-            throw new ArtipieIOException("Failed to create temp dir", err);
-        }
-        final Storage local = new FileStorage(tmpdir);
         return this.doWithLock(
             prefix,
-            () -> this.filePackageFromRpm(prefix, tmpdir, local)
-                .parallel().runOn(Schedulers.io())
-                .flatMap(
-                    file -> {
-                        Flowable<Package> parsed;
-                        try {
-                            parsed = Flowable.just(file.parsed());
-                        } catch (final InvalidPackageException ex) {
-                            Logger.warn(
-                                this, "Failed parsing '%s': %[exception]s", file.path(), ex
-                            );
-                            parsed = Flowable.empty();
-                        }
-                        return parsed;
-                    }
-                )
-                .sequential().observeOn(Schedulers.io())
-                .reduceWith(this::repository, Repository::update)
-                .doOnSuccess(rep -> Logger.info(this, "repository updated"))
-                .doOnSuccess(Repository::close)
-                .doOnSuccess(rep -> Logger.info(this, "repository closed"))
-                .flatMapObservable(
-                    rep -> Observable.fromIterable(
-                        rep.save(new Repodata.Temp(this.config.naming(), metadir))
+            () -> Completable.fromFuture(this.calcDiff(prefix)
+                .thenApply(nothing -> new SubStorage(prefix, this.storage))
+                .thenCompose(
+                    sub -> new AstoRepoAdd(sub, this.config).perform().thenCompose(
+                        nothing -> new AstoRepoRemove(sub, this.config).perform()
                     )
-                )
-                .flatMapSingle(
-                    path -> this.moveRepodataToStorage(new FileStorage(metadir), path, prefix)
-                )
-                .map(path -> path.getFileName().toString())
-                .toList().map(HashSet::new)
-                .flatMapCompletable(preserve -> this.removeOldMetadata(preserve, prefix))
-            ).doOnTerminate(
-                () -> {
-                    Rpm.cleanup(tmpdir);
-                    Rpm.cleanup(metadir);
-                }
-            );
+                ).toCompletableFuture()
+            )
+        );
     }
 
     /**
-     * Updates repository incrementally.
+     * Batch update RPM files for repository,
+     * works exactly as {@link Rpm#batchUpdate(Key)}.
      * @param prefix Repo prefix
      * @return Completable action
      * @throws ArtipieIOException On IO-operation errors
+     * @deprecated User {@link Rpm#batchUpdate(Key)}
      */
+    @Deprecated
     public Completable batchUpdateIncrementally(final Key prefix) {
-        return Completable.fromFuture(
-            this.calcDiff(prefix)
-            .thenApply(nothing -> new SubStorage(prefix, this.storage))
-            .thenCompose(
-                sub -> new AstoRepoAdd(sub, this.config).perform().thenCompose(
-                    nothing -> new AstoRepoRemove(sub, this.config).perform()
-                )
-            ).toCompletableFuture()
-        );
-    }
-
-    /**
-     * Removes old metadata.
-     * @param preserve Metadata to keep
-     * @param prefix Repo prefix
-     * @return Completable
-     */
-    private Completable removeOldMetadata(final Set<String> preserve, final Key prefix) {
-        return new RxStorageWrapper(this.storage).list(new Key.From(prefix, "repodata"))
-            .flatMapObservable(Observable::fromIterable)
-            .filter(item -> !preserve.contains(Paths.get(item.string()).getFileName().toString()))
-            .flatMapCompletable(
-                item -> new RxStorageWrapper(this.storage).delete(item)
-            );
-    }
-
-    /**
-     * Moves repodata to storage.
-     * @param local Local storage
-     * @param path Metadata to move
-     * @param prefix Repo prefix
-     * @return Metadata path
-     */
-    private Single<Path> moveRepodataToStorage(final Storage local, final Path path,
-        final Key prefix) {
-        return new RxStorageWrapper(local)
-            .value(new Key.From(path.getFileName().toString()))
-            .flatMapCompletable(
-                content -> new RxStorageWrapper(new SubStorage(prefix, this.storage)).save(
-                    new Key.From("repodata", path.getFileName().toString()), content
-                )
-            ).toSingleDefault(path);
-    }
-
-    /**
-     * Copies rpms to local storage and constacts {@link FilePackage} instance.
-     * @param prefix Repo prefix
-     * @param tmpdir Tempdir
-     * @param local Local storage
-     * @return Flowable of FilePackage
-     */
-    private Flowable<FilePackage> filePackageFromRpm(
-        final Key prefix, final Path tmpdir, final Storage local
-    ) {
-        return SingleInterop.fromFuture(this.storage.list(prefix))
-            .flatMapPublisher(Flowable::fromIterable)
-            .filter(key -> key.string().endsWith(".rpm"))
-            .flatMapSingle(
-                key -> {
-                    final String filename;
-                    if (key.equals(prefix)) {
-                        filename = key.string();
-                    } else {
-                        filename = key.string().replaceFirst(prefix.string(), "")
-                            .replaceFirst("^/", "");
-                    }
-                    return new RxStorageWrapper(this.storage)
-                        .value(key)
-                        .flatMapCompletable(
-                            content -> new RxStorageWrapper(local)
-                                .save(new Key.From(filename), content)
-                        ).andThen(
-                            Single.fromCallable(
-                                () -> new FilePackage(tmpdir.resolve(filename), filename)
-                            )
-                        );
-                }
-            );
-    }
-
-    /**
-     * Cleanup temporary dir.
-     * @param dir Directory
-     */
-    private static void cleanup(final Path dir) {
-        try {
-            FileUtils.deleteDirectory(dir.toFile());
-        } catch (final IOException err) {
-            throw new ArtipieIOException(err);
-        }
-    }
-
-    /**
-     * Get repository for file updates.
-     * @return Repository
-     */
-    private Repository repository() {
-        return new Repository(
-            new XmlPackage.Stream(this.config.filelists()).get().map(
-                new UncheckedFunc<XmlPackage, MetadataFile, IOException>(
-                    item -> new MetadataFile(item, item.output().start())
-                )
-            ).collect(Collectors.toList()),
-            this.config.digest()
-        );
+        return this.batchUpdate(prefix);
     }
 
     /**
