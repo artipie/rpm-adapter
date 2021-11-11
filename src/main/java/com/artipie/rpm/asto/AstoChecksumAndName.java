@@ -20,7 +20,7 @@ import org.cactoos.map.MapEntry;
  * Checksums and names of the storage items.
  * @since 1.10
  */
-final class AstoChecksumAndName {
+public final class AstoChecksumAndName {
 
     /**
      * Asto storage.
@@ -37,20 +37,21 @@ final class AstoChecksumAndName {
      * @param asto Asto storage
      * @param dgst Digest algorithm
      */
-    AstoChecksumAndName(final Storage asto, final Digest dgst) {
+    public AstoChecksumAndName(final Storage asto, final Digest dgst) {
         this.asto = asto;
         this.dgst = dgst;
     }
 
     /**
-     * Calculate checksum of all the items found by key.
+     * Calculate checksum of all the items found by key, that ends with `.rpm`.
      * @param key Storage key
      * @return Map with item name and checksum
      */
-    CompletionStage<Map<String, String>> calculate(final Key key) {
+    public CompletionStage<Map<String, String>> calculate(final Key key) {
         final RxStorageWrapper rxsto = new RxStorageWrapper(this.asto);
         return rxsto.list(key)
             .flatMapObservable(Observable::fromIterable)
+            .filter(item -> item.string().endsWith(".rpm"))
             .flatMapSingle(
                 item -> rxsto.value(item).flatMap(
                     cnt -> Single.fromFuture(

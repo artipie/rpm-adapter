@@ -4,10 +4,8 @@
  */
 package com.artipie.rpm.asto;
 
-import com.artipie.asto.Copy;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.asto.SubStorage;
 import com.artipie.asto.misc.UncheckedIOFunc;
 import com.artipie.asto.misc.UncheckedIOScalar;
 import com.artipie.asto.streams.StorageValuePipeline;
@@ -27,7 +25,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
-import org.cactoos.set.SetOf;
 
 /**
  * Removes packages from metadata files.
@@ -66,7 +63,6 @@ public final class AstoMetadataRemove {
     public CompletionStage<Key> perform(final Collection<String> checksums) {
         final List<CompletableFuture<Void>> res = new ArrayList<>(3);
         final Key.From prefix = new Key.From(UUID.randomUUID().toString());
-        final Storage tmpstor = new SubStorage(prefix, this.asto);
         for (final XmlPackage pckg : new XmlPackage.Stream(this.cnfg.filelists())
             .get().collect(Collectors.toList())) {
             res.add(
@@ -76,16 +72,10 @@ public final class AstoMetadataRemove {
                             .filter(item -> item.string().contains(pckg.lowercase())).findFirst()
                     ).thenCompose(
                         opt -> {
-                            final Key key = new Key.From(pkg.name());
                             final Key tmpkey = new Key.From(prefix, pkg.name());
                             CompletionStage<Void> result = CompletableFuture.allOf();
                             if (opt.isPresent()) {
-                                result = new Copy(this.asto, new SetOf<Key>(opt.get()))
-                                    .copy(tmpstor)
-                                    .thenCompose(nothing -> tmpstor.move(opt.get(), key))
-                                    .thenCompose(
-                                        ignored -> this.removePackages(pckg, tmpkey, checksums)
-                                    )
+                                result = this.removePackages(pckg, opt.get(), tmpkey, checksums)
                                     .thenCompose(
                                         cnt -> new StorageValuePipeline<>(this.asto, tmpkey)
                                             .process(
@@ -115,13 +105,15 @@ public final class AstoMetadataRemove {
      * Removes packages from metadata file.
      * @param pckg Package type
      * @param key Item key
+     * @param temp Temp key where to write the result
      * @param checksums Checksums to remove
      * @return Completable action with count of the items left in storage
+     * @checkstyle ParameterNumberCheck (5 lines)
      */
     private CompletionStage<Long> removePackages(
-        final XmlPackage pckg, final Key key, final Collection<String> checksums
+        final XmlPackage pckg, final Key key, final Key temp, final Collection<String> checksums
     ) {
-        return new StorageValuePipeline<Long>(this.asto, key).processWithResult(
+        return new StorageValuePipeline<Long>(this.asto, key, temp).processWithResult(
             (opt, out) -> {
                 final XmlMaid maid;
                 final InputStream input = opt.map(new UncheckedIOFunc<>(GZIPInputStream::new))
