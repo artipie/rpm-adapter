@@ -71,7 +71,7 @@ public class RpmBench {
     @Benchmark
     public void run(final Blackhole bhl) {
         new Rpm(new BenchmarkStorage(this.readonly))
-            .batchUpdateIncrementally(Key.ROOT)
+            .batchUpdate(Key.ROOT)
             .to(CompletableInterop.await())
             .toCompletableFuture().join();
     }
