@@ -399,8 +399,8 @@ public final class Rpm {
                                 .thenApply(repo -> new PackagesDiff(primary, repo))
                         ).thenCompose(
                             diff -> Rpm.copyPackagesToAdd(
-                                new SubStorage(prefix, this.storage),
-                                diff.toAdd().keySet().stream().map(Key.From::new)
+                                sub,
+                                diff.toAdd().stream().map(Key.From::new)
                                     .collect(Collectors.toList())
                             ).thenApply(nothing -> diff.toDelete().values())
                         );

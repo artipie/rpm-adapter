@@ -155,7 +155,7 @@ class AstoRepoAddTest {
             )
         );
         MatcherAssert.assertThat(
-            "Other xml should have three records",
+            "Filelists xml should have three records",
             new String(
                 this.mbytes.value(XmlPackage.FILELISTS),
                 StandardCharsets.UTF_8

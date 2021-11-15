@@ -18,7 +18,7 @@ import com.artipie.rpm.meta.XmlPackage;
 import com.jcabi.matchers.XhtmlMatchers;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
+import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
@@ -148,7 +148,11 @@ class AstoRepoRemoveTest {
             .saveTo(this.storage, new Key.From("repodata", "repomd.xml"));
         new AstoRepoRemove(this.storage, this.conf).perform(
             //@checkstyle LineLengthCheck (1 line)
-            Collections.singleton("b9d10ae3485a5c5f71f0afb1eaf682bfbea4ea667cc3c3975057d6e3d8f2e905")
+            new ListOf<String>(
+                "b9d10ae3485a5c5f71f0afb1eaf682bfbea4ea667cc3c3975057d6e3d8f2e905",
+                "b9d10ae3485a5c5f71f0afb1eaf682bfbea4ea667cc3c3975057d6e3d8f2e905",
+                "abc123"
+            )
         ).toCompletableFuture().join();
         MatcherAssert.assertThat(
             "There should be 4 items in storage",

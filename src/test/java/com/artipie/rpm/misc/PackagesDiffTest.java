@@ -49,12 +49,8 @@ class PackagesDiffTest {
             new MapEntry<>("abc.rpm", "abc-other-checksum")
         );
         MatcherAssert.assertThat(
-            new PackagesDiff(primary, repo).toAdd().entrySet(),
-            Matchers.hasItems(
-                new MapEntry<>("abc.rpm", "abc-checksum"),
-                new MapEntry<>("httpd.rpm", "httpd-checksum"),
-                new MapEntry<>("openssh.rpm", "openssh-checksum")
-            )
+            new PackagesDiff(primary, repo).toAdd(),
+            Matchers.hasItems("abc.rpm", "httpd.rpm", "openssh.rpm")
         );
     }
 }
