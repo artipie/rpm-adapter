@@ -280,10 +280,7 @@ final class RpmTest {
         repo.batchUpdate(Key.ROOT).blockingAwait();
         MatcherAssert.assertThat(
             this.storage,
-            Matchers.allOf(
-                new StorageHasMetadata(1, true, RpmTest.tmp),
-                new StorageHasRepoMd(this.config)
-            )
+            new StorageHasMetadata(1, true, RpmTest.tmp)
         );
     }
 
