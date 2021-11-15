@@ -17,17 +17,14 @@ import com.artipie.rpm.hm.StorageHasRepoMd;
 import com.artipie.rpm.meta.XmlPackage;
 import com.jcabi.matchers.XhtmlMatchers;
 import com.jcabi.xml.XMLDocument;
-import io.reactivex.Completable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import org.cactoos.Scalar;
 import org.cactoos.list.ListOf;
@@ -43,8 +40,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.llorllale.cactoos.matchers.IsTrue;
 import org.xmlunit.matchers.CompareMatcher;
@@ -59,9 +54,6 @@ import org.xmlunit.matchers.CompareMatcher;
  *  "Reading of RPM package 'package' failed, data corrupt or malformed.",
  *  like described in showMeaningfulErrorWhenInvalidPackageSent. Implement it
  *  and then enable the test.
- * @todo #376:30min Extract primary.xml `location` tag check from `writesSubdirsToLocation()` test
- *  method into separate matcher and add this matcher to `StorageHasMetadata` checks: we should
- *  always verify that `location` is specified correctly.
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @checkstyle MagicNumberCheck (500 lines)
  * @checkstyle IllegalCatchCheck (500 lines)
@@ -93,9 +85,8 @@ final class RpmTest {
         this.config = new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.SHA1, true);
     }
 
-    @ParameterizedTest
-    @EnumSource(UpdateType.class)
-    void updatesDifferentReposSimultaneouslyTwice(final UpdateType update) throws Exception {
+    @Test
+    void updatesDifferentReposSimultaneouslyTwice() throws Exception {
         final Rpm repo =  new Rpm(this.storage, this.config);
         final List<String> keys = new ListOf<>("one", "two", "three");
         final CountDownLatch latch = new CountDownLatch(keys.size());
@@ -108,7 +99,7 @@ final class RpmTest {
                     ).put(new SubStorage(new Key.From(key), this.storage));
                     latch.countDown();
                     latch.await();
-                    update.action.apply(repo, new Key.From(key)).blockingAwait();
+                    repo.batchUpdate(new Key.From(key)).blockingAwait();
                     return true;
                 }
             ),
@@ -125,16 +116,14 @@ final class RpmTest {
                 )
             )
         );
-        this.verifyThatTempDirIsCleanedUp();
     }
 
-    @ParameterizedTest
-    @EnumSource(UpdateType.class)
-    void updateWorksOnNewRepo(final UpdateType update) throws IOException {
+    @Test
+    void updateWorksOnNewRepo() throws IOException {
         new TestRpm.Multiple(
             new TestRpm.Abc(), new TestRpm.Libdeflt(), new TestRpm.Time()
         ).put(this.storage);
-        update.action.apply(new Rpm(this.storage, this.config), Key.ROOT).blockingAwait();
+        new Rpm(this.storage, this.config).batchUpdate(Key.ROOT).blockingAwait();
         MatcherAssert.assertThat(
             this.storage,
             Matchers.allOf(
@@ -142,7 +131,6 @@ final class RpmTest {
                 new StorageHasRepoMd(this.config)
             )
         );
-        this.verifyThatTempDirIsCleanedUp();
     }
 
     @Test
@@ -151,7 +139,7 @@ final class RpmTest {
             new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.PLAIN, true);
         final Rpm repo = new Rpm(this.storage, cnfg);
         new TestRpm.Multiple(new TestRpm.Abc(), new TestRpm.Libdeflt()).put(this.storage);
-        repo.batchUpdateIncrementally(Key.ROOT).blockingAwait();
+        repo.batchUpdate(Key.ROOT).blockingAwait();
         final Storage stash = new InMemoryStorage();
         new Copy(
             this.storage,
@@ -159,7 +147,7 @@ final class RpmTest {
                 .filter(item -> item.string().endsWith("gz")).collect(Collectors.toList())
         ).copy(stash).join();
         new TestRpm.Invalid().put(this.storage);
-        repo.batchUpdateIncrementally(Key.ROOT).blockingAwait();
+        repo.batchUpdate(Key.ROOT).blockingAwait();
         for (final Key key : stash.list(Key.ROOT).join()) {
             MatcherAssert.assertThat(
                 String.format("%s xmls are equal", key.string()),
@@ -170,14 +158,13 @@ final class RpmTest {
         }
     }
 
-    @ParameterizedTest
-    @EnumSource(UpdateType.class)
-    void skipsInvalidPackageOnUpdate(final UpdateType update) throws Exception {
+    @Test
+    void skipsInvalidPackageOnUpdate() throws Exception {
         final Rpm repo =  new Rpm(this.storage, this.config);
         new TestRpm.Abc().put(this.storage);
-        update.action.apply(repo, Key.ROOT).blockingAwait();
+        repo.batchUpdate(Key.ROOT).blockingAwait();
         new TestRpm.Multiple(new TestRpm.Invalid(), new TestRpm.Libdeflt()).put(this.storage);
-        update.action.apply(repo, Key.ROOT).blockingAwait();
+        repo.batchUpdate(Key.ROOT).blockingAwait();
         MatcherAssert.assertThat(
             this.storage,
             Matchers.allOf(
@@ -185,7 +172,6 @@ final class RpmTest {
                 new StorageHasRepoMd(this.config)
             )
         );
-        this.verifyThatTempDirIsCleanedUp();
     }
 
     @Test
@@ -207,10 +193,8 @@ final class RpmTest {
         );
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"NON_INCREMENTAL"})
-    void throwsExceptionWhenFullUpdatesDoneSimultaneously(final UpdateType type)
-        throws IOException {
+    @Test
+    void throwsExceptionWhenFullUpdatesDoneSimultaneously() throws IOException {
         final Rpm repo =  new Rpm(
             this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true
         );
@@ -229,7 +213,7 @@ final class RpmTest {
                     try {
                         latch.countDown();
                         latch.await();
-                        type.action.apply(repo, key).blockingAwait();
+                        repo.batchUpdate(key).blockingAwait();
                         future.complete(null);
                     } catch (final Exception exception) {
                         future.completeExceptionally(exception);
@@ -254,27 +238,22 @@ final class RpmTest {
                 .noneMatch(key -> key.string().contains("lock")),
             new IsEqual<>(true)
         );
-        this.verifyThatTempDirIsCleanedUp();
     }
 
     @ParameterizedTest
-    @CsvSource({
-        "'',INCREMENTAL",
-        "'',NON_INCREMENTAL",
-        "my_repo,INCREMENTAL",
-        "my_repo,NON_INCREMENTAL",
-        "one/two/three,INCREMENTAL",
-        "one/two/three,NON_INCREMENTAL",
-        "a/b/,INCREMENTAL",
-        "a/b/,NON_INCREMENTAL"
+    @ValueSource(strings = {
+        "''",
+        "my_repo",
+        "one/two/three",
+        "a/b/"
     })
-    void writesSubdirsToLocation(final String str, final UpdateType type) throws IOException {
+    void writesSubdirsToLocation(final String str) throws IOException {
         final Rpm repo =  new Rpm(this.storage, StandardNamingPolicy.PLAIN, Digest.SHA256, true);
         final Key key = new Key.From(str);
         final Storage substorage = new SubStorage(key, this.storage);
         new TestRpm.Abc().put(new SubStorage(new Key.From("subdir"), substorage));
         new TestRpm.Libdeflt().put(substorage);
-        type.action.apply(repo, key).blockingAwait();
+        repo.batchUpdate(key).blockingAwait();
         final Path gzip = Files.createTempFile(RpmTest.tmp, XmlPackage.PRIMARY.name(), "xml.gz");
         Files.write(
             gzip, new BlockingStorage(substorage).value(new Key.From("repodata/primary.xml.gz"))
@@ -289,52 +268,23 @@ final class RpmTest {
                 "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='location' and @href='subdir/abc-1.01-26.git20200127.fc32.ppc64le.rpm']"
             )
         );
-        this.verifyThatTempDirIsCleanedUp();
     }
 
-    private void verifyThatTempDirIsCleanedUp() throws IOException {
-        final Path systemtemp = Paths.get(System.getProperty("java.io.tmpdir"));
+    @Test
+    void removesPackagesFromMetadata() throws Exception {
+        final Rpm repo =  new Rpm(this.storage, this.config);
+        new TestRpm.Abc().put(this.storage);
+        repo.batchUpdate(Key.ROOT).blockingAwait();
+        new TestRpm.Libdeflt().put(this.storage);
+        this.storage.delete(new Key.From(new TestRpm.Abc().path().getFileName().toString())).join();
+        repo.batchUpdate(Key.ROOT).blockingAwait();
         MatcherAssert.assertThat(
-            "Temp dir for rpms removed",
-            Files.list(systemtemp)
-                .noneMatch(path -> path.getFileName().toString().startsWith("repo")),
-            new IsEqual<>(true)
-        );
-        MatcherAssert.assertThat(
-            "Temp dir for metadata removed",
-            Files.list(systemtemp)
-                .noneMatch(path -> path.getFileName().toString().startsWith("meta")),
-            new IsEqual<>(true)
+            this.storage,
+            Matchers.allOf(
+                new StorageHasMetadata(1, true, RpmTest.tmp),
+                new StorageHasRepoMd(this.config)
+            )
         );
     }
 
-    /**
-     * Update types.
-     * @since 1.3
-     */
-    enum UpdateType {
-
-        /**
-         * Incremental update.
-         */
-        INCREMENTAL(Rpm::batchUpdateIncrementally),
-
-        /**
-         * Non incremental update.
-         */
-        NON_INCREMENTAL(Rpm::batchUpdate);
-
-        /**
-         * Update action.
-         */
-        private final BiFunction<Rpm, Key, Completable> action;
-
-        /**
-         * Ctor.
-         * @param action Action
-         */
-        UpdateType(final BiFunction<Rpm, Key, Completable> action) {
-            this.action = action;
-        }
-    }
 }
