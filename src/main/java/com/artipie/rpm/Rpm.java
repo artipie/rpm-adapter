@@ -166,7 +166,7 @@ public final class Rpm {
                 list -> {
                     final Storage sub = new SubStorage(prefix, this.storage);
                     return new AstoRepoAdd(sub, this.config).perform().thenCompose(
-                        nothing -> new AstoRepoRemove(sub, this.config).perform()
+                        nothing -> new AstoRepoRemove(sub, this.config).perform(list)
                     );
                 }).toCompletableFuture()
             )
