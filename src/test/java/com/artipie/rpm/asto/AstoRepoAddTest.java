@@ -129,9 +129,45 @@ class AstoRepoAddTest {
             this.storage.exists(new Key.From("lib", lib)).join(),
             new IsEqual<>(true)
         );
-        this.checkMeta("primary-res.xml", XmlPackage.PRIMARY);
-        this.checkMeta("other-res.xml", XmlPackage.OTHER);
-        this.checkMeta("filelists-res.xml", XmlPackage.FILELISTS);
+        MatcherAssert.assertThat(
+            "Primary xml should have three records",
+            new String(this.mbytes.value(XmlPackage.PRIMARY), StandardCharsets.UTF_8),
+            XhtmlMatchers.hasXPaths(
+                "/*[local-name()='metadata' and @packages='3']",
+                //@checkstyle LineLengthCheck (3 lines)
+                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='abc']",
+                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='time']",
+                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='libnss-mymachines2']"
+            )
+        );
+        MatcherAssert.assertThat(
+            "Other xml should have three records",
+            new String(
+                this.mbytes.value(XmlPackage.OTHER),
+                StandardCharsets.UTF_8
+            ),
+            XhtmlMatchers.hasXPaths(
+                "/*[local-name()='otherdata' and @packages='3']",
+                "/*[local-name()='otherdata']/*[local-name()='package' and @name='abc']",
+                "/*[local-name()='otherdata']/*[local-name()='package' and @name='time']",
+                //@checkstyle LineLengthCheck (1 line)
+                "/*[local-name()='otherdata']/*[local-name()='package' and @name='libnss-mymachines2']"
+            )
+        );
+        MatcherAssert.assertThat(
+            "Filelists xml should have three records",
+            new String(
+                this.mbytes.value(XmlPackage.FILELISTS),
+                StandardCharsets.UTF_8
+            ),
+            XhtmlMatchers.hasXPaths(
+                "/*[local-name()='filelists' and @packages='3']",
+                "/*[local-name()='filelists']/*[local-name()='package' and @name='abc']",
+                "/*[local-name()='filelists']/*[local-name()='package' and @name='time']",
+                //@checkstyle LineLengthCheck (1 line)
+                "/*[local-name()='filelists']/*[local-name()='package' and @name='libnss-mymachines2']"
+            )
+        );
         MatcherAssert.assertThat(
             "Failed to generate repomd xml",
             new String(

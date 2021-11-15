@@ -15,6 +15,7 @@ import com.artipie.rpm.http.RpmRemove;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -52,14 +53,14 @@ public final class AstoRepoRemove {
     }
 
     /**
-     * Performs whole workflow to remove items, listed in {@link RpmRemove#TO_RM} location, from
-     * the repository.
+     * Performs whole workflow to remove items by provided checksums from
+     * the repository. Rpm packages themselves are considered to be already removed
+     * from the repository.
+     * @param checksums Checksums of the packages to remove to
      * @return Completable action
      */
-    public CompletionStage<Void> perform() {
-        return this.checksums().thenCompose(
-            list -> new AstoMetadataRemove(this.asto, this.cnfg).perform(list)
-        ).thenCompose(
+    public CompletionStage<Void> perform(final Collection<String> checksums) {
+        return new AstoMetadataRemove(this.asto, this.cnfg).perform(checksums).thenCompose(
             temp -> new AstoCreateRepomd(this.asto, this.cnfg).perform(temp).thenCompose(
                 nothing -> new AstoMetadataNames(this.asto, this.cnfg).prepareNames(temp)
                     .thenCompose(
@@ -81,7 +82,16 @@ public final class AstoRepoRemove {
                         }
                     )
             )
-        ).thenCompose(
+        );
+    }
+
+    /**
+     * Performs whole workflow to remove items, listed in {@link RpmRemove#TO_RM} location, from
+     * the repository.
+     * @return Completable action
+     */
+    public CompletionStage<Void> perform() {
+        return this.checksums().thenCompose(this::perform).thenCompose(
             ignored -> this.asto.list(RpmRemove.TO_RM).thenCompose(
                 list -> CompletableFuture.allOf(
                     list.stream().map(

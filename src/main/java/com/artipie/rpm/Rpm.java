@@ -5,7 +5,6 @@
 package com.artipie.rpm;
 
 import com.artipie.asto.ArtipieIOException;
-import com.artipie.asto.Content;
 import com.artipie.asto.Copy;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
@@ -17,7 +16,6 @@ import com.artipie.asto.streams.ContentAsStream;
 import com.artipie.rpm.asto.AstoChecksumAndName;
 import com.artipie.rpm.asto.AstoRepoAdd;
 import com.artipie.rpm.asto.AstoRepoRemove;
-import com.artipie.rpm.http.RpmRemove;
 import com.artipie.rpm.http.RpmUpload;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryChecksums;
@@ -27,6 +25,8 @@ import io.reactivex.Completable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -162,12 +162,12 @@ public final class Rpm {
     public Completable batchUpdate(final Key prefix) {
         return this.doWithLock(
             prefix,
-            () -> Completable.fromFuture(this.calcDiff(prefix)
-                .thenApply(nothing -> new SubStorage(prefix, this.storage))
-                .thenCompose(
-                    sub -> new AstoRepoAdd(sub, this.config).perform().thenCompose(
-                        nothing -> new AstoRepoRemove(sub, this.config).perform()
-                    )
+            () -> Completable.fromFuture(this.calcDiff(prefix).thenCompose(
+                list -> {
+                    final Storage sub = new SubStorage(prefix, this.storage);
+                return new AstoRepoAdd(sub, this.config).perform().thenCompose(
+                        nothing -> new AstoRepoRemove(sub, this.config).perform());
+                    }
                 ).toCompletableFuture()
             )
         );
@@ -211,9 +211,9 @@ public final class Rpm {
      * Calculate differences between current metadata and storage rpms, prepare
      * packages to add or to remove.
      * @param prefix Prefix key
-     * @return Completable action
+     * @return Completable action with list of the checksums of the remove packages
      */
-    private CompletionStage<Void> calcDiff(final Key prefix) {
+    private CompletionStage<Collection<String>> calcDiff(final Key prefix) {
         return this.storage.list(new Key.From(prefix, "repodata"))
             .thenApply(
                 list -> list.stream().filter(
@@ -222,7 +222,7 @@ public final class Rpm {
                 ).findFirst()
             ).thenCompose(
                 opt -> {
-                    final CompletionStage<Void> res;
+                    final CompletionStage<Collection<String>> res;
                     final SubStorage sub = new SubStorage(prefix, this.storage);
                     if (opt.isPresent()) {
                         res = this.storage.value(opt.get()).thenCompose(
@@ -237,43 +237,22 @@ public final class Rpm {
                                 .calculate(prefix)
                                 .thenApply(repo -> new PackagesDiff(primary, repo))
                         ).thenCompose(
-                            diff -> CompletableFuture.allOf(
-                                this.handlePackagesToRemove(prefix, diff.toDelete())
-                                    .toCompletableFuture(),
-                                Rpm.copyPackagesToAdd(
-                                    new SubStorage(prefix, this.storage),
-                                    diff.toAdd().keySet().stream().map(Key.From::new)
-                                        .collect(Collectors.toList())
-                                ).toCompletableFuture()
-                            )
+                            diff -> Rpm.copyPackagesToAdd(
+                                sub,
+                                diff.toAdd().stream().map(Key.From::new)
+                                    .collect(Collectors.toList())
+                            ).thenApply(nothing -> diff.toDelete().values())
                         );
                     } else {
                         res = sub.list(Key.ROOT).thenApply(
                             list -> list.stream().filter(item -> item.string().endsWith("rpm"))
                         ).thenCompose(
                             rpms -> copyPackagesToAdd(sub, rpms.collect(Collectors.toList()))
-                        );
+                        ).thenApply(nothing -> Collections.emptySet());
                     }
                     return res;
                 }
             );
-    }
-
-    /**
-     * Handles packages that should be removed from the metadata.
-     * @param prefix Prefix key
-     * @param packages Packages list
-     * @return Completable action
-     */
-    private CompletionStage<Void> handlePackagesToRemove(
-        final Key prefix, final Map<String, String> packages
-    ) {
-        return CompletableFuture.allOf(
-            packages.keySet().stream().map(
-                key -> new SubStorage(prefix, this.storage)
-                    .save(new Key.From(RpmRemove.TO_RM, key), Content.EMPTY)
-            ).toArray(CompletableFuture[]::new)
-        );
     }
 
     /**
