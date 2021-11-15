@@ -18,6 +18,7 @@ import com.artipie.rpm.meta.XmlPackage;
 import com.jcabi.matchers.XhtmlMatchers;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
@@ -120,6 +121,60 @@ class AstoRepoRemoveTest {
             XhtmlMatchers.hasXPaths(
                 "/*[local-name()='otherdata' and @packages='1']",
                 "/*[local-name()='otherdata']/*[local-name()='package' and @name='abc']"
+            )
+        );
+        MatcherAssert.assertThat(
+            "Repomd xml should be created",
+            new String(
+                new BlockingStorage(this.storage).value(new Key.From("repodata", "repomd.xml")),
+                StandardCharsets.UTF_8
+            ),
+            XhtmlMatchers.hasXPaths(
+                "/*[local-name()='repomd']/*[local-name()='revision']",
+                "/*[local-name()='repomd']/*[local-name()='data' and @type='primary']",
+                "/*[local-name()='repomd']/*[local-name()='data' and @type='other']"
+            )
+        );
+    }
+
+    @Test
+    void removesByChecksums() throws IOException {
+        new TestResource("libdeflt1_0-2020.03.27-25.1.armv7hl.rpm").saveTo(this.storage);
+        new TestResource("AstoRepoRemoveTest/other.xml.gz")
+            .saveTo(this.storage, new Key.From("repodata", "other.xml.gz"));
+        new TestResource("AstoRepoRemoveTest/primary.xml.gz")
+            .saveTo(this.storage, new Key.From("repodata", "primary.xml.gz"));
+        new TestResource("AstoRepoRemoveTest/repomd.xml")
+            .saveTo(this.storage, new Key.From("repodata", "repomd.xml"));
+        new AstoRepoRemove(this.storage, this.conf).perform(
+            //@checkstyle LineLengthCheck (1 line)
+            new ListOf<String>(
+                "b9d10ae3485a5c5f71f0afb1eaf682bfbea4ea667cc3c3975057d6e3d8f2e905",
+                "b9d10ae3485a5c5f71f0afb1eaf682bfbea4ea667cc3c3975057d6e3d8f2e905",
+                "abc123"
+            )
+        ).toCompletableFuture().join();
+        MatcherAssert.assertThat(
+            "There should be 4 items in storage",
+            this.storage.list(Key.ROOT).join(),
+            Matchers.iterableWithSize(4)
+        );
+        final MetadataBytes mbytes = new MetadataBytes(this.storage);
+        MatcherAssert.assertThat(
+            "Primary xml should have `libdeflt1_0` record",
+            new String(mbytes.value(XmlPackage.PRIMARY), StandardCharsets.UTF_8),
+            XhtmlMatchers.hasXPaths(
+                "/*[local-name()='metadata' and @packages='1']",
+                //@checkstyle LineLengthCheck (1 line)
+                "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='libdeflt1_0']"
+            )
+        );
+        MatcherAssert.assertThat(
+            "Other xml should have `libdeflt1_0` record",
+            new String(mbytes.value(XmlPackage.OTHER), StandardCharsets.UTF_8),
+            XhtmlMatchers.hasXPaths(
+                "/*[local-name()='otherdata' and @packages='1']",
+                "/*[local-name()='otherdata']/*[local-name()='package' and @name='libdeflt1_0']"
             )
         );
         MatcherAssert.assertThat(
