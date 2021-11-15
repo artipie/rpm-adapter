@@ -165,10 +165,10 @@ public final class Rpm {
             () -> Completable.fromFuture(this.calcDiff(prefix).thenCompose(
                 list -> {
                     final Storage sub = new SubStorage(prefix, this.storage);
-                return new AstoRepoAdd(sub, this.config).perform().thenCompose(
-                        nothing -> new AstoRepoRemove(sub, this.config).perform());
-                    }
-                ).toCompletableFuture()
+                    return new AstoRepoAdd(sub, this.config).perform().thenCompose(
+                        nothing -> new AstoRepoRemove(sub, this.config).perform()
+                    );
+                }).toCompletableFuture()
             )
         );
     }
@@ -179,7 +179,7 @@ public final class Rpm {
      * @param prefix Repo prefix
      * @return Completable action
      * @throws ArtipieIOException On IO-operation errors
-     * @deprecated User {@link Rpm#batchUpdate(Key)}
+     * @deprecated Use {@link Rpm#batchUpdate(Key)}
      */
     @Deprecated
     public Completable batchUpdateIncrementally(final Key prefix) {
