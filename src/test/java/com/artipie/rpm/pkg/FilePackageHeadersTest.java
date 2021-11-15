@@ -4,15 +4,12 @@
  */
 package com.artipie.rpm.pkg;
 
-import com.artipie.asto.ArtipieIOException;
 import com.artipie.rpm.Digest;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.redline_rpm.header.Header;
@@ -101,21 +98,6 @@ public final class FilePackageHeadersTest {
             ).header(Header.HeaderTag.EPOCH).asInt(expected),
             new IsEqual<>(expected)
         );
-    }
-
-    @Test
-    public void failParseInvalidPackageFile(@TempDir final Path tmp) throws Exception {
-        final Path invalid = tmp.resolve("invalid.rpm");
-        Files.write(invalid, "invalid".getBytes());
-        final FilePackage pack = new FilePackage(invalid, "invalid");
-        Assertions.assertThrows(InvalidPackageException.class, pack::parsed);
-    }
-
-    @Test
-    public void failParseNotExistingPackageFile(@TempDir final Path tmp) {
-        final String fake = "not-exists.rpm";
-        final FilePackage pack = new FilePackage(tmp.resolve(fake), fake);
-        Assertions.assertThrows(ArtipieIOException.class, pack::parsed);
     }
 
     @Test
