@@ -4,7 +4,6 @@
  */
 package com.artipie.rpm.pkg;
 
-import com.artipie.rpm.Digest;
 import java.io.IOException;
 import java.util.List;
 import org.redline_rpm.header.Header;
@@ -15,14 +14,6 @@ import org.redline_rpm.header.Header;
  * @since 0.6
  */
 public interface Package {
-
-    /**
-     * Save package to output using digest.
-     * @param out Output to save
-     * @param digest Digest to use
-     * @throws IOException On error
-     */
-    void save(PackageOutput out, Digest digest) throws IOException;
 
     /**
      * Package metadata.
