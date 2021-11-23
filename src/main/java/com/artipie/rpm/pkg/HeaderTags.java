@@ -228,7 +228,8 @@ public final class HeaderTags {
      */
     public List<Optional<String>> requireFlags() {
         final int[] array = this.meta.header(Header.HeaderTag.REQUIREFLAGS).asInts();
-        return Arrays.stream(array)
+        // @checkstyle MagicNumberCheck (1 line)
+        return Arrays.stream(array).map(flag -> flag &= 0xf)
             .mapToObj(Flags::find).collect(Collectors.toList());
     }
 
