@@ -293,7 +293,7 @@ public interface XmlEvent {
                     items.put(item, ind);
                     writer.add(events.createEndElement(Primary.PRFX, Primary.NS_URL, "entry"));
                     if (versions.get(ind).ver().isEmpty()) {
-                        duplicates.add(name);
+                        duplicates.add(name.concat(flags.get(ind).orElse("")));
                     }
                 }
             }
