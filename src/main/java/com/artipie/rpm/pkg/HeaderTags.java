@@ -223,14 +223,22 @@ public final class HeaderTags {
     }
 
     /**
-     * Get the require flags header.
+     * Get the require flags header as strings.
      * @return Value of header tag REQUIREFLAGS.
      */
     public List<Optional<String>> requireFlags() {
-        final int[] array = this.meta.header(Header.HeaderTag.REQUIREFLAGS).asInts();
         // @checkstyle MagicNumberCheck (1 line)
-        return Arrays.stream(array).map(flag -> flag &= 0xf)
-            .mapToObj(Flags::find).collect(Collectors.toList());
+        return this.requireFlagsInts().stream().map(flag -> flag &= 0xf)
+            .map(Flags::find).collect(Collectors.toList());
+    }
+
+    /**
+     * Get the require flags headers as ints.
+     * @return Value of header tag REQUIREFLAGS.
+     */
+    public List<Integer> requireFlagsInts() {
+        final int[] array = this.meta.header(Header.HeaderTag.REQUIREFLAGS).asInts();
+        return Arrays.stream(array).boxed().collect(Collectors.toList());
     }
 
     /**

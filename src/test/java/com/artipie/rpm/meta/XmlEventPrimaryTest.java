@@ -33,7 +33,8 @@ class XmlEventPrimaryTest {
         "libnss-mymachines2-245-1.x86_64.rpm,libnss_res.xml",
         "openssh-server-7.4p1-16.h16.eulerosv2r7.x86_64.rpm,openssh_res.xml",
         "httpd-2.4.6-80.1.h8.eulerosv2r7.x86_64.rpm,httpd_res.xml",
-        "felix-framework-4.2.1-5.el7.noarch.rpm,felix-framework-res.xml"
+        "felix-framework-4.2.1-5.el7.noarch.rpm,felix-framework-res.xml",
+        "ant-1.9.4-2.el7.noarch.rpm,ant_res.xml"
     })
     void writesPackageInfo(final String rpm, final String res) throws XMLStreamException,
         IOException {
@@ -60,7 +61,6 @@ class XmlEventPrimaryTest {
                 .ignoreElementContentWhitespace()
                 .normalizeWhitespace()
                 .withNodeFilter(node -> !"file".equals(node.getLocalName()))
-                .withAttributeFilter(attr -> !"pre".equals(attr.getName()))
         );
     }
 

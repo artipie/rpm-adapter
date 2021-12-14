@@ -153,9 +153,26 @@ public interface XmlEvent {
     /**
      * Implementation of {@link XmlEvent} to build event for {@link XmlPackage#PRIMARY} package.
      * @since 1.5
-     * @checkstyle ExecutableStatementCountCheck (100 lines)
+     * @checkstyle ExecutableStatementCountCheck (500 lines)
+     * @checkstyle MagicNumberCheck (20 lines)
      */
+    @SuppressWarnings("PMD.LongVariable")
     final class Primary implements XmlEvent {
+
+        /**
+         * Legacy prereq dependency.
+         */
+        private static final int RPMSENSE_PREREQ = 1 << 6;
+
+        /**
+         * Pre dependency.
+         */
+        private static final int RPMSENSE_SCRIPT_PRE = 1 << 9;
+
+        /**
+         * Post dependency.
+         */
+        private static final int RPMSENSE_SCRIPT_POST = 1 << 10;
 
         /**
          * Xml namespace prefix.
@@ -275,27 +292,39 @@ public interface XmlEvent {
             writer.add(events.createStartElement(Primary.PRFX, Primary.NS_URL, "requires"));
             final List<String> names = tags.requires();
             final List<Optional<String>> flags = tags.requireFlags();
+            final List<Integer> intflags = tags.requireFlagsInts();
             final List<HeaderTags.Version> versions = tags.requiresVer();
             final Map<String, Integer> items = new HashMap<>(names.size());
             final Set<String> duplicates = new HashSet<>(names.size());
             for (int ind = 0; ind < names.size(); ind = ind + 1) {
                 final String name = names.get(ind);
+                int pre = 0;
+                if ((intflags.get(ind)
+                    & (Primary.RPMSENSE_PREREQ
+                    | Primary.RPMSENSE_SCRIPT_PRE
+                    | Primary.RPMSENSE_SCRIPT_POST)) != 0) {
+                    pre = 1;
+                }
+                String full = name.concat(flags.get(ind).orElse(""))
+                    .concat(versions.get(ind).toString());
+                if (!versions.get(ind).toString().isEmpty()) {
+                    full = full.concat(String.valueOf(pre));
+                }
                 if (!name.startsWith("rpmlib(")
-                    && !name.startsWith("config(") && !duplicates.contains(name)) {
+                    && !name.startsWith("config(") && !duplicates.contains(full)) {
                     writer.add(events.createStartElement(Primary.PRFX, Primary.NS_URL, "entry"));
                     writer.add(events.createAttribute("name", name));
-                    final String item = String.join(
-                        "", name, versions.get(ind).toString()
-                    );
+                    final String item = String.join("", name, versions.get(ind).toString());
                     Primary.addEntryAttr(
                         writer, events, versions, ind, flags, Primary.findFlag(flags, items, item)
                     );
+                    if (pre > 0) {
+                        writer.add(events.createAttribute("pre", String.valueOf(pre)));
+                    }
                     items.put(item, ind);
                     writer.add(events.createEndElement(Primary.PRFX, Primary.NS_URL, "entry"));
-                    if (versions.get(ind).ver().isEmpty()) {
-                        duplicates.add(name.concat(flags.get(ind).orElse("")));
-                    }
                 }
+                duplicates.add(full);
             }
             writer.add(events.createEndElement(Primary.PRFX, Primary.NS_URL, "requires"));
         }
@@ -389,7 +418,7 @@ public interface XmlEvent {
         }
 
         /**
-         * Try to find flag for `requires` entry: if there en entry with such name and version,
+         * Try to find flag for `requires` entry: if there is en entry with such name and version,
          * use the flag it has. If there is no such entry, write `EQ`.
          * @param flags Flags list
          * @param items Items: names and versions
