@@ -29,7 +29,7 @@
             </rpm:provides>
             <rpm:requires>
                 <rpm:entry name="/bin/bash"/>
-                <rpm:entry name="/bin/sh"/>
+                <rpm:entry name="/bin/sh" pre="1"/>
                 <rpm:entry name="/usr/sbin/useradd" pre="1"/>
                 <rpm:entry name="fipscheck-lib(x86-64)" flags="GE" ver="1.3.0" epoch="0"/>
                 <rpm:entry name="libaudit.so.1()(64bit)"/>

@@ -87,7 +87,7 @@
                 <rpm:entry name="libdeflt1_0(armv7hl-32)" flags="EQ" ver="2020.03.27" epoch="0" rel="25.1"/>
             </rpm:provides>
             <rpm:requires>
-                <rpm:entry name="/sbin/ldconfig"/>
+                <rpm:entry name="/sbin/ldconfig" pre="1"/>
                 <rpm:entry name="ld-linux-armhf.so.3"/>
                 <rpm:entry name="ld-linux-armhf.so.3(GLIBC_2.4)"/>
                 <rpm:entry name="libc.so.6"/>

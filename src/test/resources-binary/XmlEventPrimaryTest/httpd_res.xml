@@ -38,10 +38,10 @@
                 <rpm:entry name="/etc/mime.types"/>
                 <rpm:entry name="system-logos"/>
                 <rpm:entry name="httpd-tools" ver="2.4.6" epoch="0" rel="80.1.h8.eulerosv2r7" flags="EQ"/>
-                <rpm:entry name="/usr/sbin/useradd"/>
-                <rpm:entry name="/usr/sbin/groupadd"/>
+                <rpm:entry name="/usr/sbin/useradd" pre="1"/>
+                <rpm:entry name="/usr/sbin/groupadd" pre="1"/>
                 <rpm:entry name="systemd-units"/>
-                <rpm:entry name="/bin/sh"/>
+                <rpm:entry name="/bin/sh" pre="1"/>
                 <rpm:entry name="libapr-1.so.0()(64bit)"/>
                 <rpm:entry name="libaprutil-1.so.0()(64bit)"/>
                 <rpm:entry name="libc.so.6()(64bit)"/>
