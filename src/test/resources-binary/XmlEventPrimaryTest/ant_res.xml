@@ -51,43 +51,8 @@
             <file>/usr/bin/complete-ant-cmd.pl</file>
             <file>/usr/bin/runant.pl</file>
             <file>/usr/bin/runant.py</file>
-            <file type="dir">/usr/share/ant</file>
-            <file type="dir">/usr/share/ant/bin</file>
             <file>/usr/share/ant/bin/ant</file>
             <file>/usr/share/ant/bin/antRun</file>
-            <file type="dir">/usr/share/ant/etc</file>
-            <file>/usr/share/ant/etc/ant-update.xsl</file>
-            <file>/usr/share/ant/etc/changelog.xsl</file>
-            <file>/usr/share/ant/etc/common2master.xsl</file>
-            <file>/usr/share/ant/etc/coverage-frames.xsl</file>
-            <file>/usr/share/ant/etc/junit-frames-xalan1.xsl</file>
-            <file>/usr/share/ant/etc/log.xsl</file>
-            <file>/usr/share/ant/etc/mmetrics-frames.xsl</file>
-            <file>/usr/share/ant/etc/printFailingTests.xsl</file>
-            <file>/usr/share/ant/etc/tagdiff.xsl</file>
-            <file type="dir">/usr/share/ant/lib</file>
-            <file>/usr/share/ant/lib/ant-bootstrap.jar</file>
-            <file>/usr/share/ant/lib/ant-launcher.jar</file>
-            <file>/usr/share/ant/lib/ant.jar</file>
-            <file type="dir">/usr/share/doc/ant-1.9.4</file>
-            <file>/usr/share/doc/ant-1.9.4/KEYS</file>
-            <file>/usr/share/doc/ant-1.9.4/LICENSE</file>
-            <file>/usr/share/doc/ant-1.9.4/NOTICE</file>
-            <file>/usr/share/doc/ant-1.9.4/README</file>
-            <file>/usr/share/doc/ant-1.9.4/WHATSNEW</file>
-            <file type="dir">/usr/share/java/ant</file>
-            <file>/usr/share/java/ant-bootstrap.jar</file>
-            <file>/usr/share/java/ant-launcher.jar</file>
-            <file>/usr/share/java/ant.jar</file>
-            <file>/usr/share/java/ant/ant-bootstrap.jar</file>
-            <file>/usr/share/java/ant/ant-launcher.jar</file>
-            <file>/usr/share/java/ant/ant.jar</file>
-            <file>/usr/share/maven-fragments/ant</file>
-            <file>/usr/share/maven-fragments/ant-ant</file>
-            <file>/usr/share/maven-fragments/ant-launcher</file>
-            <file>/usr/share/maven-poms/JPP-ant-parent.pom</file>
-            <file>/usr/share/maven-poms/JPP.ant-ant-launcher.pom</file>
-            <file>/usr/share/maven-poms/JPP.ant-ant.pom</file>
         </format>
     </package>
 </metadata>

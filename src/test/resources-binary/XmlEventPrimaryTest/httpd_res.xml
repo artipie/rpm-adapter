@@ -65,6 +65,35 @@
                 <rpm:entry name="libz.so.1()(64bit)"/>
                 <rpm:entry name="rtld(GNU_HASH)"/>
             </rpm:requires>
+            <file type="dir">/etc/httpd</file>
+            <file type="dir">/etc/httpd/conf</file>
+            <file type="dir">/etc/httpd/conf.d</file>
+            <file>/etc/httpd/conf.d/README</file>
+            <file>/etc/httpd/conf.d/autoindex.conf</file>
+            <file>/etc/httpd/conf.d/userdir.conf</file>
+            <file>/etc/httpd/conf.d/welcome.conf</file>
+            <file type="dir">/etc/httpd/conf.modules.d</file>
+            <file>/etc/httpd/conf.modules.d/00-base.conf</file>
+            <file>/etc/httpd/conf.modules.d/00-dav.conf</file>
+            <file>/etc/httpd/conf.modules.d/00-lua.conf</file>
+            <file>/etc/httpd/conf.modules.d/00-mpm.conf</file>
+            <file>/etc/httpd/conf.modules.d/00-proxy.conf</file>
+            <file>/etc/httpd/conf.modules.d/00-systemd.conf</file>
+            <file>/etc/httpd/conf.modules.d/01-cgi.conf</file>
+            <file>/etc/httpd/conf/httpd.conf</file>
+            <file>/etc/httpd/conf/magic</file>
+            <file>/etc/httpd/logs</file>
+            <file>/etc/httpd/modules</file>
+            <file>/etc/httpd/run</file>
+            <file>/etc/logrotate.d/httpd</file>
+            <file>/etc/sysconfig/htcacheclean</file>
+            <file>/etc/sysconfig/httpd</file>
+            <file>/usr/sbin/apachectl</file>
+            <file>/usr/sbin/fcgistarter</file>
+            <file>/usr/sbin/htcacheclean</file>
+            <file>/usr/sbin/httpd</file>
+            <file>/usr/sbin/rotatelogs</file>
+            <file>/usr/sbin/suexec</file>
         </format>
     </package>
 </metadata>
