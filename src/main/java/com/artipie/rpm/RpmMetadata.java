@@ -10,6 +10,7 @@ import com.artipie.rpm.meta.MergedXmlPackage;
 import com.artipie.rpm.meta.MergedXmlPrimary;
 import com.artipie.rpm.meta.XmlAlter;
 import com.artipie.rpm.meta.XmlEvent;
+import com.artipie.rpm.meta.XmlEventPrimary;
 import com.artipie.rpm.meta.XmlMaid;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlPrimaryMaid;
@@ -137,7 +138,7 @@ public interface RpmMetadata {
                         .filter(item -> item.type == XmlPackage.PRIMARY).findFirst().get();
                     try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(temp))) {
                         res = new MergedXmlPrimary(primary.input, out)
-                            .merge(packages, new XmlEvent.Primary());
+                            .merge(packages, new XmlEventPrimary());
                     }
                     final ExecutorService service = Executors.newFixedThreadPool(3);
                     service.submit(Append.setPrimaryPckg(temp, res, primary));

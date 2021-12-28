@@ -46,12 +46,6 @@
                 <rpm:entry name="rtld(GNU_HASH)"/>
             </rpm:requires>
             <file>/usr/bin/abc</file>
-            <file type="dir">/usr/lib/.build-id/cb</file>
-            <file>/usr/lib/.build-id/cb/263ca8bdb2d581b1a12e604c0e30635e69c889</file>
-            <file type="dir">/usr/share/doc/abc</file>
-            <file>/usr/share/doc/abc/README.md</file>
-            <file>/usr/share/doc/abc/readmeaig</file>
-            <file>/usr/share/man/man1/abc.1.gz</file>
         </format>
     </package>
 </metadata>

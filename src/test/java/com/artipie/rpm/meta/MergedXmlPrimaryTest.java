@@ -46,7 +46,7 @@ class MergedXmlPrimaryTest {
                             libdeflt.path(), Digest.SHA256, libdeflt.path().getFileName().toString()
                         )
                     ),
-                    new XmlEvent.Primary()
+                    new XmlEventPrimary()
                 );
             MatcherAssert.assertThat(
                 "Packages count is incorrect",
@@ -91,7 +91,7 @@ class MergedXmlPrimaryTest {
                             libdeflt.path(), Digest.SHA256, libdeflt.path().getFileName().toString()
                         )
                     ),
-                    new XmlEvent.Primary()
+                    new XmlEventPrimary()
                 );
             MatcherAssert.assertThat(
                 "Packages count is incorrect",
@@ -143,7 +143,7 @@ class MergedXmlPrimaryTest {
                             libdeflt.path(), Digest.SHA256, libdeflt.path().getFileName().toString()
                         )
                     ),
-                    new XmlEvent.Primary()
+                    new XmlEventPrimary()
                 );
             MatcherAssert.assertThat(
                 "Packages count is incorrect",
@@ -187,7 +187,7 @@ class MergedXmlPrimaryTest {
                         abc.path(), Digest.SHA256, abc.path().getFileName().toString()
                     )
                 ),
-                new XmlEvent.Primary()
+                new XmlEventPrimary()
             );
             MatcherAssert.assertThat(
                 "Packages count is incorrect",
@@ -226,7 +226,7 @@ class MergedXmlPrimaryTest {
                     time.path(), Digest.SHA256, time.path().getFileName().toString()
                 )
             ),
-            new XmlEvent.Primary()
+            new XmlEventPrimary()
         );
         MatcherAssert.assertThat(
             "Packages count is incorrect",
