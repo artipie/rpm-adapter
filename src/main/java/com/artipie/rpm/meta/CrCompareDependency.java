@@ -13,6 +13,9 @@ import java.util.Comparator;
  * <p>It assumes that first parts must be same.
  * libc.so.6() < libc.so.6(GLIBC_2.3.4)(64 bit) < libc.so.6(GLIBC_2.4)</p>
  *
+ * @see <a href="https://github.com/rpm-software-management/createrepo_c/blob/b49b8b2586c07d3e84009beba677162b86539f9d/src/parsehdr.c#L82">
+ *  createrepo compare dependency implementation
+ *  </a>
  * @since 1.9.9
  * @checkstyle ExecutableStatementCountCheck (500 lines)
  * @checkstyle JavaNCSSCheck (500 lines)

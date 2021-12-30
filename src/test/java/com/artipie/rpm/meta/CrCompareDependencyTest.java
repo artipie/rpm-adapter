@@ -6,8 +6,6 @@ package com.artipie.rpm.meta;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
-
-import com.artipie.rpm.meta.CrCompareDependency;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -20,6 +18,38 @@ import org.junit.jupiter.api.Test;
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 final class CrCompareDependencyTest {
+
+    @Test
+    void comparesSameDependencies() {
+        MatcherAssert.assertThat(
+            new CrCompareDependency().compare("libc.so.6", "libc.so.6"),
+            Matchers.is(0)
+        );
+    }
+
+    @Test
+    void comparesDependencies() {
+        MatcherAssert.assertThat(
+            Arrays.asList(
+                "libc.so.6(GLIBC_2.3.4)",
+                "libc.so.6(GLIBC_2.4)",
+                "libc.so.6(GLIBC_2.1.3)",
+                "libc.so.6(GLIBC_2.3)",
+                "libc.so.6(GLIBC_2.1.1)",
+                "libc.so.6(GLIBC_2.2)",
+                "libc.so.6",
+                "libc.so.6(GLIBC_2.1)",
+                "libc.so.6(GLIBC_2.0)"
+            )
+            .stream()
+            .sorted(new CrCompareDependency())
+            .collect(Collectors.joining(" < ")),
+            Matchers.is(
+                // @checkstyle LineLengthCheck (1 line)
+                "libc.so.6 < libc.so.6(GLIBC_2.0) < libc.so.6(GLIBC_2.1) < libc.so.6(GLIBC_2.1.1) < libc.so.6(GLIBC_2.1.3) < libc.so.6(GLIBC_2.2) < libc.so.6(GLIBC_2.3) < libc.so.6(GLIBC_2.3.4) < libc.so.6(GLIBC_2.4)"
+            )
+        );
+    }
 
     @Test
     void comparesDependenciesWithSameArchitecture() {
