@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import org.cactoos.text.FormattedText;
 import org.hamcrest.Matcher;
 import org.hamcrest.core.AllOf;
 import org.llorllale.cactoos.matchers.MatcherOf;
@@ -55,16 +54,20 @@ public final class StorageHasRepoMd extends AllOf<Storage> {
     private static List<Matcher<? super Storage>> matchers(final RepoConfig config) {
         final List<Matcher<? super Storage>> res = new ArrayList<>(4);
         res.add(
-            new MatcherOf<Storage>(
+            new MatcherOf<>(
                 storage -> storage.exists(StorageHasRepoMd.REPOMD).join(),
-                new FormattedText("Repomd is present")
+                desc -> desc.appendText("Repomd is present"),
+                (sto, desc) ->  desc.appendText("Repomd is not present")
             )
         );
         new XmlPackage.Stream(config.filelists()).get().forEach(
-            pckg -> res.add(
-                new MatcherOf<Storage>(
-                    storage -> hasRecord(storage, pckg, config.digest()),
-                    new FormattedText("Repomd has record for %s xml", pckg.name())
+            pkg -> res.add(
+                new MatcherOf<>(
+                    storage -> hasRecord(storage, pkg, config.digest()),
+                    desc -> desc.appendText(
+                        String.format("Repomd has record for %s xml", pkg.name())
+                    ),
+                    (sto, desc) ->  String.format("Repomd has not record for %s xml", pkg.name())
                 )
             )
         );
