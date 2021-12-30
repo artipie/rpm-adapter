@@ -2,7 +2,7 @@
  * The MIT License (MIT) Copyright (c) 2020-2021 artipie.com
  * https://github.com/artipie/rpm-adapter/LICENSE.txt
  */
-package com.artipie.rpm;
+package com.artipie.rpm.meta;
 
 import com.vdurmont.semver4j.Semver;
 import java.util.Comparator;
