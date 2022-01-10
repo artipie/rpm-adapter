@@ -12,16 +12,12 @@ import java.nio.file.Path;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsNot;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.llorllale.cactoos.matchers.Matches;
 import org.llorllale.cactoos.matchers.Mismatches;
 
 /**
  * Test for {@link NodeHasPkgCount}.
  * @since 0.10
- * @todo #307:30min Test methods for description verification fail on windows: figure out why,
- *  fix it and remove disable annotation.
  * @checkstyle MagicNumberCheck (500 lines)
  */
 final class NodeHasPkgCountTest {
@@ -63,7 +59,6 @@ final class NodeHasPkgCountTest {
     }
 
     @Test
-    @DisabledOnOs(OS.WINDOWS)
     void describesCorrectlyWhenPackagesAmountDiffers() throws FileNotFoundException {
         MatcherAssert.assertThat(
             new NodeHasPkgCount(10, XmlPackage.PRIMARY.tag()),
@@ -88,7 +83,6 @@ final class NodeHasPkgCountTest {
     }
 
     @Test
-    @DisabledOnOs(OS.WINDOWS)
     void describesCorrectlyWhenPackageAttributeDiffers() throws FileNotFoundException {
         MatcherAssert.assertThat(
             new NodeHasPkgCount(2, XmlPackage.OTHER.tag()),
