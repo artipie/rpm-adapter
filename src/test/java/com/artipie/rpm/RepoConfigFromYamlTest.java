@@ -6,11 +6,12 @@ package com.artipie.rpm;
 
 import com.amihaiemil.eoyaml.Yaml;
 import java.util.Optional;
-import org.cactoos.func.ProcOf;
+import org.cactoos.list.ListOf;
+import org.hamcrest.Matcher;
 import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
+import org.hamcrest.core.AllOf;
 import org.junit.jupiter.api.Test;
-import org.llorllale.cactoos.matchers.MatcherOf;
+import org.llorllale.cactoos.matchers.Satisfies;
 
 /**
  * Test for {@link RepoConfig.FromYaml}.
@@ -27,12 +28,14 @@ public final class RepoConfigFromYamlTest {
                 .add("naming-policy", "sha256").add("filelists", "false")
                 .add("update", Yaml.createYamlMappingBuilder().add("on", "upload").build()).build()
             ),
-            Matchers.allOf(
-                new MatcherOf<>(cnfg -> cnfg.digest() == Digest.SHA1),
-                new MatcherOf<>(cnfg -> cnfg.naming() == StandardNamingPolicy.SHA256),
-                new MatcherOf<>(fromYaml -> !fromYaml.filelists()),
-                new MatcherOf<>(cnfg -> cnfg.mode() == RepoConfig.UpdateMode.UPLOAD),
-                new MatcherOf<>(new ProcOf<>(cnfg -> !cnfg.cron().isPresent()))
+            new AllOf<>(
+                new ListOf<Matcher<? super RepoConfig>>(
+                    new Satisfies<>(cfg -> cfg.digest() == Digest.SHA1),
+                    new Satisfies<>(cfg -> cfg.naming() == StandardNamingPolicy.SHA256),
+                    new Satisfies<>(fromYaml -> !fromYaml.filelists()),
+                    new Satisfies<>(cfg -> cfg.mode() == RepoConfig.UpdateMode.UPLOAD),
+                    new Satisfies<>(cfg -> !cfg.cron().isPresent())
+                )
             )
         );
     }
@@ -51,9 +54,11 @@ public final class RepoConfigFromYamlTest {
                         ).build()
                     ).build()
             ),
-            Matchers.allOf(
-                new MatcherOf<>(cnfg -> cnfg.mode() == RepoConfig.UpdateMode.CRON),
-                new MatcherOf<>(new ProcOf<>(cnfg -> !cnfg.cron().get().equals(cron)))
+            new AllOf<>(
+                new ListOf<Matcher<? super RepoConfig>>(
+                    new Satisfies<>(cfg -> cfg.mode() == RepoConfig.UpdateMode.CRON),
+                    new Satisfies<>(cfg -> cfg.cron().get().equals(cron))
+                )
             )
         );
     }
@@ -62,12 +67,14 @@ public final class RepoConfigFromYamlTest {
     void returnsDefaults() {
         MatcherAssert.assertThat(
             new RepoConfig.FromYaml(Optional.empty()),
-            Matchers.allOf(
-                new MatcherOf<>(cnfg -> cnfg.digest() == Digest.SHA256),
-                new MatcherOf<>(cnfg -> cnfg.naming() == StandardNamingPolicy.SHA256),
-                new MatcherOf<>(new ProcOf<>(RepoConfig.FromYaml::filelists)),
-                new MatcherOf<>(cnfg -> cnfg.mode() == RepoConfig.UpdateMode.UPLOAD),
-                new MatcherOf<>(new ProcOf<>(cnfg -> !cnfg.cron().isPresent()))
+            new AllOf<>(
+                new ListOf<Matcher<? super RepoConfig>>(
+                    new Satisfies<>(cfg -> cfg.digest() == Digest.SHA256),
+                    new Satisfies<>(cfg -> cfg.naming() == StandardNamingPolicy.SHA256),
+                    new Satisfies<>(RepoConfig::filelists),
+                    new Satisfies<>(cfg -> cfg.mode() == RepoConfig.UpdateMode.UPLOAD),
+                    new Satisfies<>(cfg -> !cfg.cron().isPresent())
+                )
             )
         );
     }
