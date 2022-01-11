@@ -41,9 +41,8 @@
             <rpm:requires>
                 <rpm:entry name="abc-libs(ppc-64)" flags="EQ" ver="1.01" epoch="0" rel="26.git20200127.fc32"/>
                 <rpm:entry name="libabc.so.0()(64bit)"/>
-                <rpm:entry name="libc.so.6()(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.17)(64bit)"/>
                 <rpm:entry name="rtld(GNU_HASH)"/>
+                <rpm:entry name="libc.so.6(GLIBC_2.17)(64bit)"/>
             </rpm:requires>
             <file>/usr/bin/abc</file>
         </format>

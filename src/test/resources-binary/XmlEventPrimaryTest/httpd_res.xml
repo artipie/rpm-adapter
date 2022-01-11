@@ -44,12 +44,6 @@
                 <rpm:entry name="/bin/sh" pre="1"/>
                 <rpm:entry name="libapr-1.so.0()(64bit)"/>
                 <rpm:entry name="libaprutil-1.so.0()(64bit)"/>
-                <rpm:entry name="libc.so.6()(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.14)(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.2.5)(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.3)(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.3.4)(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.4)(64bit)"/>
                 <rpm:entry name="libcrypt.so.1()(64bit)"/>
                 <rpm:entry name="libdb-5.3.so()(64bit)"/>
                 <rpm:entry name="libdl.so.2()(64bit)"/>
@@ -64,6 +58,7 @@
                 <rpm:entry name="libsystemd-daemon.so.0(LIBSYSTEMD_DAEMON_31)(64bit)"/>
                 <rpm:entry name="libz.so.1()(64bit)"/>
                 <rpm:entry name="rtld(GNU_HASH)"/>
+                <rpm:entry name="libc.so.6(GLIBC_2.14)(64bit)"/>
             </rpm:requires>
             <file type="dir">/etc/httpd</file>
             <file type="dir">/etc/httpd/conf</file>

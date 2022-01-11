@@ -8,6 +8,7 @@ import com.artipie.rpm.misc.UncheckedConsumer;
 import com.artipie.rpm.pkg.HeaderTags;
 import com.artipie.rpm.pkg.Package;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -174,6 +175,7 @@ public final class XmlEventPrimary implements XmlEvent {
      * @param tags Tag info
      * @throws XMLStreamException On error
      */
+    @SuppressWarnings("PMD.CyclomaticComplexity")
     private static void addRequires(final XMLEventWriter writer, final HeaderTags tags)
         throws XMLStreamException {
         final XMLEventFactory events = XMLEventFactory.newFactory();
@@ -186,8 +188,13 @@ public final class XmlEventPrimary implements XmlEvent {
         final List<HeaderTags.Version> versions = tags.requiresVer();
         final Map<String, Integer> items = new HashMap<>(names.size());
         final Set<String> duplicates = new HashSet<>(names.size());
+        final List<String> libcso = new ArrayList<>(names.size());
         for (int ind = 0; ind < names.size(); ind = ind + 1) {
             final String name = names.get(ind);
+            if (name.startsWith("libc.so.")) {
+                libcso.add(name);
+                continue;
+            }
             int pre = 0;
             if ((intflags.get(ind)
                 & (XmlEventPrimary.RPMSENSE_PREREQ
@@ -220,6 +227,16 @@ public final class XmlEventPrimary implements XmlEvent {
                 );
             }
             duplicates.add(full);
+        }
+        if (!libcso.isEmpty()) {
+            libcso.sort(new CrCompareDependency());
+            writer.add(
+                events.createStartElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "entry")
+            );
+            writer.add(events.createAttribute("name", libcso.get(libcso.size() - 1)));
+            writer.add(
+                events.createEndElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "entry")
+            );
         }
         writer.add(
             events.createEndElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "requires")
