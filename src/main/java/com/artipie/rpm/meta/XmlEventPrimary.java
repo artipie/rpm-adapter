@@ -120,8 +120,9 @@ public final class XmlEventPrimary implements XmlEvent {
             XmlEventPrimary.addRequires(writer, tags);
             // @checkstyle BooleanExpressionComplexityCheck (10 lines)
             new Files(
-                name -> name.startsWith("/var/") || name.startsWith("/lib/")
-                    || name.startsWith("/lib64/")
+                name -> name.startsWith("/var/")
+                    || name.startsWith("/lib/") || name.startsWith("/lib64/")
+                    || "/lib64".equals(name) || "/lib".equals(name)
                     || name.startsWith("/run/") || name.startsWith("/usr/")
                     && !(name.contains("/bin/") || name.contains("/sbin/"))
             ).add(writer, meta);
