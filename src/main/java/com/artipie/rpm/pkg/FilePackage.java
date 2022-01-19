@@ -24,61 +24,6 @@ import org.redline_rpm.header.Header;
 public final class FilePackage implements Package {
 
     /**
-     * The RPM file.
-     */
-    private final Path file;
-
-    /**
-     * The RPM file location relatively to the updated repository.
-     */
-    private final String location;
-
-    /**
-     * Ctor.
-     * @param path The path
-     * @param location File relative location
-     */
-    public FilePackage(final Path path, final String location) {
-        this.file = path;
-        this.location = location;
-    }
-
-    /**
-     * Get path.
-     * @return Path
-     */
-    public Path path() {
-        return this.file;
-    }
-
-    @Override
-    public void save(final PackageOutput out, final Digest digest) throws IOException {
-        out.accept(
-            new FilePackage.Headers(
-                new FilePackageHeader(this.file).header(), this.file, digest, this.location
-            )
-        );
-        Files.delete(this.file);
-    }
-
-    @Override
-    public String toString() {
-        return String.format("%s[%s]", this.getClass().getSimpleName(), this.file.getFileName());
-    }
-
-    /**
-     * Parsed file package.
-     * @return Parsed package
-     * @throws InvalidPackageException In case package is invalid.
-     * @throws IOException On error
-     */
-    public Package parsed() throws InvalidPackageException, IOException {
-        return new ParsedFilePackage(
-            new FilePackageHeader(this.file).header(), this.file, this.location
-        );
-    }
-
-    /**
      * File package metadata.
      * @since 0.6
      */

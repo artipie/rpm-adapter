@@ -5,6 +5,7 @@
 package com.artipie.rpm.misc;
 
 import com.google.common.collect.Maps;
+import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -49,14 +50,14 @@ public final class PackagesDiff {
      * Return packages, that should be added/updated in the repository. These packages are:<br/>
      * 1) packages, that are present in repo and not present in primary<br/>
      * 2) packages, that are present both in repo and primary, but have different checksums
-     * @return Map with different (by value) items
+     * @return Collection with packages names
      */
-    public Map<String, String> toAdd() {
+    public Collection<String> toAdd() {
         return Stream.concat(
             Maps.difference(this.primary, this.repo).entriesDiffering().entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().leftValue()))
                 .entrySet().stream(),
             Maps.difference(this.primary, this.repo).entriesOnlyOnRight().entrySet().stream()
-        ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)).keySet();
     }
 }

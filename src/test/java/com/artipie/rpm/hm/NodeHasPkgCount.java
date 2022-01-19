@@ -9,6 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.hamcrest.core.IsEqual;
 import org.llorllale.cactoos.matchers.MatcherEnvelope;
+import org.llorllale.cactoos.matchers.MatcherOf;
 
 /**
  * Metadata has given amount of packages.
@@ -28,13 +29,15 @@ public final class NodeHasPkgCount extends MatcherEnvelope<XMLDocument> {
      */
     public NodeHasPkgCount(final int count, final String tag) {
         super(
-            xml -> new IsEqual<>(count).matches(countPackages(tag, xml))
-                && new IsEqual<>(count).matches(packagesAttributeValue(xml)),
-            desc -> desc.appendText(String.format("%d packages expected", count)),
-            (xml, desc) -> desc.appendText(
-                String.format(
-                    "%d packages found, 'packages' attribute value is %d",
-                    countPackages(tag, xml), packagesAttributeValue(xml)
+            new MatcherOf<>(
+                xml -> new IsEqual<>(count).matches(countPackages(tag, xml))
+                    && new IsEqual<>(count).matches(packagesAttributeValue(xml)),
+                desc -> desc.appendText(String.format("%d packages expected", count)),
+                (xml, desc) -> desc.appendText(
+                    String.format(
+                        "%d packages found, 'packages' attribute value is %d",
+                        countPackages(tag, xml), packagesAttributeValue(xml)
+                    )
                 )
             )
         );

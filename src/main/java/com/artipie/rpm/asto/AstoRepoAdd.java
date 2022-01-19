@@ -15,6 +15,7 @@ import com.artipie.rpm.pkg.Package;
 import com.jcabi.log.Logger;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Flowable;
+import io.reactivex.schedulers.Schedulers;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -102,6 +103,7 @@ public final class AstoRepoAdd {
     private CompletionStage<List<Package.Meta>> read() {
         return SingleInterop.fromFuture(this.asto.list(RpmUpload.TO_ADD))
             .flatMapPublisher(Flowable::fromIterable)
+            .parallel().runOn(Schedulers.io())
             .flatMap(
                 key -> Flowable.fromFuture(
                     new AstoRpmPackage(this.asto, this.cnfg.digest()).packageMeta(
@@ -117,7 +119,7 @@ public final class AstoRepoAdd {
                             .andThen(Flowable.empty());
                     }
                 )
-            ).toList().to(SingleInterop.get());
+            ).sequential().observeOn(Schedulers.io()).toList().to(SingleInterop.get());
     }
 
     /**

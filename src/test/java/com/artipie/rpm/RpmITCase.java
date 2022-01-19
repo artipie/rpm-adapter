@@ -83,7 +83,8 @@ final class RpmITCase {
     }
 
     @Test
-    void generatesMetadata() {
+    void generatesMetadata() throws IOException, InterruptedException {
+        this.modifyRepo();
         final boolean filelist = true;
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, filelist)
             .batchUpdate(Key.ROOT)
@@ -95,20 +96,7 @@ final class RpmITCase {
     }
 
     @Test
-    void generatesMetadataIncrementally() throws Exception {
-        this.modifyRepo();
-        final boolean filelist = true;
-        new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, filelist)
-            .batchUpdateIncrementally(Key.ROOT)
-            .blockingAwait();
-        MatcherAssert.assertThat(
-            this.storage,
-            new StorageHasMetadata(RpmITCase.SIZE.count() - 4, filelist, RpmITCase.tmp)
-        );
-    }
-
-    @Test
-    void dontKeepOldMetadata() throws Exception {
+    void dontKeepOldMetadata() {
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
@@ -135,52 +123,12 @@ final class RpmITCase {
     }
 
     @Test
-    void dontKeepOldMetadataWhenUpdatingIncrementally() throws InterruptedException {
-        new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
-            .batchUpdateIncrementally(Key.ROOT)
-            .blockingAwait();
-        final BlockingStorage bsto = new BlockingStorage(this.storage);
-        MatcherAssert.assertThat(
-            "got 4 metadata files after first update",
-            bsto.list(new Key.From("repodata")).size(),
-            Matchers.equalTo(4)
-        );
-        for (int cnt = 0; cnt < 5; ++cnt) {
-            final Key first = bsto.list(Key.ROOT).stream()
-                .filter(name -> name.string().endsWith(".rpm"))
-                .findFirst().orElseThrow(() -> new IllegalStateException("not key found"));
-            bsto.delete(first);
-            new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
-                .batchUpdateIncrementally(Key.ROOT)
-                .blockingAwait();
-        }
-        MatcherAssert.assertThat(
-            "got 4 metadata files after second update",
-            bsto.list(new Key.From("repodata")).size(),
-            Matchers.equalTo(4)
-        );
-    }
-
-    @Test
-    void generatesRepomdMetadata() {
-        final RepoConfig config =
-            new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.SHA1, true);
-        new Rpm(this.storage, config)
-            .batchUpdate(Key.ROOT)
-            .blockingAwait();
-        MatcherAssert.assertThat(
-            this.storage,
-            new StorageHasRepoMd(config)
-        );
-    }
-
-    @Test
-    void generatesRepomdIncrementallyMetadata() throws Exception {
+    void generatesRepomdMetadata() throws IOException, InterruptedException {
         this.modifyRepo();
         final RepoConfig config =
             new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.SHA1, true);
         new Rpm(this.storage, config)
-            .batchUpdateIncrementally(Key.ROOT)
+            .batchUpdate(Key.ROOT)
             .blockingAwait();
         MatcherAssert.assertThat(
             this.storage,

@@ -167,7 +167,7 @@ SOFTWARE.
     <dependency>
       <groupId>org.llorllale</groupId>
       <artifactId>cactoos-matchers</artifactId>
-      <version>0.18</version>
+      <version>0.25</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -234,6 +234,11 @@ SOFTWARE.
       <groupId>com.jcabi</groupId>
       <artifactId>jcabi-aspects</artifactId>
       <version>0.23.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vdurmont</groupId>
+      <artifactId>semver4j</artifactId>
+      <version>3.1.0</version>
     </dependency>
   </dependencies>
   <build>
@@ -348,7 +353,7 @@ SOFTWARE.
                     <limit>
                       <counter>CLASS</counter>
                       <value>MISSEDCOUNT</value>
-                      <maximum>5</maximum>
+                      <maximum>7</maximum>
                     </limit>
                   </limits>
                 </rule>

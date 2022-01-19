@@ -15,6 +15,7 @@ import com.artipie.rpm.meta.MergedXmlPackage;
 import com.artipie.rpm.meta.MergedXmlPrimary;
 import com.artipie.rpm.meta.XmlAlter;
 import com.artipie.rpm.meta.XmlEvent;
+import com.artipie.rpm.meta.XmlEventPrimary;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.pkg.Package;
 import java.io.BufferedInputStream;
@@ -103,7 +104,7 @@ public final class AstoMetadataAdd {
                         (input, out) -> new UncheckedScalar<>(
                             () -> new MergedXmlPrimary(
                                 input.map(new UncheckedIOFunc<>(GZIPInputStream::new)), out
-                            ).merge(metas, new XmlEvent.Primary())
+                            ).merge(metas, new XmlEventPrimary())
                         ).value()
                     ).thenCompose(
                         res -> new StorageValuePipeline<>(this.asto, tempkey).process(

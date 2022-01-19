@@ -87,17 +87,13 @@
                 <rpm:entry name="libdeflt1_0(armv7hl-32)" flags="EQ" ver="2020.03.27" epoch="0" rel="25.1"/>
             </rpm:provides>
             <rpm:requires>
-                <rpm:entry name="/sbin/ldconfig"/>
+                <rpm:entry name="/sbin/ldconfig" pre="1"/>
                 <rpm:entry name="ld-linux-armhf.so.3"/>
                 <rpm:entry name="ld-linux-armhf.so.3(GLIBC_2.4)"/>
-                <rpm:entry name="libc.so.6"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.4)"/>
                 <rpm:entry name="libgcc_s.so.1"/>
                 <rpm:entry name="libgcc_s.so.1(GCC_3.5)"/>
+                <rpm:entry name="libc.so.6(GLIBC_2.4)"/>
             </rpm:requires>
-            <file>/usr/lib/libdeflt.so.1.0</file>
-            <file type="dir">/usr/share/licenses/libdeflt1_0</file>
-            <file>/usr/share/licenses/libdeflt1_0/CDDL.Schily.txt</file>
         </format>
     </package>
     <package type="rpm">
@@ -138,17 +134,10 @@
             <rpm:requires>
                 <rpm:entry name="abc-libs(ppc-64)" flags="EQ" ver="1.01" epoch="0" rel="26.git20200127.fc32"/>
                 <rpm:entry name="libabc.so.0()(64bit)"/>
-                <rpm:entry name="libc.so.6()(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.17)(64bit)"/>
                 <rpm:entry name="rtld(GNU_HASH)"/>
+                <rpm:entry name="libc.so.6(GLIBC_2.17)(64bit)"/>
             </rpm:requires>
             <file>/usr/bin/abc</file>
-            <file type="dir">/usr/lib/.build-id/cb</file>
-            <file>/usr/lib/.build-id/cb/263ca8bdb2d581b1a12e604c0e30635e69c889</file>
-            <file type="dir">/usr/share/doc/abc</file>
-            <file>/usr/share/doc/abc/README.md</file>
-            <file>/usr/share/doc/abc/readmeaig</file>
-            <file>/usr/share/man/man1/abc.1.gz</file>
         </format>
     </package>
 </metadata>

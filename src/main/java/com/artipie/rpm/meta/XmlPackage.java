@@ -4,12 +4,6 @@
  */
 package com.artipie.rpm.meta;
 
-import com.artipie.rpm.pkg.FilelistsOutput;
-import com.artipie.rpm.pkg.OthersOutput;
-import com.artipie.rpm.pkg.PackageOutput;
-import com.artipie.rpm.pkg.PrimaryOutput;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.Locale;
 import java.util.Map;
 import org.cactoos.map.MapEntry;
@@ -30,12 +24,7 @@ public enum XmlPackage {
             new MapEntry<>("", "http://linux.duke.edu/metadata/common"),
             new MapEntry<>("rpm", "http://linux.duke.edu/metadata/rpm")
         )
-    ) {
-        @Override
-        public PackageOutput.FileOutput output() throws IOException {
-            return new PrimaryOutput(Files.createTempFile(this.tempPrefix(), XmlPackage.SUFFIX));
-        }
-    },
+    ),
 
     /**
      * Metadata other.xml.
@@ -43,12 +32,7 @@ public enum XmlPackage {
     OTHER(
         "otherdata",
         new MapOf<String, String>(new MapEntry<>("", "http://linux.duke.edu/metadata/other"))
-    ) {
-        @Override
-        public PackageOutput.FileOutput output() throws IOException {
-            return new OthersOutput(Files.createTempFile(this.tempPrefix(), XmlPackage.SUFFIX));
-        }
-    },
+    ),
 
     /**
      * Metadata filelists.xml.
@@ -56,12 +40,7 @@ public enum XmlPackage {
     FILELISTS(
         "filelists",
         new MapOf<String, String>(new MapEntry<>("", "http://linux.duke.edu/metadata/filelists"))
-    ) {
-        @Override
-        public PackageOutput.FileOutput output() throws IOException {
-            return new FilelistsOutput(Files.createTempFile(this.tempPrefix(), XmlPackage.SUFFIX));
-        }
-    };
+    );
 
     /**
      * File suffix.
@@ -120,13 +99,6 @@ public enum XmlPackage {
     public Map<String, String> xmlNamespaces() {
         return this.namespaces;
     }
-
-    /**
-     * File output for the xml package.
-     * @return FileOutput instance
-     * @throws IOException On error
-     */
-    public abstract PackageOutput.FileOutput output() throws IOException;
 
     /**
      * List of XmlPackage.

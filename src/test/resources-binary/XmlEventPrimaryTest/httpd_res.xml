@@ -38,18 +38,12 @@
                 <rpm:entry name="/etc/mime.types"/>
                 <rpm:entry name="system-logos"/>
                 <rpm:entry name="httpd-tools" ver="2.4.6" epoch="0" rel="80.1.h8.eulerosv2r7" flags="EQ"/>
-                <rpm:entry name="/usr/sbin/useradd"/>
-                <rpm:entry name="/usr/sbin/groupadd"/>
+                <rpm:entry name="/usr/sbin/useradd" pre="1"/>
+                <rpm:entry name="/usr/sbin/groupadd" pre="1"/>
                 <rpm:entry name="systemd-units"/>
-                <rpm:entry name="/bin/sh"/>
+                <rpm:entry name="/bin/sh" pre="1"/>
                 <rpm:entry name="libapr-1.so.0()(64bit)"/>
                 <rpm:entry name="libaprutil-1.so.0()(64bit)"/>
-                <rpm:entry name="libc.so.6()(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.14)(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.2.5)(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.3)(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.3.4)(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.4)(64bit)"/>
                 <rpm:entry name="libcrypt.so.1()(64bit)"/>
                 <rpm:entry name="libdb-5.3.so()(64bit)"/>
                 <rpm:entry name="libdl.so.2()(64bit)"/>
@@ -64,7 +58,37 @@
                 <rpm:entry name="libsystemd-daemon.so.0(LIBSYSTEMD_DAEMON_31)(64bit)"/>
                 <rpm:entry name="libz.so.1()(64bit)"/>
                 <rpm:entry name="rtld(GNU_HASH)"/>
+                <rpm:entry name="libc.so.6(GLIBC_2.14)(64bit)"/>
             </rpm:requires>
+            <file type="dir">/etc/httpd</file>
+            <file type="dir">/etc/httpd/conf</file>
+            <file type="dir">/etc/httpd/conf.d</file>
+            <file>/etc/httpd/conf.d/README</file>
+            <file>/etc/httpd/conf.d/autoindex.conf</file>
+            <file>/etc/httpd/conf.d/userdir.conf</file>
+            <file>/etc/httpd/conf.d/welcome.conf</file>
+            <file type="dir">/etc/httpd/conf.modules.d</file>
+            <file>/etc/httpd/conf.modules.d/00-base.conf</file>
+            <file>/etc/httpd/conf.modules.d/00-dav.conf</file>
+            <file>/etc/httpd/conf.modules.d/00-lua.conf</file>
+            <file>/etc/httpd/conf.modules.d/00-mpm.conf</file>
+            <file>/etc/httpd/conf.modules.d/00-proxy.conf</file>
+            <file>/etc/httpd/conf.modules.d/00-systemd.conf</file>
+            <file>/etc/httpd/conf.modules.d/01-cgi.conf</file>
+            <file>/etc/httpd/conf/httpd.conf</file>
+            <file>/etc/httpd/conf/magic</file>
+            <file>/etc/httpd/logs</file>
+            <file>/etc/httpd/modules</file>
+            <file>/etc/httpd/run</file>
+            <file>/etc/logrotate.d/httpd</file>
+            <file>/etc/sysconfig/htcacheclean</file>
+            <file>/etc/sysconfig/httpd</file>
+            <file>/usr/sbin/apachectl</file>
+            <file>/usr/sbin/fcgistarter</file>
+            <file>/usr/sbin/htcacheclean</file>
+            <file>/usr/sbin/httpd</file>
+            <file>/usr/sbin/rotatelogs</file>
+            <file>/usr/sbin/suexec</file>
         </format>
     </package>
 </metadata>
