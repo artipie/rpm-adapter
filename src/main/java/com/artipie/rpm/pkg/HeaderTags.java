@@ -244,8 +244,9 @@ public final class HeaderTags {
      * Get the obsolete versions header.
      * @return Value of header tag OBSOLETEVERSION.
      */
-    public List<String> obsoletesVer() {
-        return this.meta.header(Header.HeaderTag.OBSOLETEVERSION).asStrings();
+    public List<HeaderTags.Version> obsoletesVer() {
+        return this.meta.header(Header.HeaderTag.OBSOLETEVERSION).asStrings()
+            .stream().map(HeaderTags.Version::new).collect(Collectors.toList());
     }
 
     /**

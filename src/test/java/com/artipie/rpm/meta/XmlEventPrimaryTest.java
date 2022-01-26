@@ -35,7 +35,8 @@ class XmlEventPrimaryTest {
         "httpd-2.4.6-80.1.h8.eulerosv2r7.x86_64.rpm,httpd_res.xml",
         "felix-framework-4.2.1-5.el7.noarch.rpm,felix-framework-res.xml",
         "ant-1.9.4-2.el7.noarch.rpm,ant_res.xml",
-        "dbus-1.6.12-17.el7.x86_64.rpm,dbus_res.xml"
+        "dbus-1.6.12-17.el7.x86_64.rpm,dbus_res.xml",
+        "compat-db47-4.7.25-28.el7.i686.rpm,compat_res.xml"
     })
     void writesPackageInfo(final String rpm, final String res) throws XMLStreamException,
         IOException {

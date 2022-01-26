@@ -26,6 +26,7 @@ import org.cactoos.map.MapOf;
  *
  * @checkstyle ExecutableStatementCountCheck (500 lines)
  * @checkstyle MagicNumberCheck (20 lines)
+ * @checkstyle CyclomaticComplexityCheck (500 lines)
  * @since 1.5
  */
 @SuppressWarnings({"PMD.LongVariable", "PMD.AvoidDuplicateLiterals"})
@@ -118,9 +119,11 @@ public final class XmlEventPrimary implements XmlEvent {
             );
             XmlEventPrimary.addProvides(writer, tags);
             XmlEventPrimary.addRequires(writer, tags);
+            XmlEventPrimary.addObsoletes(writer, tags);
             // @checkstyle BooleanExpressionComplexityCheck (10 lines)
             new Files(
                 name -> name.startsWith("/var/")
+                    || name.startsWith("/boot") || name.startsWith("/boot/")
                     || name.startsWith("/lib/") || name.startsWith("/lib64/")
                     || "/lib64".equals(name) || "/lib".equals(name)
                     || name.startsWith("/run/") || name.startsWith("/usr/")
@@ -241,6 +244,42 @@ public final class XmlEventPrimary implements XmlEvent {
         }
         writer.add(
             events.createEndElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "requires")
+        );
+    }
+
+    /**
+     * Builds `obsoletes` tag.
+     *
+     * @param writer Xml event writer
+     * @param tags Tag info
+     * @throws XMLStreamException On error
+     */
+    private static void addObsoletes(final XMLEventWriter writer, final HeaderTags tags)
+        throws XMLStreamException {
+        final List<String> names = tags.obsoletes();
+        if (names.isEmpty()) {
+            return;
+        }
+        final XMLEventFactory events = XMLEventFactory.newFactory();
+        writer.add(
+            events.createStartElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "obsoletes")
+        );
+        final List<Optional<String>> flags = tags.obsoletesFlags();
+        final List<HeaderTags.Version> versions = tags.obsoletesVer();
+        for (int ind = 0; ind < names.size(); ind = ind + 1) {
+            writer.add(
+                events.createStartElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "entry")
+            );
+            writer.add(events.createAttribute("name", names.get(ind)));
+            XmlEventPrimary.addEntryAttr(
+                writer, events, versions, ind, flags, HeaderTags.Flags.EQUAL.notation()
+            );
+            writer.add(
+                events.createEndElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "entry")
+            );
+        }
+        writer.add(
+            events.createEndElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "obsoletes")
         );
     }
 
