@@ -233,6 +233,33 @@ public final class HeaderTags {
     }
 
     /**
+     * Get the obsolete name header.
+     * @return Value of header tag OBSOLETENAME.
+     */
+    public List<String> obsoletes() {
+        return this.meta.header(Header.HeaderTag.OBSOLETENAME).asStrings();
+    }
+
+    /**
+     * Get the obsolete versions header.
+     * @return Value of header tag OBSOLETEVERSION.
+     */
+    public List<String> obsoletesVer() {
+        return this.meta.header(Header.HeaderTag.OBSOLETEVERSION).asStrings();
+    }
+
+    /**
+     * Get the obsolete flags header.
+     * @return Value of header tag OBSOLETEFLAGS.
+     */
+    public List<Optional<String>> obsoletesFlags() {
+        // @checkstyle MagicNumberCheck (2 lines)
+        return Arrays.stream(this.meta.header(Header.HeaderTag.OBSOLETEFLAGS).asInts()).boxed()
+            .map(flag -> flag &= 0xf)
+            .map(Flags::find).collect(Collectors.toList());
+    }
+
+    /**
      * Get the require flags headers as ints.
      * @return Value of header tag REQUIREFLAGS.
      */
