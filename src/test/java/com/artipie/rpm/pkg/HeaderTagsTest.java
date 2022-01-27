@@ -9,6 +9,7 @@ import com.artipie.rpm.Digest;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,8 @@ class HeaderTagsTest {
         MatcherAssert.assertThat(
             new HeaderTags(
                 new FilePackage.Headers(new FilePackageHeader(file).header(), file, Digest.SHA256)
-            ).obsoletesVer(),
+            ).obsoletesVer()
+                .stream().map(HeaderTags.Version::toString).collect(Collectors.toList()),
             Matchers.contains("0:1.9.4-2.el7")
         );
     }
