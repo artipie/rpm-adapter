@@ -29,7 +29,7 @@ import org.cactoos.map.MapOf;
  * @checkstyle CyclomaticComplexityCheck (500 lines)
  * @since 1.5
  */
-@SuppressWarnings({"PMD.LongVariable", "PMD.AvoidDuplicateLiterals"})
+@SuppressWarnings({"PMD.LongVariable", "PMD.AvoidDuplicateLiterals", "PMD.TooManyMethods"})
 public final class XmlEventPrimary implements XmlEvent {
 
     /**
@@ -193,8 +193,12 @@ public final class XmlEventPrimary implements XmlEvent {
         final Map<String, Integer> items = new HashMap<>(names.size());
         final Set<String> duplicates = new HashSet<>(names.size());
         final List<String> libcso = new ArrayList<>(names.size());
+        final Set<String> provides = XmlEventPrimary.provides(tags);
         for (int ind = 0; ind < names.size(); ind = ind + 1) {
             final String name = names.get(ind);
+            if (provides.contains(name.concat(versions.get(ind).toString()))) {
+                continue;
+            }
             if (name.startsWith("libc.so.")) {
                 libcso.add(name);
                 continue;
@@ -388,5 +392,20 @@ public final class XmlEventPrimary implements XmlEvent {
         final Map<String, Integer> items, final String item) {
         return Optional.ofNullable(items.get(item)).flatMap(flags::get)
             .orElse(HeaderTags.Flags.EQUAL.notation());
+    }
+
+    /**
+     * Returns set with provides items, names and version.
+     * @param tags Header tags
+     * @return Set with provides
+     */
+    private static Set<String> provides(final HeaderTags tags) {
+        final List<String> names = tags.providesNames();
+        final List<HeaderTags.Version> vers = tags.providesVer();
+        final Set<String> res = new HashSet<>();
+        for (int ind = 0; ind < names.size(); ind = ind + 1) {
+            res.add(names.get(ind).concat(vers.get(ind).toString()));
+        }
+        return res;
     }
 }
