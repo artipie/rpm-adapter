@@ -123,7 +123,7 @@ public final class XmlEventPrimary implements XmlEvent {
             // @checkstyle BooleanExpressionComplexityCheck (10 lines)
             new Files(
                 name -> name.startsWith("/var/")
-                    || name.startsWith("/boot") || name.startsWith("/boot/")
+                    || name.equals("/boot") || name.startsWith("/boot/")
                     || name.startsWith("/lib/") || name.startsWith("/lib64/")
                     || "/lib64".equals(name) || "/lib".equals(name)
                     || name.startsWith("/run/") || name.startsWith("/usr/")
