@@ -31,7 +31,6 @@
             </rpm:provides>
             <rpm:requires>
                 <rpm:entry name="compat-db-headers" ver="4.7.25" epoch="0" rel="28.el7" flags="EQ"/>
-                <rpm:entry name="libdb-4.7.so"/>
                 <rpm:entry name="libgcc_s.so.1"/>
                 <rpm:entry name="libgcc_s.so.1(GCC_3.0)"/>
                 <rpm:entry name="libm.so.6"/>
