@@ -228,7 +228,7 @@ public final class HeaderTags {
      */
     public List<Optional<String>> requireFlags() {
         // @checkstyle MagicNumberCheck (1 line)
-        return this.requireFlagsInts().stream().map(flag -> flag &= 0xf)
+        return this.requireFlagsInts().stream().map(flag -> flag & 0xf)
             .map(Flags::find).collect(Collectors.toList());
     }
 
@@ -255,9 +255,9 @@ public final class HeaderTags {
      */
     public List<Optional<String>> obsoletesFlags() {
         // @checkstyle MagicNumberCheck (2 lines)
-        return Arrays.stream(this.meta.header(Header.HeaderTag.OBSOLETEFLAGS).asInts()).boxed()
-            .map(flag -> flag &= 0xf)
-            .map(Flags::find).collect(Collectors.toList());
+        return Arrays.stream(this.meta.header(Header.HeaderTag.OBSOLETEFLAGS).asInts())
+            .map(flag -> flag & 0xf)
+            .mapToObj(Flags::find).collect(Collectors.toList());
     }
 
     /**
@@ -283,9 +283,9 @@ public final class HeaderTags {
      */
     public List<Optional<String>> conflictsFlags() {
         // @checkstyle MagicNumberCheck (2 lines)
-        return Arrays.stream(this.meta.header(Header.HeaderTag.CONFLICTFLAGS).asInts()).boxed()
-            .map(flag -> flag &= 0xf)
-            .map(Flags::find).collect(Collectors.toList());
+        return Arrays.stream(this.meta.header(Header.HeaderTag.CONFLICTFLAGS).asInts())
+            .map(flag -> flag & 0xf)
+            .mapToObj(Flags::find).collect(Collectors.toList());
     }
 
     /**
