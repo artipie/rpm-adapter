@@ -261,6 +261,34 @@ public final class HeaderTags {
     }
 
     /**
+     * Get the conflicts name header.
+     * @return Value of header tag CONFLICTNAME.
+     */
+    public List<String> conflicts() {
+        return this.meta.header(Header.HeaderTag.CONFLICTNAME).asStrings();
+    }
+
+    /**
+     * Get the conflicts versions header.
+     * @return Value of header tag CONFLICTVERSION.
+     */
+    public List<HeaderTags.Version> conflictsVer() {
+        return this.meta.header(Header.HeaderTag.CONFLICTVERSION).asStrings()
+            .stream().map(HeaderTags.Version::new).collect(Collectors.toList());
+    }
+
+    /**
+     * Get the conflicts flags header.
+     * @return Value of header tag CONFLICTFLAGS.
+     */
+    public List<Optional<String>> conflictsFlags() {
+        // @checkstyle MagicNumberCheck (2 lines)
+        return Arrays.stream(this.meta.header(Header.HeaderTag.CONFLICTFLAGS).asInts()).boxed()
+            .map(flag -> flag &= 0xf)
+            .map(Flags::find).collect(Collectors.toList());
+    }
+
+    /**
      * Get the require flags headers as ints.
      * @return Value of header tag REQUIREFLAGS.
      */
