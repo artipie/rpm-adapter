@@ -160,6 +160,12 @@ public interface XmlEvent {
                         continue;
                     }
                     writer.add(events.createStartElement("", "", "file"));
+                    // @checkstyle MethodBodyCommentsCheck (5 lines)
+                    // @todo #501:30min Analyze condition by which we add `ghost`.
+                    //  We need to get file flag number and compare it to `st_mode` by
+                    //  `&` operator. Obviously, when a file isn't a `directory` or a `ghost`,
+                    //  it is a `regular file (empty type). These changes will break some tests
+                    //  which will therefore have to be fixed.
                     if ((fmod[idx] & Files.S_IFDIR) != 0) {
                         writer.add(events.createAttribute("type", "dir"));
                     }
