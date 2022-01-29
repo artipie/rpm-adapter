@@ -142,7 +142,17 @@ public final class FilePackage implements Package {
         @Override
         public int asInt(final int def) {
             return this.entry
-                .map(e -> ((int[]) e.getValues())[0])
+                .map(
+                    e -> {
+                        final int result;
+                        if (e.getValues() instanceof short[]) {
+                            result = ((short[]) e.getValues())[0];
+                        } else {
+                            result = ((int[]) e.getValues())[0];
+                        }
+                        return result;
+                    }
+                )
                 .orElse(def);
         }
 
@@ -154,9 +164,24 @@ public final class FilePackage implements Package {
         }
 
         @Override
+        @SuppressWarnings("PMD.AvoidArrayLoops")
         public int[] asInts() {
             return this.entry
-                .map(e -> (int[]) e.getValues())
+                .map(
+                    e -> {
+                        final int[] result;
+                        if (e.getValues() instanceof short[]) {
+                            final short[] sre = (short[]) e.getValues();
+                            result = new int[sre.length];
+                            for (int ind = 0; ind < sre.length; ind += 1) {
+                                result[ind] = sre[ind];
+                            }
+                        } else {
+                            result = (int[]) e.getValues();
+                        }
+                        return result;
+                    }
+                )
                 .orElseGet(() -> new int[0]);
         }
     }
