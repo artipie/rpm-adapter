@@ -44,7 +44,7 @@
                 <rpm:entry name="xml-commons-apis"/>
             </rpm:requires>
             <file>/etc/ant.conf</file>
-            <file>/etc/ant.d</file>
+            <file type="dir">/etc/ant.d</file>
             <file>/usr/bin/ant</file>
             <file>/usr/bin/antRun</file>
             <file>/usr/bin/antRun.pl</file>
