@@ -7,10 +7,7 @@ package com.artipie.rpm.meta;
 import com.artipie.rpm.pkg.HeaderTags;
 import com.artipie.rpm.pkg.Package;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventWriter;
 import javax.xml.stream.XMLStreamException;
@@ -110,7 +107,14 @@ public interface XmlEvent {
      * Implementation of {@link XmlEvent} to build event for `files` tag.
      * @since 1.5
      */
+    @SuppressWarnings("PMD.AvoidUsingOctalValues")
     final class Files implements XmlEvent {
+
+        /**
+         * Flag for st_mode field to identify a directory, from Man page.
+         * @see <a href="https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/stat.2.html">Man page</a>
+         */
+        private static final int S_IFDIR = 0040000;
 
         /**
          * Predicate to filter files. The item is NOT added to the writer if
@@ -141,8 +145,8 @@ public interface XmlEvent {
             try {
                 final String[] files = tags.baseNames().toArray(new String[0]);
                 final String[] dirs = tags.dirNames().toArray(new String[0]);
-                final Set<String> dirset = Arrays.stream(dirs).collect(Collectors.toSet());
                 final int[] did = tags.dirIndexes();
+                final int[] fmod = tags.fileModes();
                 for (int idx = 0; idx < files.length; idx += 1) {
                     final String fle = files[idx];
                     // @checkstyle MethodBodyCommentsCheck (2 lines)
@@ -156,7 +160,7 @@ public interface XmlEvent {
                         continue;
                     }
                     writer.add(events.createStartElement("", "", "file"));
-                    if (dirset.contains(String.format("%s/", path))) {
+                    if ((fmod[idx] & Files.S_IFDIR) != 0) {
                         writer.add(events.createAttribute("type", "dir"));
                     }
                     writer.add(events.createCharacters(path));

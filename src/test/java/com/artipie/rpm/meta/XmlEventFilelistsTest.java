@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Test for {@link XmlEvent.Other}.
+ * Test for {@link XmlEvent.Filelists}.
  * @since 1.5
  */
 class XmlEventFilelistsTest {
