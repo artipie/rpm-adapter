@@ -58,9 +58,9 @@
             <file>/bin/dbus-uuidgen</file>
             <file type="dir">/etc/dbus-1</file>
             <file>/etc/dbus-1/session.conf</file>
-            <file>/etc/dbus-1/session.d</file>
+            <file type="dir">/etc/dbus-1/session.d</file>
             <file>/etc/dbus-1/system.conf</file>
-            <file>/etc/dbus-1/system.d</file>
+            <file type="dir">/etc/dbus-1/system.d</file>
         </format>
     </package>
 </metadata>
