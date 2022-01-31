@@ -105,14 +105,20 @@ public interface XmlEvent {
 
     /**
      * Implementation of {@link XmlEvent} to build event for `files` tag.
+     * @see <a href="https://man7.org/linux/man-pages/man7/inode.7.html">Man page for file inode information</a>
+     * @see <a href="https://github.com/rpm-software-management/createrepo_c/blob/b49b8b2586c07d3e84009beba677162b86539f9d/src/parsehdr.c#L256">Create repo implementation</a>
      * @since 1.5
      */
     @SuppressWarnings("PMD.AvoidUsingOctalValues")
     final class Files implements XmlEvent {
 
         /**
-         * Flag for st_mode field to identify a directory, from Man page.
-         * @see <a href="https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/stat.2.html">Man page</a>
+         * Bit mask for the file type bit field.
+         */
+        private static final int S_IFMT = 0170000;
+
+        /**
+         * Flag to identify a directory.
          */
         private static final int S_IFDIR = 0040000;
 
@@ -162,11 +168,11 @@ public interface XmlEvent {
                     writer.add(events.createStartElement("", "", "file"));
                     // @checkstyle MethodBodyCommentsCheck (5 lines)
                     // @todo #501:30min Analyze condition by which we add `ghost`.
-                    //  We need to get file flag number and compare it to `st_mode` by
+                    //  We need to get file flag number and compare it to `rpmfile_ghost` mode by
                     //  `&` operator. Obviously, when a file isn't a `directory` or a `ghost`,
                     //  it is a `regular file (empty type). These changes will break some tests
                     //  which will therefore have to be fixed.
-                    if ((fmod[idx] & Files.S_IFDIR) != 0) {
+                    if ((fmod[idx] & Files.S_IFMT) == Files.S_IFDIR) {
                         writer.add(events.createAttribute("type", "dir"));
                     }
                     writer.add(events.createCharacters(path));
