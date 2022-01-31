@@ -60,6 +60,9 @@
                 <rpm:entry name="rtld(GNU_HASH)"/>
                 <rpm:entry name="libc.so.6(GLIBC_2.14)(64bit)"/>
             </rpm:requires>
+            <rpm:obsoletes>
+                <rpm:entry name="httpd-suexec"/>
+            </rpm:obsoletes>
             <file type="dir">/etc/httpd</file>
             <file type="dir">/etc/httpd/conf</file>
             <file type="dir">/etc/httpd/conf.d</file>
