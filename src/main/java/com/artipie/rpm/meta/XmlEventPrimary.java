@@ -120,6 +120,7 @@ public final class XmlEventPrimary implements XmlEvent {
             XmlEventPrimary.addProvides(writer, tags);
             XmlEventPrimary.addRequires(writer, tags);
             XmlEventPrimary.addObsoletes(writer, tags);
+            XmlEventPrimary.addConflicts(writer, tags);
             // @checkstyle BooleanExpressionComplexityCheck (10 lines)
             new Files(
                 name -> name.startsWith("/var/")
@@ -284,6 +285,49 @@ public final class XmlEventPrimary implements XmlEvent {
         }
         writer.add(
             events.createEndElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "obsoletes")
+        );
+    }
+
+    /**
+     * Builds `conflicts` tag.
+     *
+     * @param writer Xml event writer
+     * @param tags Tag info
+     * @throws XMLStreamException On error
+     */
+    private static void addConflicts(final XMLEventWriter writer, final HeaderTags tags)
+        throws XMLStreamException {
+        final List<String> names = tags.conflicts();
+        if (names.isEmpty()) {
+            return;
+        }
+        final XMLEventFactory events = XMLEventFactory.newFactory();
+        writer.add(
+            events.createStartElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "conflicts")
+        );
+        final List<Optional<String>> flags = tags.conflictsFlags();
+        final List<HeaderTags.Version> versions = tags.conflictsVer();
+        final Set<String> items = new HashSet<>(names.size());
+        for (int ind = 0; ind < names.size(); ind = ind + 1) {
+            final String concat = names.get(ind).concat(versions.get(ind).toString())
+                .concat(flags.get(ind).orElse(""));
+            if (items.contains(concat)) {
+                continue;
+            }
+            items.add(concat);
+            writer.add(
+                events.createStartElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "entry")
+            );
+            writer.add(events.createAttribute("name", names.get(ind)));
+            XmlEventPrimary.addEntryAttr(
+                writer, events, versions, ind, flags, HeaderTags.Flags.EQUAL.notation()
+            );
+            writer.add(
+                events.createEndElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "entry")
+            );
+        }
+        writer.add(
+            events.createEndElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "conflicts")
         );
     }
 
