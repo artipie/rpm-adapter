@@ -113,12 +113,12 @@ public interface XmlEvent {
     final class Files implements XmlEvent {
 
         /**
-         * Bit mask for the file type bit field.
+         * This is a bit mask used to extract the file type code from a mode value.
          */
         private static final int S_IFMT = 0170000;
 
         /**
-         * Flag to identify a directory.
+         * This is the file type constant of a directory file.
          */
         private static final int S_IFDIR = 0040000;
 
