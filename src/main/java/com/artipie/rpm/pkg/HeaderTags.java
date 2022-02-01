@@ -322,6 +322,14 @@ public final class HeaderTags {
     }
 
     /**
+     * Get the file modes header.
+     * @return Value of header tag FILEMODES.
+     */
+    public int[] fileModes() {
+        return this.meta.header(Header.HeaderTag.FILEMODES).asInts();
+    }
+
+    /**
      * Get the changelog header.
      * @return Value of header tag CHANGELOG.
      */

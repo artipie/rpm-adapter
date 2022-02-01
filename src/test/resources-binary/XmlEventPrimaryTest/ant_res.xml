@@ -47,7 +47,7 @@
                 <rpm:entry epoch="0" flags="LT" name="ant-scripts" rel="2.el7" ver="1.9.4"/>
             </rpm:obsoletes>
             <file>/etc/ant.conf</file>
-            <file>/etc/ant.d</file>
+            <file type="dir">/etc/ant.d</file>
             <file>/usr/bin/ant</file>
             <file>/usr/bin/antRun</file>
             <file>/usr/bin/antRun.pl</file>
