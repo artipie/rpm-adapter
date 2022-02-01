@@ -18,6 +18,7 @@ import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventWriter;
 import javax.xml.stream.XMLStreamException;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -84,10 +85,10 @@ class XmlEventPrimaryTest {
         writer.add(XMLEventFactory.newFactory().createEndElement("", "", "metadata"));
         writer.close();
         MatcherAssert.assertThat(
-            bout.toByteArray(),
-            CompareMatcher.isIdenticalTo(
+            bout.toString(),
+            new IsEqual<>(
                 String.join(
-                    "\n",
+                    "",
                     // @checkstyle LineLengthCheck (1 line)
                     "<?xml version='1.0' encoding='UTF-8'?><metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke.edu/metadata/rpm\"><package type=\"rpm\"><name></name><arch></arch><version epoch=\"0\" rel=\"\" ver=\"\"/><checksum type=\"sha256\" pkgid=\"YES\">d6a7cd2a7371b1a15d543196979ff74fdb027023ebf187d5d329be11055c77fd</checksum><summary></summary><description></description><packager></packager><url></url><time build=\"0\" file=\"0\"/><size installed=\"0\" archive=\"0\" package=\"3\"/><location href=\"test.rpm\"/><format><rpm:license></rpm:license><rpm:vendor></rpm:vendor><rpm:group></rpm:group><rpm:buildhost></rpm:buildhost><rpm:sourcerpm></rpm:sourcerpm><rpm:header-range start=\"0\" end=\"0\"/><rpm:provides/><rpm:requires/>",
                     "<rpm:conflicts>",
@@ -99,9 +100,6 @@ class XmlEventPrimaryTest {
                     "</format></package></metadata>"
                 )
             )
-                .ignoreWhitespace()
-                .ignoreElementContentWhitespace()
-                .normalizeWhitespace()
         );
     }
 
