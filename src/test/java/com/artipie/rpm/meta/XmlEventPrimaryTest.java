@@ -11,18 +11,24 @@ import com.artipie.rpm.pkg.FilePackageHeader;
 import com.fasterxml.aalto.stax.OutputFactoryImpl;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventWriter;
 import javax.xml.stream.XMLStreamException;
 import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.redline_rpm.header.Header;
 import org.xmlunit.matchers.CompareMatcher;
 
 /**
  * Test for {@link XmlEventPrimary}.
  * @since 1.5
+ * @checkstyle MagicNumberCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class XmlEventPrimaryTest {
@@ -44,16 +50,12 @@ class XmlEventPrimaryTest {
         final Path file = new TestResource(rpm).asPath();
         final ByteArrayOutputStream bout = new ByteArrayOutputStream();
         final XMLEventWriter writer = new OutputFactoryImpl().createXMLEventWriter(bout);
-        final XMLEventFactory events = XMLEventFactory.newFactory();
-        writer.add(events.createStartDocument());
-        writer.add(events.createStartElement("", "", "metadata"));
-        writer.add(events.createNamespace("http://linux.duke.edu/metadata/common"));
-        writer.add(events.createNamespace("rpm", "http://linux.duke.edu/metadata/rpm"));
+        this.prepareXmlWriter(writer);
         new XmlEventPrimary().add(
             writer,
             new FilePackage.Headers(new FilePackageHeader(file).header(), file, Digest.SHA256)
         );
-        writer.add(events.createEndElement("", "", "metadata"));
+        writer.add(XMLEventFactory.newFactory().createEndElement("", "", "metadata"));
         writer.close();
         MatcherAssert.assertThat(
             bout.toByteArray(),
@@ -66,4 +68,48 @@ class XmlEventPrimaryTest {
         );
     }
 
+    @Test
+    void removesConflictDuplicates(final @TempDir Path tmp) throws XMLStreamException, IOException {
+        final Path rpm = tmp.resolve("test.rpm");
+        Files.write(rpm, "any".getBytes(StandardCharsets.UTF_8));
+        final ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        final XMLEventWriter writer = new OutputFactoryImpl().createXMLEventWriter(bout);
+        this.prepareXmlWriter(writer);
+        final Header hdr = new Header();
+        // @checkstyle LineLengthCheck (2 lines)
+        hdr.createEntry(Header.HeaderTag.CONFLICTNAME, new String[]{"one", "two", "one", "three", "two"});
+        hdr.createEntry(Header.HeaderTag.CONFLICTVERSION, new String[]{"0.1", "0.2", "0.1", "0.3", "0.2.2"});
+        hdr.createEntry(Header.HeaderTag.CONFLICTFLAGS, new int[]{2, 8, 2, 2, 8});
+        new XmlEventPrimary().add(writer, new FilePackage.Headers(hdr, rpm, Digest.SHA256));
+        writer.add(XMLEventFactory.newFactory().createEndElement("", "", "metadata"));
+        writer.close();
+        MatcherAssert.assertThat(
+            bout.toByteArray(),
+            CompareMatcher.isIdenticalTo(
+                String.join(
+                    "\n",
+                    // @checkstyle LineLengthCheck (1 line)
+                    "<?xml version='1.0' encoding='UTF-8'?><metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke.edu/metadata/rpm\"><package type=\"rpm\"><name></name><arch></arch><version epoch=\"0\" rel=\"\" ver=\"\"/><checksum type=\"sha256\" pkgid=\"YES\">d6a7cd2a7371b1a15d543196979ff74fdb027023ebf187d5d329be11055c77fd</checksum><summary></summary><description></description><packager></packager><url></url><time build=\"0\" file=\"0\"/><size installed=\"0\" archive=\"0\" package=\"3\"/><location href=\"test.rpm\"/><format><rpm:license></rpm:license><rpm:vendor></rpm:vendor><rpm:group></rpm:group><rpm:buildhost></rpm:buildhost><rpm:sourcerpm></rpm:sourcerpm><rpm:header-range start=\"0\" end=\"0\"/><rpm:provides/><rpm:requires/>",
+                    "<rpm:conflicts>",
+                    "<rpm:entry name=\"one\" ver=\"0.1\" epoch=\"0\" flags=\"LT\"/>",
+                    "<rpm:entry name=\"two\" ver=\"0.2\" epoch=\"0\" flags=\"EQ\"/>",
+                    "<rpm:entry name=\"three\" ver=\"0.3\" epoch=\"0\" flags=\"LT\"/>",
+                    "<rpm:entry name=\"two\" ver=\"0.2.2\" epoch=\"0\" flags=\"EQ\"/>",
+                    "</rpm:conflicts>",
+                    "</format></package></metadata>"
+                )
+            )
+                .ignoreWhitespace()
+                .ignoreElementContentWhitespace()
+                .normalizeWhitespace()
+        );
+    }
+
+    private void prepareXmlWriter(final XMLEventWriter writer) throws XMLStreamException {
+        final XMLEventFactory events = XMLEventFactory.newFactory();
+        writer.add(events.createStartDocument());
+        writer.add(events.createStartElement("", "", "metadata"));
+        writer.add(events.createNamespace("http://linux.duke.edu/metadata/common"));
+        writer.add(events.createNamespace("rpm", "http://linux.duke.edu/metadata/rpm"));
+    }
 }
