@@ -55,11 +55,11 @@
                 <rpm:entry name="freeipa-client" ver="2.2.0" epoch="0" flags="LT"/>
                 <rpm:entry name="ipa-client" ver="2.2.0" epoch="0" flags="LT"/>
             </rpm:conflicts>
-            <file>/etc/pam.d/fingerprint-auth-ac</file>
-            <file>/etc/pam.d/password-auth-ac</file>
-            <file>/etc/pam.d/postlogin-ac</file>
-            <file>/etc/pam.d/smartcard-auth-ac</file>
-            <file>/etc/pam.d/system-auth-ac</file>
+            <file type="ghost">/etc/pam.d/fingerprint-auth-ac</file>
+            <file type="ghost">/etc/pam.d/password-auth-ac</file>
+            <file type="ghost">/etc/pam.d/postlogin-ac</file>
+            <file type="ghost">/etc/pam.d/smartcard-auth-ac</file>
+            <file type="ghost">/etc/pam.d/system-auth-ac</file>
             <file>/etc/sysconfig/authconfig</file>
             <file>/usr/sbin/authconfig</file>
             <file>/usr/sbin/authconfig-tui</file>
