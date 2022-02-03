@@ -330,6 +330,14 @@ public final class HeaderTags {
     }
 
     /**
+     * Get the file flags header.
+     * @return Value of header tag FILEFLAGS.
+     */
+    public int[] fileFlags() {
+        return this.meta.header(Header.HeaderTag.FILEFLAGS).asInts();
+    }
+
+    /**
      * Get the changelog header.
      * @return Value of header tag CHANGELOG.
      */

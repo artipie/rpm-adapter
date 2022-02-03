@@ -12,6 +12,7 @@ import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventWriter;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
+import org.redline_rpm.payload.Directive;
 
 /**
  * Xml event to write to the output stream.
@@ -108,6 +109,7 @@ public interface XmlEvent {
      * @see <a href="https://man7.org/linux/man-pages/man7/inode.7.html">Man page for file inode information</a>
      * @see <a href="https://github.com/rpm-software-management/createrepo_c/blob/b49b8b2586c07d3e84009beba677162b86539f9d/src/parsehdr.c#L256">Create repo implementation</a>
      * @since 1.5
+     * @checkstyle ExecutableStatementCountCheck (300 lines)
      */
     @SuppressWarnings("PMD.AvoidUsingOctalValues")
     final class Files implements XmlEvent {
@@ -153,6 +155,7 @@ public interface XmlEvent {
                 final String[] dirs = tags.dirNames().toArray(new String[0]);
                 final int[] did = tags.dirIndexes();
                 final int[] fmod = tags.fileModes();
+                final int[] flags = tags.fileFlags();
                 for (int idx = 0; idx < files.length; idx += 1) {
                     final String fle = files[idx];
                     // @checkstyle MethodBodyCommentsCheck (2 lines)
@@ -166,14 +169,10 @@ public interface XmlEvent {
                         continue;
                     }
                     writer.add(events.createStartElement("", "", "file"));
-                    // @checkstyle MethodBodyCommentsCheck (5 lines)
-                    // @todo #501:30min Analyze condition by which we add `ghost`.
-                    //  We need to get file flag number and compare it to `rpmfile_ghost` mode by
-                    //  `&` operator. Obviously, when a file isn't a `directory` or a `ghost`,
-                    //  it is a `regular file (empty type). These changes will break some tests
-                    //  which will therefore have to be fixed.
                     if ((fmod[idx] & Files.S_IFMT) == Files.S_IFDIR) {
                         writer.add(events.createAttribute("type", "dir"));
+                    } else if ((flags[idx] & Directive.RPMFILE_GHOST) > 0) {
+                        writer.add(events.createAttribute("type", "ghost"));
                     }
                     writer.add(events.createCharacters(path));
                     writer.add(events.createEndElement("", "", "file"));

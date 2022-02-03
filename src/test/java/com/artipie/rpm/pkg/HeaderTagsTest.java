@@ -102,4 +102,14 @@ class HeaderTagsTest {
         );
     }
 
+    @Test
+    void readsFileFlags() throws IOException {
+        final Path file = new TestResource("time-1.7-45.el7.x86_64.rpm").asPath();
+        MatcherAssert.assertThat(
+            new HeaderTags(
+                new FilePackage.Headers(new FilePackageHeader(file).header(), file, Digest.SHA256)
+            ).fileFlags(),
+            new IsEqual<>(new int[] {0, 0, 2, 2, 2, 2, 2, 2})
+        );
+    }
 }
