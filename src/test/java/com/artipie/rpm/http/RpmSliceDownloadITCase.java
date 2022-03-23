@@ -59,7 +59,7 @@ final class RpmSliceDownloadITCase {
         final TestRpm rpm = new TestRpm.Time();
         this.start(rpm, Permissions.FREE, Authentication.ANONYMOUS);
         MatcherAssert.assertThat(
-            this.yumInstall(
+            this.dnfInstall(
                 String.format(
                     "http://host.testcontainers.internal:%d/%s.rpm",
                     this.port, rpm.name()
@@ -80,7 +80,7 @@ final class RpmSliceDownloadITCase {
             new Authentication.Single(john, pswd)
         );
         MatcherAssert.assertThat(
-            this.yumInstall(
+            this.dnfInstall(
                 String.format(
                     "http://%s:%s@host.testcontainers.internal:%d/%s.rpm", john,
                     pswd, this.port, rpm.name()
@@ -101,10 +101,8 @@ final class RpmSliceDownloadITCase {
         RpmSliceDownloadITCase.VERTX.close();
     }
 
-    private String yumInstall(final String url) throws IOException, InterruptedException {
-        return this.cntn.execInContainer(
-            "yum", "-y", "install", url
-        ).getStdout();
+    private String dnfInstall(final String url) throws IOException, InterruptedException {
+        return this.cntn.execInContainer("dnf", "-y", "install", url).getStdout();
     }
 
     private void start(
@@ -118,8 +116,7 @@ final class RpmSliceDownloadITCase {
         );
         this.port = this.server.start();
         Testcontainers.exposeHostPorts(this.port);
-        this.cntn = new GenericContainer<>("centos:centos8")
-            .withCommand("tail", "-f", "/dev/null");
+        this.cntn = new GenericContainer<>("fedora:35").withCommand("tail", "-f", "/dev/null");
         this.cntn.start();
     }
 

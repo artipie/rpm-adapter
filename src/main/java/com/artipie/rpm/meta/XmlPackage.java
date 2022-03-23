@@ -4,10 +4,12 @@
  */
 package com.artipie.rpm.meta;
 
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
-import org.cactoos.map.MapEntry;
-import org.cactoos.map.MapOf;
+import java.util.stream.Collectors;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Xml metadata packages.
@@ -20,10 +22,10 @@ public enum XmlPackage {
      */
     PRIMARY(
         "metadata",
-        new MapOf<String, String>(
-            new MapEntry<>("", "http://linux.duke.edu/metadata/common"),
-            new MapEntry<>("rpm", "http://linux.duke.edu/metadata/rpm")
-        )
+        java.util.stream.Stream.of(
+            new ImmutablePair<>("", "http://linux.duke.edu/metadata/common"),
+            new ImmutablePair<>("rpm", "http://linux.duke.edu/metadata/rpm")
+        ).collect(Collectors.toMap(Pair::getKey, Pair::getValue))
     ),
 
     /**
@@ -31,7 +33,7 @@ public enum XmlPackage {
      */
     OTHER(
         "otherdata",
-        new MapOf<String, String>(new MapEntry<>("", "http://linux.duke.edu/metadata/other"))
+        Collections.singletonMap("", "http://linux.duke.edu/metadata/other")
     ),
 
     /**
@@ -39,7 +41,7 @@ public enum XmlPackage {
      */
     FILELISTS(
         "filelists",
-        new MapOf<String, String>(new MapEntry<>("", "http://linux.duke.edu/metadata/filelists"))
+        Collections.singletonMap("", "http://linux.duke.edu/metadata/filelists")
     );
 
     /**

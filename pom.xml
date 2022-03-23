@@ -101,7 +101,7 @@ SOFTWARE.
     <dependency>
       <groupId>com.artipie</groupId>
       <artifactId>http</artifactId>
-      <version>v0.26.1</version>
+      <version>v1.1.2-d</version>
     </dependency>
     <dependency>
       <groupId>javax.xml.bind</groupId>
@@ -111,7 +111,7 @@ SOFTWARE.
     <dependency>
       <groupId>com.artipie</groupId>
       <artifactId>asto</artifactId>
-      <version>v1.10.0</version>
+      <version>v1.11.0</version>
     </dependency>
     <dependency>
       <groupId>commons-cli</groupId>
@@ -136,7 +136,7 @@ SOFTWARE.
     <dependency>
       <groupId>com.fasterxml</groupId>
       <artifactId>aalto-xml</artifactId>
-      <version>1.2.2</version>
+      <version>1.3.1</version>
       <exclusions>
         <exclusion>
           <groupId>com.fasterxml.jackson.core</groupId>
@@ -163,6 +163,12 @@ SOFTWARE.
       <groupId>org.llorllale</groupId>
       <artifactId>cactoos-matchers</artifactId>
       <version>0.25</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.cactoos</groupId>
+      <artifactId>cactoos</artifactId>
+      <version>0.46</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -204,7 +210,7 @@ SOFTWARE.
     <dependency>
       <groupId>com.artipie</groupId>
       <artifactId>vertx-server</artifactId>
-      <version>0.4</version>
+      <version>1.0.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>

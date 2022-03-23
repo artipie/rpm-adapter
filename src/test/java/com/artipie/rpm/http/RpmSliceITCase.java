@@ -25,11 +25,10 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.text.StringContainsInOrder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 
@@ -79,49 +78,38 @@ public final class RpmSliceITCase {
      */
     private GenericContainer<?> cntn;
 
-    @ParameterizedTest
-    @CsvSource({
-        "centos:centos8,yum,repo-pkgs",
-        "fedora:32,dnf,repository-packages"
-    })
-    void canListAndInstallFromArtipieRepo(final String linux,
-        final String mngr, final String rey) throws Exception {
-        this.start(Permissions.FREE, Authentication.ANONYMOUS, "", linux);
+    @Test
+    void canListAndInstallFromArtipieRepo() throws Exception {
+        this.start(Permissions.FREE, Authentication.ANONYMOUS, "");
         MatcherAssert.assertThat(
             "Lists 'time' and 'aspell' packages",
-            this.exec(mngr, rey, "list"),
+            this.exec("list"),
             new StringContainsInOrder(RpmSliceITCase.AVAILABLE)
         );
         MatcherAssert.assertThat(
             "Installs 'time' and 'aspell' package",
-            this.exec(mngr, rey, "install"),
+            this.exec("install"),
             new StringContainsInOrder(RpmSliceITCase.INSTALLED)
         );
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "centos:centos8,yum,repo-pkgs",
-        "fedora:32,dnf,repository-packages"
-    })
-    void canListAndInstallFromArtipieRepoWithAuth(final String linux,
-        final String mngr, final String key) throws Exception {
+    @Test
+    void canListAndInstallFromArtipieRepoWithAuth() throws Exception {
         final String mark = "mark";
         final String pswd = "abc";
         this.start(
             new Permissions.Single(mark, "download"),
             new Authentication.Single(mark, pswd),
-            String.format("%s:%s@", mark, pswd),
-            linux
+            String.format("%s:%s@", mark, pswd)
         );
         MatcherAssert.assertThat(
             "Lists 'time' package",
-            this.exec(mngr, key, "list"),
+            this.exec("list"),
             new StringContainsInOrder(RpmSliceITCase.AVAILABLE)
         );
         MatcherAssert.assertThat(
             "Installs 'time' package",
-            this.exec(mngr, key, "install"),
+            this.exec("install"),
             new StringContainsInOrder(RpmSliceITCase.INSTALLED)
         );
     }
@@ -139,15 +127,13 @@ public final class RpmSliceITCase {
 
     /**
      * Executes yum command in container.
-     * @param mngr Rpm manager
-     * @param key Key to specify repo
      * @param action What to do
      * @return String stdout
      * @throws Exception On error
      */
-    private String exec(final String mngr, final String key, final String action) throws Exception {
+    private String exec(final String action) throws Exception {
         return this.cntn.execInContainer(
-            mngr, "-y", key, "example", action
+            "dnf", "-y", "repository-packages", "example", action
         ).getStdout();
     }
 
@@ -156,12 +142,10 @@ public final class RpmSliceITCase {
      * @param perms Permissions
      * @param auth Authentication
      * @param cred String with user name and password to add in url, uname:pswd@
-     * @param linux Linux distribution name and version
      * @throws Exception On error
-     * @checkstyle ParameterNumberCheck (10 lines)
      */
-    private void start(final Permissions perms, final Authentication auth, final String cred,
-        final String linux) throws Exception {
+    private void start(final Permissions perms, final Authentication auth, final String cred)
+        throws Exception {
         final Storage storage = new InMemoryStorage();
         new TestRpm.Time().put(storage);
         new TestRpm.Aspell().put(new SubStorage(new Key.From("spelling"), storage));
@@ -187,7 +171,7 @@ public final class RpmSliceITCase {
                 "gpgcheck=0"
             )
         );
-        this.cntn = new GenericContainer<>(linux)
+        this.cntn = new GenericContainer<>("fedora:35")
             .withCommand("tail", "-f", "/dev/null")
             .withWorkingDirectory("/home/")
             .withFileSystemBind(this.tmp.toString(), "/home");

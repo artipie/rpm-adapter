@@ -9,17 +9,20 @@ import com.artipie.rpm.pkg.HeaderTags;
 import com.artipie.rpm.pkg.Package;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventWriter;
 import javax.xml.stream.XMLStreamException;
-import org.cactoos.map.MapEntry;
-import org.cactoos.map.MapOf;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Implementation of {@link XmlEvent} to build event for {@link XmlPackage#PRIMARY} package.
@@ -84,24 +87,24 @@ public final class XmlEventPrimary implements XmlEvent {
             XmlEventPrimary.addAttributes(
                 writer,
                 "time",
-                new MapOf<String, String>(
-                    new MapEntry<>("file", String.valueOf(tags.fileTimes())),
-                    new MapEntry<>("build", String.valueOf(tags.buildTime()))
-                )
+                Stream.of(
+                    new ImmutablePair<>("file", String.valueOf(tags.fileTimes())),
+                    new ImmutablePair<>("build", String.valueOf(tags.buildTime()))
+                ).collect(Collectors.toMap(Pair::getKey, Pair::getValue))
             );
             XmlEventPrimary.addAttributes(
                 writer,
                 "size",
-                new MapOf<String, String>(
-                    new MapEntry<>("package", String.valueOf(meta.size())),
-                    new MapEntry<>("installed", String.valueOf(tags.installedSize())),
-                    new MapEntry<>("archive", String.valueOf(tags.archiveSize()))
-                )
+                Stream.of(
+                    new ImmutablePair<>("package", String.valueOf(meta.size())),
+                    new ImmutablePair<>("installed", String.valueOf(tags.installedSize())),
+                    new ImmutablePair<>("archive", String.valueOf(tags.archiveSize()))
+                ).collect(Collectors.toMap(Pair::getKey, Pair::getValue))
             );
             XmlEventPrimary.addAttributes(
                 writer,
                 "location",
-                new MapOf<String, String>(new MapEntry<>("href", meta.href()))
+                Collections.singletonMap("href", meta.href())
             );
             writer.add(events.createStartElement("", "", "format"));
             XmlEventPrimary.addElementWithNamespace(writer, "license", tags.license());
@@ -112,10 +115,10 @@ public final class XmlEventPrimary implements XmlEvent {
             XmlEventPrimary.addAttributes(
                 writer,
                 "header-range", XmlEventPrimary.NS_URL, XmlEventPrimary.PRFX,
-                new MapOf<String, String>(
-                    new MapEntry<>("start", String.valueOf(meta.range()[0])),
-                    new MapEntry<>("end", String.valueOf(meta.range()[1]))
-                )
+                Stream.of(
+                    new ImmutablePair<>("start", String.valueOf(meta.range()[0])),
+                    new ImmutablePair<>("end", String.valueOf(meta.range()[1]))
+                ).collect(Collectors.toMap(Pair::getKey, Pair::getValue))
             );
             XmlEventPrimary.addProvides(writer, tags);
             XmlEventPrimary.addRequires(writer, tags);
