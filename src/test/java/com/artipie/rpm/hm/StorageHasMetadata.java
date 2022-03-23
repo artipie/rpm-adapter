@@ -14,7 +14,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.cactoos.text.FormattedText;
 import org.hamcrest.Matcher;
 import org.hamcrest.core.AllOf;
 import org.llorllale.cactoos.matchers.MatcherOf;
@@ -52,9 +51,17 @@ public final class StorageHasMetadata extends AllOf<Storage> {
         final int expected, final boolean filelists, final Path temp
     ) {
         return new XmlPackage.Stream(filelists).get().map(
-            pckg -> new MatcherOf<Storage>(
-                storage -> hasMetadata(storage, temp, pckg, expected),
-                new FormattedText("Metadata %s has %d rpm packages", pckg.name(), expected)
+            pkg -> new MatcherOf<Storage>(
+                storage -> hasMetadata(storage, temp, pkg, expected),
+                desc -> desc.appendText(
+                    String.format("Metadata %s has %d rpm packages", pkg.name(), expected)
+                ),
+                (sto, desc) ->  desc.appendText(
+                    String.format(
+                        "%d rm packages found for metadata %s",
+                        expected, pkg.name()
+                    )
+                )
             )
         ).collect(Collectors.toList());
     }

@@ -28,13 +28,6 @@
                 <rpm:entry name="java" ver="1.5" epoch="0" flags="GE"/>
                 <rpm:entry name="jpackage-utils"/>
             </rpm:requires>
-            <file type="dir">/usr/share/doc/felix-framework-4.2.1</file>
-            <file>/usr/share/doc/felix-framework-4.2.1/LICENSE</file>
-            <file>/usr/share/doc/felix-framework-4.2.1/NOTICE</file>
-            <file>/usr/share/java/felix/org.apache.felix.framework.jar</file>
-            <file>/usr/share/maven-effective-poms/JPP.felix-org.apache.felix.framework.pom</file>
-            <file>/usr/share/maven-fragments/felix-framework.xml</file>
-            <file>/usr/share/maven-poms/JPP.felix-org.apache.felix.framework.pom</file>
         </format>
     </package>
 </metadata>

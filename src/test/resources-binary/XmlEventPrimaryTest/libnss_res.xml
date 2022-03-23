@@ -27,10 +27,10 @@
             <rpm:requires>
                 <rpm:entry name="libc6" flags="GE" epoch="0" ver="2.31"/>
                 <rpm:entry name="libcap2" flags="GE" epoch="0" ver="2.32"/>
-                <rpm:entry name="libselinux1" flags="GE" epoch="0" ver="3.0" pre="1"/>
+                <rpm:entry name="libselinux1" flags="GE" epoch="0" ver="3.0"/>
                 <rpm:entry name="libc6" flags="GE" epoch="0" ver="2.31" pre="1"/>
                 <rpm:entry name="libcap2" flags="GE" epoch="0" ver="2.32" pre="1"/>
-                <rpm:entry name="libselinux1" flags="GE" epoch="0" ver="3.0"/>
+                <rpm:entry name="libselinux1" flags="GE" epoch="0" ver="3.0" pre="1"/>
                 <rpm:entry name="/bin/sh" pre="1"/>
             </rpm:requires>
         </format>

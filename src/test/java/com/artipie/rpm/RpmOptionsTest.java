@@ -11,7 +11,7 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.AllOf;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
-import org.llorllale.cactoos.matchers.MatcherOf;
+import org.llorllale.cactoos.matchers.Satisfies;
 
 /**
  * Tests for {@link RpmOptions}.
@@ -29,10 +29,10 @@ public class RpmOptionsTest {
             new AllOf<>(
                 new ListOf<Matcher<? super Option>>(
                     //@checkstyle LineLengthCheck (5 lines)
-                    new MatcherOf<>(opt -> { return "dgst".equals(opt.getArgName()); }),
-                    new MatcherOf<>(opt -> { return "d".equals(opt.getOpt()); }),
-                    new MatcherOf<>(opt -> { return "(optional, default sha256) configures Digest instance for Rpm: sha256 or sha1".equals(opt.getDescription()); }),
-                    new MatcherOf<>(opt -> { return "digest".equals(opt.getLongOpt()); })
+                    new Satisfies<>(opt -> "dgst".equals(opt.getArgName())),
+                    new Satisfies<>(opt -> "d".equals(opt.getOpt())),
+                    new Satisfies<>(opt -> "(optional, default sha256) configures Digest instance for Rpm: sha256 or sha1".equals(opt.getDescription())),
+                    new Satisfies<>(opt -> "digest".equals(opt.getLongOpt()))
                 )
             )
         );
@@ -45,10 +45,10 @@ public class RpmOptionsTest {
             new AllOf<>(
                 new ListOf<Matcher<? super Option>>(
                     //@checkstyle LineLengthCheck (5 lines)
-                    new MatcherOf<>(opt -> { return "np".equals(opt.getArgName()); }),
-                    new MatcherOf<>(opt -> { return "n".equals(opt.getOpt()); }),
-                    new MatcherOf<>(opt -> { return "(optional, default plain) configures NamingPolicy for Rpm: plain, sha256 or sha1".equals(opt.getDescription()); }),
-                    new MatcherOf<>(opt -> { return "naming-policy".equals(opt.getLongOpt()); })
+                    new Satisfies<>(opt -> "np".equals(opt.getArgName())),
+                    new Satisfies<>(opt -> "n".equals(opt.getOpt())),
+                    new Satisfies<>(opt -> "(optional, default plain) configures NamingPolicy for Rpm: plain, sha256 or sha1".equals(opt.getDescription())),
+                    new Satisfies<>(opt -> "naming-policy".equals(opt.getLongOpt()))
                 )
             )
         );
@@ -61,10 +61,10 @@ public class RpmOptionsTest {
             new AllOf<>(
                 new ListOf<Matcher<? super Option>>(
                     //@checkstyle LineLengthCheck (5 lines)
-                    new MatcherOf<>(opt -> { return "fl".equals(opt.getArgName()); }),
-                    new MatcherOf<>(opt -> { return "f".equals(opt.getOpt()); }),
-                    new MatcherOf<>(opt -> { return "(optional, default true) includes File Lists for Rpm: true or false".equals(opt.getDescription()); }),
-                    new MatcherOf<>(opt -> { return "filelists".equals(opt.getLongOpt()); })
+                    new Satisfies<>(opt -> "fl".equals(opt.getArgName())),
+                    new Satisfies<>(opt -> "f".equals(opt.getOpt())),
+                    new Satisfies<>(opt -> "(optional, default true) includes File Lists for Rpm: true or false".equals(opt.getDescription())),
+                    new Satisfies<>(opt -> "filelists".equals(opt.getLongOpt()))
                 )
             )
         );

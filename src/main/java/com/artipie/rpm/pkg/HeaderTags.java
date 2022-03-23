@@ -223,14 +223,78 @@ public final class HeaderTags {
     }
 
     /**
-     * Get the require flags header.
+     * Get the require flags header as strings.
      * @return Value of header tag REQUIREFLAGS.
      */
     public List<Optional<String>> requireFlags() {
-        final int[] array = this.meta.header(Header.HeaderTag.REQUIREFLAGS).asInts();
         // @checkstyle MagicNumberCheck (1 line)
-        return Arrays.stream(array).map(flag -> flag &= 0xf)
+        return this.requireFlagsInts().stream().map(flag -> flag & 0xf)
+            .map(Flags::find).collect(Collectors.toList());
+    }
+
+    /**
+     * Get the obsolete name header.
+     * @return Value of header tag OBSOLETENAME.
+     */
+    public List<String> obsoletes() {
+        return this.meta.header(Header.HeaderTag.OBSOLETENAME).asStrings();
+    }
+
+    /**
+     * Get the obsolete versions header.
+     * @return Value of header tag OBSOLETEVERSION.
+     */
+    public List<HeaderTags.Version> obsoletesVer() {
+        return this.meta.header(Header.HeaderTag.OBSOLETEVERSION).asStrings()
+            .stream().map(HeaderTags.Version::new).collect(Collectors.toList());
+    }
+
+    /**
+     * Get the obsolete flags header.
+     * @return Value of header tag OBSOLETEFLAGS.
+     */
+    public List<Optional<String>> obsoletesFlags() {
+        // @checkstyle MagicNumberCheck (2 lines)
+        return Arrays.stream(this.meta.header(Header.HeaderTag.OBSOLETEFLAGS).asInts())
+            .map(flag -> flag & 0xf)
             .mapToObj(Flags::find).collect(Collectors.toList());
+    }
+
+    /**
+     * Get the conflicts name header.
+     * @return Value of header tag CONFLICTNAME.
+     */
+    public List<String> conflicts() {
+        return this.meta.header(Header.HeaderTag.CONFLICTNAME).asStrings();
+    }
+
+    /**
+     * Get the conflicts versions header.
+     * @return Value of header tag CONFLICTVERSION.
+     */
+    public List<HeaderTags.Version> conflictsVer() {
+        return this.meta.header(Header.HeaderTag.CONFLICTVERSION).asStrings()
+            .stream().map(HeaderTags.Version::new).collect(Collectors.toList());
+    }
+
+    /**
+     * Get the conflicts flags header.
+     * @return Value of header tag CONFLICTFLAGS.
+     */
+    public List<Optional<String>> conflictsFlags() {
+        // @checkstyle MagicNumberCheck (2 lines)
+        return Arrays.stream(this.meta.header(Header.HeaderTag.CONFLICTFLAGS).asInts())
+            .map(flag -> flag & 0xf)
+            .mapToObj(Flags::find).collect(Collectors.toList());
+    }
+
+    /**
+     * Get the require flags headers as ints.
+     * @return Value of header tag REQUIREFLAGS.
+     */
+    public List<Integer> requireFlagsInts() {
+        final int[] array = this.meta.header(Header.HeaderTag.REQUIREFLAGS).asInts();
+        return Arrays.stream(array).boxed().collect(Collectors.toList());
     }
 
     /**
@@ -255,6 +319,22 @@ public final class HeaderTags {
      */
     public int[] dirIndexes() {
         return this.meta.header(Header.HeaderTag.DIRINDEXES).asInts();
+    }
+
+    /**
+     * Get the file modes header.
+     * @return Value of header tag FILEMODES.
+     */
+    public int[] fileModes() {
+        return this.meta.header(Header.HeaderTag.FILEMODES).asInts();
+    }
+
+    /**
+     * Get the file flags header.
+     * @return Value of header tag FILEFLAGS.
+     */
+    public int[] fileFlags() {
+        return this.meta.header(Header.HeaderTag.FILEFLAGS).asInts();
     }
 
     /**

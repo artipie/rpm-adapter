@@ -29,19 +29,10 @@
             </rpm:provides>
             <rpm:requires>
                 <rpm:entry name="/bin/bash"/>
-                <rpm:entry name="/bin/sh"/>
+                <rpm:entry name="/bin/sh" pre="1"/>
                 <rpm:entry name="/usr/sbin/useradd" pre="1"/>
                 <rpm:entry name="fipscheck-lib(x86-64)" flags="GE" ver="1.3.0" epoch="0"/>
                 <rpm:entry name="libaudit.so.1()(64bit)"/>
-                <rpm:entry name="libc.so.6()(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.14)(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.16)(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.17)(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.2.5)(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.3)(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.3.4)(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.4)(64bit)"/>
-                <rpm:entry name="libc.so.6(GLIBC_2.8)(64bit)"/>
                 <rpm:entry name="libcom_err.so.2()(64bit)"/>
                 <rpm:entry name="libcrypt.so.1()(64bit)"/>
                 <rpm:entry name="libcrypt.so.1(GLIBC_2.2.5)(64bit)"/>
@@ -72,6 +63,7 @@
                 <rpm:entry name="pam" flags="GE" ver="1.0.1" epoch="0" rel="3"/>
                 <rpm:entry name="rtld(GNU_HASH)"/>
                 <rpm:entry name="systemd-units" pre="1"/>
+                <rpm:entry name="libc.so.6(GLIBC_2.17)(64bit)"/>
             </rpm:requires>
             <file>/etc/pam.d/sshd</file>
             <file>/etc/ssh/sshd_config</file>
