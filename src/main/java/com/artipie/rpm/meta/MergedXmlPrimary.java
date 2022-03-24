@@ -7,6 +7,7 @@ package com.artipie.rpm.meta;
 import com.artipie.rpm.pkg.Package;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.fasterxml.aalto.stax.OutputFactoryImpl;
+import com.jcabi.log.Logger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -87,6 +88,7 @@ public final class MergedXmlPrimary implements MergedXml {
                     event.add(writer, item);
                     res.incrementAndGet();
                 }
+                Logger.info(MergedXmlPrimary.class, "Merging primary: new packages added");
                 writer.add(events.createSpace("\n"));
                 writer.add(
                     events.createEndElement(
@@ -102,6 +104,7 @@ public final class MergedXmlPrimary implements MergedXml {
         } catch (final XMLStreamException err) {
             throw new IOException(err);
         }
+        Logger.info(MergedXmlPrimary.class, "Merging primary: xml closed");
         return new MergedXml.Result(res.get(), checksums);
     }
 
@@ -130,7 +133,9 @@ public final class MergedXmlPrimary implements MergedXml {
         String checksum = "123";
         reader.nextEvent();
         reader.nextEvent();
+        Logger.info(MergedXmlPrimary.class, "Merging primary: starting to read xml");
         while (reader.hasNext()) {
+            Logger.info(MergedXmlPrimary.class, "Merging primary: reading xml");
             event = reader.nextEvent();
             if (MergedXmlPrimary.isTag(event, "package")) {
                 pckg.clear();
@@ -158,6 +163,7 @@ public final class MergedXmlPrimary implements MergedXml {
                 res.add(checksum);
             }
         }
+        Logger.info(MergedXmlPrimary.class, "Merging primary: xml fully read");
         return res;
     }
 
