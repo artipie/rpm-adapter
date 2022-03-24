@@ -85,7 +85,7 @@ final class RpmITCase {
     @Test
     void generatesMetadata() throws IOException, InterruptedException {
         this.modifyRepo();
-        final boolean filelist = true;
+        final boolean filelist = false;
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, filelist)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
@@ -97,7 +97,7 @@ final class RpmITCase {
 
     @Test
     void dontKeepOldMetadata() {
-        new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, true)
+        new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, false)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
         final BlockingStorage bsto = new BlockingStorage(this.storage);
@@ -126,7 +126,7 @@ final class RpmITCase {
     void generatesRepomdMetadata() throws IOException, InterruptedException {
         this.modifyRepo();
         final RepoConfig config =
-            new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.SHA1, true);
+            new RepoConfig.Simple(Digest.SHA256, StandardNamingPolicy.SHA1, false);
         new Rpm(this.storage, config)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
