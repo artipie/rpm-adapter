@@ -194,10 +194,13 @@ public final class XmlEventPrimary implements XmlEvent {
         final Map<String, Integer> items = new HashMap<>(names.size());
         final Set<String> duplicates = new HashSet<>(names.size());
         final List<String> libcso = new ArrayList<>(names.size());
-        final Set<String> provides = XmlEventPrimary.provides(tags);
+        final List<String> nprovides = tags.providesNames();
+        final List<HeaderTags.Version> vprovides = tags.providesVer();
         for (int ind = 0; ind < names.size(); ind = ind + 1) {
             final String name = names.get(ind);
-            if (provides.contains(name.concat(versions.get(ind).toString()))) {
+            if (XmlEventPrimary.checkRequiresInProvides(
+                nprovides, vprovides, name, versions.get(ind)
+            )) {
                 continue;
             }
             if (name.startsWith("libc.so.")) {
@@ -217,7 +220,8 @@ public final class XmlEventPrimary implements XmlEvent {
                 full = full.concat(String.valueOf(pre));
             }
             if (!name.startsWith("rpmlib(")
-                && !name.startsWith("config(") && !duplicates.contains(full)) {
+                && !name.startsWith("config(") && !duplicates.contains(full)
+                && !name.equals("/usr/sbin/glibc_post_upgrade.x86_64")) {
                 writer.add(
                     events.createStartElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "entry")
                 );
@@ -439,16 +443,28 @@ public final class XmlEventPrimary implements XmlEvent {
     }
 
     /**
-     * Returns set with provides items, names and version.
-     * @param tags Header tags
-     * @return Set with provides
+     * Checks if requires item exists in provides: generally, both name and version
+     * should be considered, but there are some exceptions:
+     * 1) when requires name starts with `pkgconfig` we check only names.
+     * @param nprovides Provides names
+     * @param vprovides Provides version
+     * @param rname Requires name
+     * @param rversion Requires version
+     * @return True is requires item should NOT be added
+     * @checkstyle ParameterNumberCheck (5 lines)
      */
-    private static Set<String> provides(final HeaderTags tags) {
-        final List<String> names = tags.providesNames();
-        final List<HeaderTags.Version> vers = tags.providesVer();
-        final Set<String> res = new HashSet<>();
-        for (int ind = 0; ind < names.size(); ind = ind + 1) {
-            res.add(names.get(ind).concat(vers.get(ind).toString()));
+    private static boolean checkRequiresInProvides(
+        final List<String> nprovides, final List<HeaderTags.Version> vprovides,
+        final String rname, final HeaderTags.Version rversion
+    ) {
+        final String concat = rname.concat(rversion.toString());
+        boolean res = false;
+        for (int ind = 0; ind < nprovides.size(); ind = ind + 1) {
+            if (concat.equals(nprovides.get(ind).concat(vprovides.get(ind).toString()))
+                || rname.startsWith("pkgconfig") && nprovides.get(ind).equals(rname)) {
+                res = true;
+                break;
+            }
         }
         return res;
     }

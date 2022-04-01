@@ -45,7 +45,8 @@ class XmlEventPrimaryTest {
         "ant-1.9.4-2.el7.noarch.rpm,ant_res.xml",
         "dbus-1.6.12-17.el7.x86_64.rpm,dbus_res.xml",
         "compat-db47-4.7.25-28.el7.i686.rpm,compat_res.xml",
-        "authconfig-6.2.8-30.el7.x86_64.rpm,authconfig_res.xml"
+        "authconfig-6.2.8-30.el7.x86_64.rpm,authconfig_res.xml",
+        "openssl-devel-1.0.2k-19.el7.x86_64.rpm,openssl-devil.xml"
     })
     void writesPackageInfo(final String rpm, final String res) throws XMLStreamException,
         IOException {
