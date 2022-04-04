@@ -46,7 +46,9 @@ class XmlEventPrimaryTest {
         "dbus-1.6.12-17.el7.x86_64.rpm,dbus_res.xml",
         "compat-db47-4.7.25-28.el7.i686.rpm,compat_res.xml",
         "authconfig-6.2.8-30.el7.x86_64.rpm,authconfig_res.xml",
-        "openssl-devel-1.0.2k-19.el7.x86_64.rpm,openssl-devil.xml"
+        "openssl-devel-1.0.2k-19.el7.x86_64.rpm,openssl-devil.xml",
+        "nmap-7.80-1.h1.eulerosv2r9.x86_64.rpm,nmap_res.xml",
+        "systemtap-client-4.1-6.eulerosv2r9.x86_64.rpm,systemtap_res.xml"
     })
     void writesPackageInfo(final String rpm, final String res) throws XMLStreamException,
         IOException {
