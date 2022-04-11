@@ -252,14 +252,6 @@ SOFTWARE.
         <filtering>false</filtering>
       </testResource>
     </testResources>
-    <resources>
-      <resource>
-        <directory>${basedir}/src/test/resources-binary</directory>
-        <excludes>
-          <exclude>**/repodata/**</exclude>
-        </excludes>
-      </resource>
-    </resources>
     <pluginManagement>
       <plugins>
         <plugin>
