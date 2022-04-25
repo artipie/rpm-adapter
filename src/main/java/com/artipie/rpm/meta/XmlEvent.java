@@ -7,14 +7,12 @@ package com.artipie.rpm.meta;
 import com.artipie.rpm.pkg.HeaderTags;
 import com.artipie.rpm.pkg.Package;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventWriter;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
+import org.redline_rpm.payload.Directive;
 
 /**
  * Xml event to write to the output stream.
@@ -108,9 +106,23 @@ public interface XmlEvent {
 
     /**
      * Implementation of {@link XmlEvent} to build event for `files` tag.
+     * @see <a href="https://man7.org/linux/man-pages/man7/inode.7.html">Man page for file inode information</a>
+     * @see <a href="https://github.com/rpm-software-management/createrepo_c/blob/b49b8b2586c07d3e84009beba677162b86539f9d/src/parsehdr.c#L256">Create repo implementation</a>
      * @since 1.5
+     * @checkstyle ExecutableStatementCountCheck (300 lines)
      */
+    @SuppressWarnings("PMD.AvoidUsingOctalValues")
     final class Files implements XmlEvent {
+
+        /**
+         * This is a bit mask used to extract the file type code from a mode value.
+         */
+        private static final int S_IFMT = 0170000;
+
+        /**
+         * This is the file type constant of a directory file.
+         */
+        private static final int S_IFDIR = 0040000;
 
         /**
          * Predicate to filter files. The item is NOT added to the writer if
@@ -141,8 +153,9 @@ public interface XmlEvent {
             try {
                 final String[] files = tags.baseNames().toArray(new String[0]);
                 final String[] dirs = tags.dirNames().toArray(new String[0]);
-                final Set<String> dirset = Arrays.stream(dirs).collect(Collectors.toSet());
                 final int[] did = tags.dirIndexes();
+                final int[] fmod = tags.fileModes();
+                final int[] flags = tags.fileFlags();
                 for (int idx = 0; idx < files.length; idx += 1) {
                     final String fle = files[idx];
                     // @checkstyle MethodBodyCommentsCheck (2 lines)
@@ -156,8 +169,10 @@ public interface XmlEvent {
                         continue;
                     }
                     writer.add(events.createStartElement("", "", "file"));
-                    if (dirset.contains(String.format("%s/", path))) {
+                    if ((fmod[idx] & Files.S_IFMT) == Files.S_IFDIR) {
                         writer.add(events.createAttribute("type", "dir"));
+                    } else if ((flags[idx] & Directive.RPMFILE_GHOST) > 0) {
+                        writer.add(events.createAttribute("type", "ghost"));
                     }
                     writer.add(events.createCharacters(path));
                     writer.add(events.createEndElement("", "", "file"));

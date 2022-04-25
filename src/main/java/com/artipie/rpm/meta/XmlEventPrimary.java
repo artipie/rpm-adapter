@@ -15,9 +15,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventWriter;
 import javax.xml.stream.XMLStreamException;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.cactoos.map.MapEntry;
 import org.cactoos.map.MapOf;
 
@@ -26,9 +30,12 @@ import org.cactoos.map.MapOf;
  *
  * @checkstyle ExecutableStatementCountCheck (500 lines)
  * @checkstyle MagicNumberCheck (20 lines)
+ * @checkstyle CyclomaticComplexityCheck (500 lines)
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
+ * @checkstyle NPathComplexityCheck (500 lines)
  * @since 1.5
  */
-@SuppressWarnings({"PMD.LongVariable", "PMD.AvoidDuplicateLiterals"})
+@SuppressWarnings({"PMD.LongVariable", "PMD.AvoidDuplicateLiterals", "PMD.TooManyMethods"})
 public final class XmlEventPrimary implements XmlEvent {
 
     /**
@@ -43,6 +50,7 @@ public final class XmlEventPrimary implements XmlEvent {
 
     /**
      * Post dependency.
+     * @checkstyle MagicNumberCheck (5 lines)
      */
     private static final int RPMSENSE_SCRIPT_POST = 1 << 10;
 
@@ -56,6 +64,18 @@ public final class XmlEventPrimary implements XmlEvent {
      */
     private static final String NS_URL =
         XmlPackage.PRIMARY.xmlNamespaces().get(XmlEventPrimary.PRFX);
+
+    /**
+     * This is a map of packages names and requires items, that should be excluded
+     * from requires list while creating metadata file.
+     */
+    private static final Map<String, String> REQUIRES_EXCLUDES =
+        Stream.of(
+            new ImmutablePair<>("bash", "/urs/bin/bash"),
+            new ImmutablePair<>("perl", "/urs/bin/perl"),
+            new ImmutablePair<>("ruby", "/urs/bin/ruby"),
+            new ImmutablePair<>("systemtap-client", "/usr/bin/stap")
+        ).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
 
     @Override
     public void add(final XMLEventWriter writer, final Package.Meta meta) throws IOException {
@@ -118,9 +138,12 @@ public final class XmlEventPrimary implements XmlEvent {
             );
             XmlEventPrimary.addProvides(writer, tags);
             XmlEventPrimary.addRequires(writer, tags);
+            XmlEventPrimary.addObsoletes(writer, tags);
+            XmlEventPrimary.addConflicts(writer, tags);
             // @checkstyle BooleanExpressionComplexityCheck (10 lines)
             new Files(
                 name -> name.startsWith("/var/")
+                    || name.equals("/boot") || name.startsWith("/boot/")
                     || name.startsWith("/lib/") || name.startsWith("/lib64/")
                     || "/lib64".equals(name) || "/lib".equals(name)
                     || name.startsWith("/run/") || name.startsWith("/usr/")
@@ -176,13 +199,14 @@ public final class XmlEventPrimary implements XmlEvent {
      * @param tags Tag info
      * @throws XMLStreamException On error
      */
-    @SuppressWarnings("PMD.CyclomaticComplexity")
+    @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
     private static void addRequires(final XMLEventWriter writer, final HeaderTags tags)
         throws XMLStreamException {
         final XMLEventFactory events = XMLEventFactory.newFactory();
         writer.add(
             events.createStartElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "requires")
         );
+        final String pkg = tags.name();
         final List<String> names = tags.requires();
         final List<Optional<String>> flags = tags.requireFlags();
         final List<Integer> intflags = tags.requireFlagsInts();
@@ -190,8 +214,18 @@ public final class XmlEventPrimary implements XmlEvent {
         final Map<String, Integer> items = new HashMap<>(names.size());
         final Set<String> duplicates = new HashSet<>(names.size());
         final List<String> libcso = new ArrayList<>(names.size());
+        final List<String> nprovides = tags.providesNames();
+        final List<HeaderTags.Version> vprovides = tags.providesVer();
         for (int ind = 0; ind < names.size(); ind = ind + 1) {
             final String name = names.get(ind);
+            if (XmlEventPrimary.checkRequiresInProvides(
+                nprovides, vprovides, name, versions.get(ind)
+            )) {
+                continue;
+            }
+            if (name.equals(XmlEventPrimary.REQUIRES_EXCLUDES.get(pkg))) {
+                continue;
+            }
             if (name.startsWith("libc.so.")) {
                 libcso.add(name);
                 continue;
@@ -209,7 +243,8 @@ public final class XmlEventPrimary implements XmlEvent {
                 full = full.concat(String.valueOf(pre));
             }
             if (!name.startsWith("rpmlib(")
-                && !name.startsWith("config(") && !duplicates.contains(full)) {
+                && !name.startsWith("config(") && !duplicates.contains(full)
+                && !name.equals("/usr/sbin/glibc_post_upgrade.x86_64")) {
                 writer.add(
                     events.createStartElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "entry")
                 );
@@ -241,6 +276,85 @@ public final class XmlEventPrimary implements XmlEvent {
         }
         writer.add(
             events.createEndElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "requires")
+        );
+    }
+
+    /**
+     * Builds `obsoletes` tag.
+     *
+     * @param writer Xml event writer
+     * @param tags Tag info
+     * @throws XMLStreamException On error
+     */
+    private static void addObsoletes(final XMLEventWriter writer, final HeaderTags tags)
+        throws XMLStreamException {
+        final List<String> names = tags.obsoletes();
+        if (names.isEmpty()) {
+            return;
+        }
+        final XMLEventFactory events = XMLEventFactory.newFactory();
+        writer.add(
+            events.createStartElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "obsoletes")
+        );
+        final List<Optional<String>> flags = tags.obsoletesFlags();
+        final List<HeaderTags.Version> versions = tags.obsoletesVer();
+        for (int ind = 0; ind < names.size(); ind = ind + 1) {
+            writer.add(
+                events.createStartElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "entry")
+            );
+            writer.add(events.createAttribute("name", names.get(ind)));
+            XmlEventPrimary.addEntryAttr(
+                writer, events, versions, ind, flags, HeaderTags.Flags.EQUAL.notation()
+            );
+            writer.add(
+                events.createEndElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "entry")
+            );
+        }
+        writer.add(
+            events.createEndElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "obsoletes")
+        );
+    }
+
+    /**
+     * Builds `conflicts` tag.
+     *
+     * @param writer Xml event writer
+     * @param tags Tag info
+     * @throws XMLStreamException On error
+     */
+    private static void addConflicts(final XMLEventWriter writer, final HeaderTags tags)
+        throws XMLStreamException {
+        final List<String> names = tags.conflicts();
+        if (names.isEmpty()) {
+            return;
+        }
+        final XMLEventFactory events = XMLEventFactory.newFactory();
+        writer.add(
+            events.createStartElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "conflicts")
+        );
+        final List<Optional<String>> flags = tags.conflictsFlags();
+        final List<HeaderTags.Version> versions = tags.conflictsVer();
+        final Set<String> items = new HashSet<>(names.size());
+        for (int ind = 0; ind < names.size(); ind = ind + 1) {
+            final String concat = names.get(ind).concat(versions.get(ind).toString())
+                .concat(flags.get(ind).orElse(""));
+            if (items.contains(concat)) {
+                continue;
+            }
+            items.add(concat);
+            writer.add(
+                events.createStartElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "entry")
+            );
+            writer.add(events.createAttribute("name", names.get(ind)));
+            XmlEventPrimary.addEntryAttr(
+                writer, events, versions, ind, flags, HeaderTags.Flags.EQUAL.notation()
+            );
+            writer.add(
+                events.createEndElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "entry")
+            );
+        }
+        writer.add(
+            events.createEndElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "conflicts")
         );
     }
 
@@ -349,5 +463,35 @@ public final class XmlEventPrimary implements XmlEvent {
         final Map<String, Integer> items, final String item) {
         return Optional.ofNullable(items.get(item)).flatMap(flags::get)
             .orElse(HeaderTags.Flags.EQUAL.notation());
+    }
+
+    /**
+     * Checks if requires item exists in provides:
+     * first version is considered in comparison,
+     * then, if either requires of provides version is absent,
+     * we compare only provide and require items names.
+     * @param nprovides Provides names
+     * @param vprovides Provides version
+     * @param rname Requires name
+     * @param rversion Requires version
+     * @return True is requires item should NOT be added
+     * @checkstyle ParameterNumberCheck (5 lines)
+     */
+    private static boolean checkRequiresInProvides(
+        final List<String> nprovides, final List<HeaderTags.Version> vprovides,
+        final String rname, final HeaderTags.Version rversion
+    ) {
+        final String concat = rname.concat(rversion.toString());
+        boolean res = false;
+        for (int ind = 0; ind < nprovides.size(); ind = ind + 1) {
+            if (concat.equals(nprovides.get(ind).concat(vprovides.get(ind).toString()))
+                || (rversion.toString().isEmpty() || vprovides.get(ind).toString().isEmpty())
+                    && nprovides.get(ind).equals(rname)
+            ) {
+                res = true;
+                break;
+            }
+        }
+        return res;
     }
 }

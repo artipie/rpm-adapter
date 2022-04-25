@@ -65,6 +65,19 @@ public final class FilePackageHeadersTest {
     }
 
     @Test
+    public void parseShortAsIntHeader(@TempDir final Path unused) {
+        final Header.HeaderTag tag = Header.HeaderTag.FILEMODES;
+        final Header header = new Header();
+        header.createEntry(tag, new short[]{1});
+        MatcherAssert.assertThat(
+            new FilePackage.Headers(
+                header, unused, Digest.SHA256, "unused"
+            ).header(tag).asInt(0),
+            new IsEqual<>(1)
+        );
+    }
+
+    @Test
     public void parseIntsHeader(@TempDir final Path unused) throws Exception {
         final Header.HeaderTag tag = Header.HeaderTag.EPOCH;
         final Header header = new Header();
@@ -75,6 +88,19 @@ public final class FilePackageHeadersTest {
                 header, unused, Digest.SHA256, "unused"
             ).header(tag).asInts(),
             new IsEqual<>(expected)
+        );
+    }
+
+    @Test
+    public void parseShortsAsIntsHeader(@TempDir final Path unused) {
+        final Header.HeaderTag tag = Header.HeaderTag.FILEMODES;
+        final Header header = new Header();
+        header.createEntry(tag, new short[]{1, 2});
+        MatcherAssert.assertThat(
+            new FilePackage.Headers(
+                header, unused, Digest.SHA256, "unused"
+            ).header(tag).asInts(),
+            new IsEqual<>(new int[]{1, 2})
         );
     }
 
