@@ -126,7 +126,7 @@ class XmlEventPrimaryTest {
         "python,/usr/bin/python3.30",
         "python-debug,/usr/bin/python-debug",
         "python-debug,/usr/bin/python2-debug",
-        "python-debug,/usr/bin/python2.9-debug",
+        "python-debug,/usr/bin/python2.9-debug"
     })
     void excludesFromRequires(final String name, final String requires, final @TempDir Path tmp)
         throws XMLStreamException, IOException {
@@ -149,7 +149,7 @@ class XmlEventPrimaryTest {
             new IsEqual<>(
                 String.join(
                     "",
-                    // @checkstyle LineLengthCheck (1 line)
+                    // @checkstyle LineLengthCheck (5 lines)
                     "<?xml version='1.0' encoding='UTF-8'?><metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke.edu/metadata/rpm\"><package type=\"rpm\">",
                     String.format("<name>%s</name>", name),
                     "<arch></arch><version epoch=\"0\" rel=\"\" ver=\"\"/><checksum type=\"sha256\" pkgid=\"YES\">d6a7cd2a7371b1a15d543196979ff74fdb027023ebf187d5d329be11055c77fd</checksum><summary></summary><description></description><packager></packager><url></url><time build=\"0\" file=\"0\"/><size installed=\"0\" archive=\"0\" package=\"3\"/><location href=\"test.rpm\"/><format><rpm:license></rpm:license><rpm:vendor></rpm:vendor><rpm:group></rpm:group><rpm:buildhost></rpm:buildhost><rpm:sourcerpm></rpm:sourcerpm><rpm:header-range start=\"0\" end=\"0\"/><rpm:provides/>",

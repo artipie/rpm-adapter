@@ -481,7 +481,7 @@ public final class XmlEventPrimary implements XmlEvent {
      * 1) first version is considered in comparison, then, if either requires of provides version
      * is absent, we compare only provide and require items names;
      * 2) if requires name is `/sbin/ldconfig`, then we should check provides for `ldconfig` item,
-     * they are considered the same
+     * they are considered the same.
      * @param nprovides Provides names
      * @param vprovides Provides version
      * @param rname Requires name
