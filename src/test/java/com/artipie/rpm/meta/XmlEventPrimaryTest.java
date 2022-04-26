@@ -107,6 +107,63 @@ class XmlEventPrimaryTest {
         );
     }
 
+    @ParameterizedTest
+    @CsvSource({
+        "bash,/usr/bin/bash",
+        "bash,/bin/sh",
+        "perl,/usr/bin/perl",
+        "ruby,/usr/bin/ruby",
+        "zsh,/bin/zsh",
+        "festival,/usr/bin/festival",
+        "fontforge,/usr/bin/fontforge",
+        "fontforge,/usr/bin/fontforge",
+        "regina,/usr/bin/regina",
+        "ocaml,/usr/bin/ocamlrun",
+        "guile,/usr/bin/guile",
+        "systemtap-client,/usr/bin/stap",
+        "python,/usr/bin/python",
+        "python,/usr/bin/python2",
+        "python,/usr/bin/python3.30",
+        "python-debug,/usr/bin/python-debug",
+        "python-debug,/usr/bin/python2-debug",
+        "python-debug,/usr/bin/python2.9-debug",
+    })
+    void excludesFromRequires(final String name, final String requires, final @TempDir Path tmp)
+        throws XMLStreamException, IOException {
+        final Path rpm = tmp.resolve("test.rpm");
+        Files.write(rpm, "any".getBytes(StandardCharsets.UTF_8));
+        final ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        final XMLEventWriter writer = new OutputFactoryImpl().createXMLEventWriter(bout);
+        this.prepareXmlWriter(writer);
+        final Header hdr = new Header();
+        hdr.createEntry(Header.HeaderTag.NAME, name);
+        // @checkstyle LineLengthCheck (2 lines)
+        hdr.createEntry(Header.HeaderTag.REQUIRENAME, new String[]{"one", "two", requires, "three"});
+        hdr.createEntry(Header.HeaderTag.REQUIREVERSION, new String[]{"0.1", "0.2", "", "0.3.0"});
+        hdr.createEntry(Header.HeaderTag.REQUIREFLAGS, new int[]{8, 8, 8, 8});
+        new XmlEventPrimary().add(writer, new FilePackage.Headers(hdr, rpm, Digest.SHA256));
+        writer.add(XMLEventFactory.newFactory().createEndElement("", "", "metadata"));
+        writer.close();
+        MatcherAssert.assertThat(
+            bout.toString(),
+            new IsEqual<>(
+                String.join(
+                    "",
+                    // @checkstyle LineLengthCheck (1 line)
+                    "<?xml version='1.0' encoding='UTF-8'?><metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke.edu/metadata/rpm\"><package type=\"rpm\">",
+                    String.format("<name>%s</name>", name),
+                    "<arch></arch><version epoch=\"0\" rel=\"\" ver=\"\"/><checksum type=\"sha256\" pkgid=\"YES\">d6a7cd2a7371b1a15d543196979ff74fdb027023ebf187d5d329be11055c77fd</checksum><summary></summary><description></description><packager></packager><url></url><time build=\"0\" file=\"0\"/><size installed=\"0\" archive=\"0\" package=\"3\"/><location href=\"test.rpm\"/><format><rpm:license></rpm:license><rpm:vendor></rpm:vendor><rpm:group></rpm:group><rpm:buildhost></rpm:buildhost><rpm:sourcerpm></rpm:sourcerpm><rpm:header-range start=\"0\" end=\"0\"/><rpm:provides/>",
+                    "<rpm:requires>",
+                    "<rpm:entry name=\"one\" ver=\"0.1\" epoch=\"0\" flags=\"EQ\"/>",
+                    "<rpm:entry name=\"two\" ver=\"0.2\" epoch=\"0\" flags=\"EQ\"/>",
+                    "<rpm:entry name=\"three\" ver=\"0.3.0\" epoch=\"0\" flags=\"EQ\"/>",
+                    "</rpm:requires>",
+                    "</format></package></metadata>"
+                )
+            )
+        );
+    }
+
     private void prepareXmlWriter(final XMLEventWriter writer) throws XMLStreamException {
         final XMLEventFactory events = XMLEventFactory.newFactory();
         writer.add(events.createStartDocument());
