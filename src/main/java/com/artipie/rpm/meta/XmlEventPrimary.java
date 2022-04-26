@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.xml.stream.XMLEventFactory;
@@ -69,13 +70,22 @@ public final class XmlEventPrimary implements XmlEvent {
      * This is a map of packages names and requires items, that should be excluded
      * from requires list while creating metadata file.
      */
-    private static final Map<String, String> REQUIRES_EXCLUDES =
+    private static final Map<String, Pattern> REQUIRES_EXCLUDES =
         Stream.of(
-            new ImmutablePair<>("bash", "/urs/bin/bash"),
-            new ImmutablePair<>("perl", "/urs/bin/perl"),
-            new ImmutablePair<>("ruby", "/urs/bin/ruby"),
+            new ImmutablePair<>("bash", "/usr/bin/bash|/bin/sh"),
+            new ImmutablePair<>("perl", "/usr/bin/perl"),
+            new ImmutablePair<>("ruby", "/usr/bin/ruby"),
+            new ImmutablePair<>("python", "/usr/bin/python(\\d(.\\d+)?)?"),
+            new ImmutablePair<>("python-base", "/usr/bin/python(\\d(.\\d+)?)?"),
+            new ImmutablePair<>("python-debug", "/usr/bin/python(\\d(.\\d+)?)?-debug"),
+            new ImmutablePair<>("zsh", "/bin/zsh"),
+            new ImmutablePair<>("festival", "/usr/bin/festival"),
+            new ImmutablePair<>("fontforge", "/usr/bin/fontforge"),
+            new ImmutablePair<>("regina", "/usr/bin/regina"),
+            new ImmutablePair<>("ocaml", "/usr/bin/ocamlrun"),
+            new ImmutablePair<>("guile", "/usr/bin/guile"),
             new ImmutablePair<>("systemtap-client", "/usr/bin/stap")
-        ).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+        ).collect(Collectors.toMap(Pair::getKey, pair -> Pattern.compile(pair.getValue())));
 
     @Override
     public void add(final XMLEventWriter writer, final Package.Meta meta) throws IOException {
@@ -223,7 +233,8 @@ public final class XmlEventPrimary implements XmlEvent {
             )) {
                 continue;
             }
-            if (name.equals(XmlEventPrimary.REQUIRES_EXCLUDES.get(pkg))) {
+            if (XmlEventPrimary.REQUIRES_EXCLUDES.containsKey(pkg)
+                && XmlEventPrimary.REQUIRES_EXCLUDES.get(pkg).matcher(name).matches()) {
                 continue;
             }
             if (name.startsWith("libc.so.")) {
@@ -467,9 +478,10 @@ public final class XmlEventPrimary implements XmlEvent {
 
     /**
      * Checks if requires item exists in provides:
-     * first version is considered in comparison,
-     * then, if either requires of provides version is absent,
-     * we compare only provide and require items names.
+     * 1) first version is considered in comparison, then, if either requires of provides version
+     * is absent, we compare only provide and require items names;
+     * 2) if requires name is `/sbin/ldconfig`, then we should check provides for `ldconfig` item,
+     * they are considered the same.
      * @param nprovides Provides names
      * @param vprovides Provides version
      * @param rname Requires name
@@ -488,6 +500,9 @@ public final class XmlEventPrimary implements XmlEvent {
                 || (rversion.toString().isEmpty() || vprovides.get(ind).toString().isEmpty())
                     && nprovides.get(ind).equals(rname)
             ) {
+                res = true;
+                break;
+            } else if ("/sbin/ldconfig".equals(rname) && nprovides.contains("ldconfig")) {
                 res = true;
                 break;
             }
