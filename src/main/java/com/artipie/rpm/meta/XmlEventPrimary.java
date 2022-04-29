@@ -15,14 +15,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.function.Predicate;
 import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventWriter;
 import javax.xml.stream.XMLStreamException;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.cactoos.map.MapEntry;
 import org.cactoos.map.MapOf;
 
@@ -65,27 +61,6 @@ public final class XmlEventPrimary implements XmlEvent {
      */
     private static final String NS_URL =
         XmlPackage.PRIMARY.xmlNamespaces().get(XmlEventPrimary.PRFX);
-
-    /**
-     * This is a map of packages names and requires items, that should be excluded
-     * from requires list while creating metadata file.
-     */
-    private static final Map<String, Pattern> REQUIRES_EXCLUDES =
-        Stream.of(
-            new ImmutablePair<>("bash", "/usr/bin/bash|/bin/sh"),
-            new ImmutablePair<>("perl", "/usr/bin/perl"),
-            new ImmutablePair<>("ruby", "/usr/bin/ruby"),
-            new ImmutablePair<>("python", "/usr/bin/python(\\d(.\\d+)?)?"),
-            new ImmutablePair<>("python-base", "/usr/bin/python(\\d(.\\d+)?)?"),
-            new ImmutablePair<>("python-debug", "/usr/bin/python(\\d(.\\d+)?)?-debug"),
-            new ImmutablePair<>("zsh", "/bin/zsh"),
-            new ImmutablePair<>("festival", "/usr/bin/festival"),
-            new ImmutablePair<>("fontforge", "/usr/bin/fontforge"),
-            new ImmutablePair<>("regina", "/usr/bin/regina"),
-            new ImmutablePair<>("ocaml", "/usr/bin/ocamlrun"),
-            new ImmutablePair<>("guile", "/usr/bin/guile"),
-            new ImmutablePair<>("systemtap-client", "/usr/bin/stap")
-        ).collect(Collectors.toMap(Pair::getKey, pair -> Pattern.compile(pair.getValue())));
 
     @Override
     public void add(final XMLEventWriter writer, final Package.Meta meta) throws IOException {
@@ -150,15 +125,7 @@ public final class XmlEventPrimary implements XmlEvent {
             XmlEventPrimary.addRequires(writer, tags);
             XmlEventPrimary.addObsoletes(writer, tags);
             XmlEventPrimary.addConflicts(writer, tags);
-            // @checkstyle BooleanExpressionComplexityCheck (10 lines)
-            new Files(
-                name -> name.startsWith("/var/")
-                    || name.equals("/boot") || name.startsWith("/boot/")
-                    || name.startsWith("/lib/") || name.startsWith("/lib64/")
-                    || "/lib64".equals(name) || "/lib".equals(name)
-                    || name.startsWith("/run/") || name.startsWith("/usr/")
-                    && !(name.contains("/bin/") || name.contains("/sbin/"))
-            ).add(writer, meta);
+            new Files(XmlEventPrimary.filesFilter()).add(writer, meta);
             writer.add(events.createEndElement("", "", "format"));
             writer.add(events.createEndElement("", "", "package"));
         } catch (final XMLStreamException err) {
@@ -216,25 +183,24 @@ public final class XmlEventPrimary implements XmlEvent {
         writer.add(
             events.createStartElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "requires")
         );
-        final String pkg = tags.name();
         final List<String> names = tags.requires();
         final List<Optional<String>> flags = tags.requireFlags();
         final List<Integer> intflags = tags.requireFlagsInts();
         final List<HeaderTags.Version> versions = tags.requiresVer();
         final Map<String, Integer> items = new HashMap<>(names.size());
         final Set<String> duplicates = new HashSet<>(names.size());
+        final Set<String> files = new XmlEvent.Files(XmlEventPrimary.filesFilter()).files(tags);
         final List<String> libcso = new ArrayList<>(names.size());
         final List<String> nprovides = tags.providesNames();
         final List<HeaderTags.Version> vprovides = tags.providesVer();
         for (int ind = 0; ind < names.size(); ind = ind + 1) {
             final String name = names.get(ind);
             if (XmlEventPrimary.checkRequiresInProvides(
-                nprovides, vprovides, name, versions.get(ind)
+                nprovides, vprovides, name, versions.get(ind), flags.get(ind)
             )) {
                 continue;
             }
-            if (XmlEventPrimary.REQUIRES_EXCLUDES.containsKey(pkg)
-                && XmlEventPrimary.REQUIRES_EXCLUDES.get(pkg).matcher(name).matches()) {
+            if (files.contains(name)) {
                 continue;
             }
             if (name.startsWith("libc.so.")) {
@@ -477,36 +443,43 @@ public final class XmlEventPrimary implements XmlEvent {
     }
 
     /**
-     * Checks if requires item exists in provides:
-     * 1) first version is considered in comparison, then, if either requires of provides version
-     * is absent, we compare only provide and require items names;
-     * 2) if requires name is `/sbin/ldconfig`, then we should check provides for `ldconfig` item,
-     * they are considered the same.
+     * Checks if requires item exists in provides. See
+     * {@link RpmDependency#isSatisfiedBy(String, HeaderTags.Version)}
+     * for more details.
      * @param nprovides Provides names
      * @param vprovides Provides version
      * @param rname Requires name
      * @param rversion Requires version
+     * @param flag Requires flag
      * @return True is requires item should NOT be added
      * @checkstyle ParameterNumberCheck (5 lines)
      */
     private static boolean checkRequiresInProvides(
         final List<String> nprovides, final List<HeaderTags.Version> vprovides,
-        final String rname, final HeaderTags.Version rversion
+        final String rname, final HeaderTags.Version rversion, final Optional<String> flag
     ) {
-        final String concat = rname.concat(rversion.toString());
         boolean res = false;
         for (int ind = 0; ind < nprovides.size(); ind = ind + 1) {
-            if (concat.equals(nprovides.get(ind).concat(vprovides.get(ind).toString()))
-                || (rversion.toString().isEmpty() || vprovides.get(ind).toString().isEmpty())
-                    && nprovides.get(ind).equals(rname)
-            ) {
-                res = true;
-                break;
-            } else if ("/sbin/ldconfig".equals(rname) && nprovides.contains("ldconfig")) {
+            if (new RpmDependency(rname, rversion, flag)
+                .isSatisfiedBy(nprovides.get(ind), vprovides.get(ind))) {
                 res = true;
                 break;
             }
         }
         return res;
+    }
+
+    /**
+     * Files filter. It's a method as qulice fails to analyze a constant with exception.
+     * @return Predicate to filter files
+     */
+    private static Predicate<String> filesFilter() {
+        // @checkstyle BooleanExpressionComplexityCheck (10 lines)
+        return name -> name.startsWith("/var/")
+            || name.equals("/boot") || name.startsWith("/boot/")
+            || name.startsWith("/lib/") || name.startsWith("/lib64/")
+            || "/lib64".equals(name) || "/lib".equals(name)
+            || name.startsWith("/run/") || name.startsWith("/usr/")
+            && !(name.contains("/bin/") || name.contains("/sbin/"));
     }
 }
