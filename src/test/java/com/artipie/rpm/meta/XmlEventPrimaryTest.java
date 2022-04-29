@@ -48,7 +48,9 @@ class XmlEventPrimaryTest {
         "authconfig-6.2.8-30.el7.x86_64.rpm,authconfig_res.xml",
         "openssl-devel-1.0.2k-19.el7.x86_64.rpm,openssl-devil.xml",
         "nmap-7.80-1.h1.eulerosv2r9.x86_64.rpm,nmap_res.xml",
-        "systemtap-client-4.1-6.eulerosv2r9.x86_64.rpm,systemtap_res.xml"
+        "systemtap-client-4.1-6.eulerosv2r9.x86_64.rpm,systemtap_res.xml",
+        "python3-pyasn1-0.3.7-8.eulerosv2r9.noarch.rpm,python.xml",
+        "vim-base-7.2-8.15.2.x86_64.rpm,vim-base.xml"
     })
     void writesPackageInfo(final String rpm, final String res) throws XMLStreamException,
         IOException {
@@ -110,26 +112,13 @@ class XmlEventPrimaryTest {
     @ParameterizedTest
     @CsvSource({
         "bash,/usr/bin/bash",
-        "bash,/bin/sh",
         "perl,/usr/bin/perl",
         "ruby,/usr/bin/ruby",
         "zsh,/bin/zsh",
-        "festival,/usr/bin/festival",
-        "fontforge,/usr/bin/fontforge",
-        "fontforge,/usr/bin/fontforge",
-        "regina,/usr/bin/regina",
-        "ocaml,/usr/bin/ocamlrun",
-        "guile,/usr/bin/guile",
-        "systemtap-client,/usr/bin/stap",
-        "python,/usr/bin/python",
-        "python,/usr/bin/python2",
-        "python,/usr/bin/python3.30",
-        "python-debug,/usr/bin/python-debug",
-        "python-debug,/usr/bin/python2-debug",
-        "python-debug,/usr/bin/python2.9-debug"
+        "python-debug,/usr/bin/python2-debug"
     })
-    void excludesFromRequires(final String name, final String requires, final @TempDir Path tmp)
-        throws XMLStreamException, IOException {
+    void excludesFilesFromRequires(final String name, final String requires,
+        final @TempDir Path tmp) throws XMLStreamException, IOException {
         final Path rpm = tmp.resolve("test.rpm");
         Files.write(rpm, "any".getBytes(StandardCharsets.UTF_8));
         final ByteArrayOutputStream bout = new ByteArrayOutputStream();
@@ -137,6 +126,11 @@ class XmlEventPrimaryTest {
         this.prepareXmlWriter(writer);
         final Header hdr = new Header();
         hdr.createEntry(Header.HeaderTag.NAME, name);
+        hdr.createEntry(Header.HeaderTag.BASENAMES, new String[]{"any", requires});
+        hdr.createEntry(Header.HeaderTag.DIRNAMES, new String[]{"", ""});
+        hdr.createEntry(Header.HeaderTag.DIRINDEXES, new int[]{0, 1});
+        hdr.createEntry(Header.HeaderTag.FILEMODES, new short[]{0, 1});
+        hdr.createEntry(Header.HeaderTag.FILEFLAGS, new int[]{0, 0});
         // @checkstyle LineLengthCheck (2 lines)
         hdr.createEntry(Header.HeaderTag.REQUIRENAME, new String[]{"one", "two", requires, "three"});
         hdr.createEntry(Header.HeaderTag.REQUIREVERSION, new String[]{"0.1", "0.2", "", "0.3.0"});
@@ -158,6 +152,7 @@ class XmlEventPrimaryTest {
                     "<rpm:entry name=\"two\" ver=\"0.2\" epoch=\"0\" flags=\"EQ\"/>",
                     "<rpm:entry name=\"three\" ver=\"0.3.0\" epoch=\"0\" flags=\"EQ\"/>",
                     "</rpm:requires>",
+                    String.format("<file>any</file><file>%s</file>", requires),
                     "</format></package></metadata>"
                 )
             )
