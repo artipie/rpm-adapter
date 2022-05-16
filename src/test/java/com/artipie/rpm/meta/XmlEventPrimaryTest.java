@@ -48,7 +48,9 @@ class XmlEventPrimaryTest {
         "authconfig-6.2.8-30.el7.x86_64.rpm,authconfig_res.xml",
         "openssl-devel-1.0.2k-19.el7.x86_64.rpm,openssl-devil.xml",
         "nmap-7.80-1.h1.eulerosv2r9.x86_64.rpm,nmap_res.xml",
-        "systemtap-client-4.1-6.eulerosv2r9.x86_64.rpm,systemtap_res.xml"
+        "systemtap-client-4.1-6.eulerosv2r9.x86_64.rpm,systemtap_res.xml",
+        "python3-pyasn1-0.3.7-8.eulerosv2r9.noarch.rpm,python.xml",
+        "vim-base-7.2-8.15.2.x86_64.rpm,vim-base.xml"
     })
     void writesPackageInfo(final String rpm, final String res) throws XMLStreamException,
         IOException {
@@ -101,6 +103,56 @@ class XmlEventPrimaryTest {
                     "<rpm:entry name=\"three\" ver=\"0.3\" epoch=\"0\" flags=\"LT\"/>",
                     "<rpm:entry name=\"two\" ver=\"0.2.2\" epoch=\"0\" flags=\"EQ\"/>",
                     "</rpm:conflicts>",
+                    "</format></package></metadata>"
+                )
+            )
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "bash,/usr/bin/bash",
+        "perl,/usr/bin/perl",
+        "ruby,/usr/bin/ruby",
+        "zsh,/bin/zsh",
+        "python-debug,/usr/bin/python2-debug"
+    })
+    void excludesFilesFromRequires(final String name, final String requires,
+        final @TempDir Path tmp) throws XMLStreamException, IOException {
+        final Path rpm = tmp.resolve("test.rpm");
+        Files.write(rpm, "any".getBytes(StandardCharsets.UTF_8));
+        final ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        final XMLEventWriter writer = new OutputFactoryImpl().createXMLEventWriter(bout);
+        this.prepareXmlWriter(writer);
+        final Header hdr = new Header();
+        hdr.createEntry(Header.HeaderTag.NAME, name);
+        hdr.createEntry(Header.HeaderTag.BASENAMES, new String[]{"any", requires});
+        hdr.createEntry(Header.HeaderTag.DIRNAMES, new String[]{"", ""});
+        hdr.createEntry(Header.HeaderTag.DIRINDEXES, new int[]{0, 1});
+        hdr.createEntry(Header.HeaderTag.FILEMODES, new short[]{0, 1});
+        hdr.createEntry(Header.HeaderTag.FILEFLAGS, new int[]{0, 0});
+        // @checkstyle LineLengthCheck (2 lines)
+        hdr.createEntry(Header.HeaderTag.REQUIRENAME, new String[]{"one", "two", requires, "three"});
+        hdr.createEntry(Header.HeaderTag.REQUIREVERSION, new String[]{"0.1", "0.2", "", "0.3.0"});
+        hdr.createEntry(Header.HeaderTag.REQUIREFLAGS, new int[]{8, 8, 8, 8});
+        new XmlEventPrimary().add(writer, new FilePackage.Headers(hdr, rpm, Digest.SHA256));
+        writer.add(XMLEventFactory.newFactory().createEndElement("", "", "metadata"));
+        writer.close();
+        MatcherAssert.assertThat(
+            bout.toString(),
+            new IsEqual<>(
+                String.join(
+                    "",
+                    // @checkstyle LineLengthCheck (5 lines)
+                    "<?xml version='1.0' encoding='UTF-8'?><metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke.edu/metadata/rpm\"><package type=\"rpm\">",
+                    String.format("<name>%s</name>", name),
+                    "<arch></arch><version epoch=\"0\" rel=\"\" ver=\"\"/><checksum type=\"sha256\" pkgid=\"YES\">d6a7cd2a7371b1a15d543196979ff74fdb027023ebf187d5d329be11055c77fd</checksum><summary></summary><description></description><packager></packager><url></url><time build=\"0\" file=\"0\"/><size installed=\"0\" archive=\"0\" package=\"3\"/><location href=\"test.rpm\"/><format><rpm:license></rpm:license><rpm:vendor></rpm:vendor><rpm:group></rpm:group><rpm:buildhost></rpm:buildhost><rpm:sourcerpm></rpm:sourcerpm><rpm:header-range start=\"0\" end=\"0\"/><rpm:provides/>",
+                    "<rpm:requires>",
+                    "<rpm:entry name=\"one\" ver=\"0.1\" epoch=\"0\" flags=\"EQ\"/>",
+                    "<rpm:entry name=\"two\" ver=\"0.2\" epoch=\"0\" flags=\"EQ\"/>",
+                    "<rpm:entry name=\"three\" ver=\"0.3.0\" epoch=\"0\" flags=\"EQ\"/>",
+                    "</rpm:requires>",
+                    String.format("<file>any</file><file>%s</file>", requires),
                     "</format></package></metadata>"
                 )
             )

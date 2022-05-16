@@ -78,6 +78,22 @@ class HeaderTagsVersionTest {
     }
 
     @ParameterizedTest
+    @CsvSource({
+        "1:1-test,0:1-test,1",
+        "1:1-test,0:2-test,1",
+        "0:1-test,1:1-test,-1",
+        "1.0.1-26.git20200127.fc32,1.0.2-26.git20200127.fc32,-1",
+        "3.0.1-test1,1.0.2-test3,1",
+        "1.1-test1,1.1-test3,-1"
+    })
+    void comparesVersions(final String first, final String second, final int res) {
+        MatcherAssert.assertThat(
+            new HeaderTags.Version(first).compareTo(new HeaderTags.Version(second)),
+            new IsEqual<>(res)
+        );
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {
         "-",
         "3:sd/sd-2.3alpha",
