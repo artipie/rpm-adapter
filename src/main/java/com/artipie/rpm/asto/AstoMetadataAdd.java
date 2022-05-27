@@ -18,7 +18,6 @@ import com.artipie.rpm.meta.XmlEvent;
 import com.artipie.rpm.meta.XmlEventPrimary;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.pkg.Package;
-import com.jcabi.log.Logger;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.util.Collection;
@@ -100,7 +99,6 @@ public final class AstoMetadataAdd {
         return this.getExistingOrDefaultKey(XmlPackage.PRIMARY).thenCompose(
             key -> {
                 final Key tempkey = new Key.From(temp, XmlPackage.PRIMARY.name());
-                Logger.info(this, "Primary: update started");
                 return new StorageValuePipeline<MergedXml.Result>(this.asto, key, tempkey)
                     .processWithResult(
                         (input, out) -> new UncheckedScalar<>(
@@ -109,10 +107,7 @@ public final class AstoMetadataAdd {
                             ).merge(metas, new XmlEventPrimary())
                         ).value()
                     ).thenApply(
-                        res -> {
-                            Logger.info(this, "Primary: new items added");
-                            return res;
-                        }
+                        res -> res
                     ).thenCompose(
                         res -> new StorageValuePipeline<>(this.asto, tempkey).process(
                             (input, out) -> new XmlAlter.Stream(
@@ -121,10 +116,7 @@ public final class AstoMetadataAdd {
                             ).pkgAttr(XmlPackage.PRIMARY.tag(), String.valueOf(res.count()))
                         ).thenApply(nothing -> res)
                     ).thenApply(
-                        res -> {
-                            Logger.info(this, "Primary: update finished");
-                            return res;
-                        }
+                        res -> res
                     );
             }
         );
