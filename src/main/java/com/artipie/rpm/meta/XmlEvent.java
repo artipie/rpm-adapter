@@ -7,6 +7,8 @@ package com.artipie.rpm.meta;
 import com.artipie.rpm.pkg.HeaderTags;
 import com.artipie.rpm.pkg.Package;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Predicate;
 import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventWriter;
@@ -180,6 +182,29 @@ public interface XmlEvent {
             } catch (final XMLStreamException err) {
                 throw new IOException(err);
             }
+        }
+
+        /**
+         * Obtain set of files list.
+         * @param tags Package tags
+         * @return Set of file items
+         */
+        public Set<String> files(final HeaderTags tags) {
+            final String[] files = tags.baseNames().toArray(new String[0]);
+            final String[] dirs = tags.dirNames().toArray(new String[0]);
+            final int[] did = tags.dirIndexes();
+            final Set<String> res = new HashSet<>(files.length);
+            for (int idx = 0; idx < files.length; idx += 1) {
+                final String fle = files[idx];
+                if (fle.isEmpty() || fle.charAt(0) == '.') {
+                    continue;
+                }
+                final String path = String.format("%s%s", dirs[did[idx]], fle);
+                if (!this.filter.test(path)) {
+                    res.add(path);
+                }
+            }
+            return res;
         }
     }
 

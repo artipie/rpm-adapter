@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventWriter;
 import javax.xml.stream.XMLStreamException;
@@ -27,6 +28,8 @@ import org.cactoos.map.MapOf;
  * @checkstyle ExecutableStatementCountCheck (500 lines)
  * @checkstyle MagicNumberCheck (20 lines)
  * @checkstyle CyclomaticComplexityCheck (500 lines)
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
+ * @checkstyle NPathComplexityCheck (500 lines)
  * @since 1.5
  */
 @SuppressWarnings({"PMD.LongVariable", "PMD.AvoidDuplicateLiterals", "PMD.TooManyMethods"})
@@ -44,6 +47,7 @@ public final class XmlEventPrimary implements XmlEvent {
 
     /**
      * Post dependency.
+     * @checkstyle MagicNumberCheck (5 lines)
      */
     private static final int RPMSENSE_SCRIPT_POST = 1 << 10;
 
@@ -121,15 +125,7 @@ public final class XmlEventPrimary implements XmlEvent {
             XmlEventPrimary.addRequires(writer, tags);
             XmlEventPrimary.addObsoletes(writer, tags);
             XmlEventPrimary.addConflicts(writer, tags);
-            // @checkstyle BooleanExpressionComplexityCheck (10 lines)
-            new Files(
-                name -> name.startsWith("/var/")
-                    || name.equals("/boot") || name.startsWith("/boot/")
-                    || name.startsWith("/lib/") || name.startsWith("/lib64/")
-                    || "/lib64".equals(name) || "/lib".equals(name)
-                    || name.startsWith("/run/") || name.startsWith("/usr/")
-                    && !(name.contains("/bin/") || name.contains("/sbin/"))
-            ).add(writer, meta);
+            new Files(XmlEventPrimary.filesFilter()).add(writer, meta);
             writer.add(events.createEndElement("", "", "format"));
             writer.add(events.createEndElement("", "", "package"));
         } catch (final XMLStreamException err) {
@@ -180,7 +176,7 @@ public final class XmlEventPrimary implements XmlEvent {
      * @param tags Tag info
      * @throws XMLStreamException On error
      */
-    @SuppressWarnings("PMD.CyclomaticComplexity")
+    @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
     private static void addRequires(final XMLEventWriter writer, final HeaderTags tags)
         throws XMLStreamException {
         final XMLEventFactory events = XMLEventFactory.newFactory();
@@ -193,11 +189,18 @@ public final class XmlEventPrimary implements XmlEvent {
         final List<HeaderTags.Version> versions = tags.requiresVer();
         final Map<String, Integer> items = new HashMap<>(names.size());
         final Set<String> duplicates = new HashSet<>(names.size());
+        final Set<String> files = new XmlEvent.Files(XmlEventPrimary.filesFilter()).files(tags);
         final List<String> libcso = new ArrayList<>(names.size());
-        final Set<String> provides = XmlEventPrimary.provides(tags);
+        final List<String> nprovides = tags.providesNames();
+        final List<HeaderTags.Version> vprovides = tags.providesVer();
         for (int ind = 0; ind < names.size(); ind = ind + 1) {
             final String name = names.get(ind);
-            if (provides.contains(name.concat(versions.get(ind).toString()))) {
+            if (XmlEventPrimary.checkRequiresInProvides(
+                nprovides, vprovides, name, versions.get(ind), flags.get(ind)
+            )) {
+                continue;
+            }
+            if (files.contains(name)) {
                 continue;
             }
             if (name.startsWith("libc.so.")) {
@@ -217,7 +220,8 @@ public final class XmlEventPrimary implements XmlEvent {
                 full = full.concat(String.valueOf(pre));
             }
             if (!name.startsWith("rpmlib(")
-                && !name.startsWith("config(") && !duplicates.contains(full)) {
+                && !name.startsWith("config(") && !duplicates.contains(full)
+                && !name.equals("/usr/sbin/glibc_post_upgrade.x86_64")) {
                 writer.add(
                     events.createStartElement(XmlEventPrimary.PRFX, XmlEventPrimary.NS_URL, "entry")
                 );
@@ -439,17 +443,43 @@ public final class XmlEventPrimary implements XmlEvent {
     }
 
     /**
-     * Returns set with provides items, names and version.
-     * @param tags Header tags
-     * @return Set with provides
+     * Checks if requires item exists in provides. See
+     * {@link RpmDependency#isSatisfiedBy(String, HeaderTags.Version)}
+     * for more details.
+     * @param nprovides Provides names
+     * @param vprovides Provides version
+     * @param rname Requires name
+     * @param rversion Requires version
+     * @param flag Requires flag
+     * @return True is requires item should NOT be added
+     * @checkstyle ParameterNumberCheck (5 lines)
      */
-    private static Set<String> provides(final HeaderTags tags) {
-        final List<String> names = tags.providesNames();
-        final List<HeaderTags.Version> vers = tags.providesVer();
-        final Set<String> res = new HashSet<>();
-        for (int ind = 0; ind < names.size(); ind = ind + 1) {
-            res.add(names.get(ind).concat(vers.get(ind).toString()));
+    private static boolean checkRequiresInProvides(
+        final List<String> nprovides, final List<HeaderTags.Version> vprovides,
+        final String rname, final HeaderTags.Version rversion, final Optional<String> flag
+    ) {
+        boolean res = false;
+        for (int ind = 0; ind < nprovides.size(); ind = ind + 1) {
+            if (new RpmDependency(rname, rversion, flag)
+                .isSatisfiedBy(nprovides.get(ind), vprovides.get(ind))) {
+                res = true;
+                break;
+            }
         }
         return res;
+    }
+
+    /**
+     * Files filter. It's a method as qulice fails to analyze a constant with exception.
+     * @return Predicate to filter files
+     */
+    private static Predicate<String> filesFilter() {
+        // @checkstyle BooleanExpressionComplexityCheck (10 lines)
+        return name -> name.startsWith("/var/")
+            || name.equals("/boot") || name.startsWith("/boot/")
+            || name.startsWith("/lib/") || name.startsWith("/lib64/")
+            || "/lib64".equals(name) || "/lib".equals(name)
+            || name.startsWith("/run/") || name.startsWith("/usr/")
+            && !(name.contains("/bin/") || name.contains("/sbin/"));
     }
 }

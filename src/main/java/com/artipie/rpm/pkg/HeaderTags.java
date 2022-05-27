@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.apache.maven.artifact.versioning.ComparableVersion;
 import org.redline_rpm.header.Header;
 
 /**
@@ -347,9 +348,11 @@ public final class HeaderTags {
 
     /**
      * Rpm package version, format is [epoch]:[version]-[release].
+     * Comparison in implemented by first comparing epoch values as integer and
+     * then comparing the rest part with {@link ComparableVersion}.
      * @since 1.9
      */
-    public static final class Version {
+    public static final class Version implements Comparable<Version> {
 
         /**
          * Version format pattern.
@@ -399,6 +402,31 @@ public final class HeaderTags {
         @Override
         public String toString() {
             return this.val;
+        }
+
+        @Override
+        @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+        public int compareTo(final Version another) {
+            int res;
+            if (this.val.equals(another.val)) {
+                res = 0;
+            } else {
+                res = Integer.compare(
+                    Integer.parseInt(this.epoch()), Integer.parseInt(another.epoch())
+                );
+                if (res == 0) {
+                    res = new ComparableVersion(
+                        this.rel().map(rel -> String.format("%s-%s", this.ver(), rel))
+                            .orElse(this.ver())
+                    ).compareTo(
+                        new ComparableVersion(
+                            another.rel().map(rel -> String.format("%s-%s", another.ver(), rel))
+                                .orElse(another.ver())
+                        )
+                    );
+                }
+            }
+            return res;
         }
 
         /**
