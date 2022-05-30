@@ -27,6 +27,7 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 /**
  * Test for {@link AstoMetadataAdd}.
@@ -141,6 +142,39 @@ class AstoMetadataAddTest {
         this.checksumCheck(temp, XmlPackage.PRIMARY);
         this.checksumCheck(temp, XmlPackage.OTHER);
         this.checksumCheck(temp, XmlPackage.FILELISTS);
+    }
+
+    @Test
+    @Timeout(60)
+    void addItemsToLargeFiles() throws IOException {
+        new TestResource("AstoMetadataAddTest/large-primary.xml.gz")
+            .saveTo(this.storage, new Key.From("repodata", "primary.xml.gz"));
+        new TestResource("AstoMetadataAddTest/large-other.xml.gz")
+            .saveTo(this.storage, new Key.From("repodata", "other.xml.gz"));
+        new TestResource("AstoMetadataAddTest/large-filelists.xml.gz")
+            .saveTo(this.storage, new Key.From("repodata", "filelists.xml.gz"));
+        final TestRpm.Libdeflt libdeflt = new TestRpm.Libdeflt();
+        final TestRpm.Abc abc = new TestRpm.Abc();
+        final Key temp = new AstoMetadataAdd(
+            this.storage,
+            new RepoConfig.Simple(AstoMetadataAddTest.DGST, StandardNamingPolicy.SHA256, true)
+        ).perform(
+            new ListOf<>(
+                new FilePackage.Headers(
+                    new FilePackageHeader(libdeflt.path()).header(),
+                    libdeflt.path(), Digest.SHA256, libdeflt.path().getFileName().toString()
+                ),
+                new FilePackage.Headers(
+                    new FilePackageHeader(abc.path()).header(),
+                    abc.path(), Digest.SHA256, abc.path().getFileName().toString()
+                )
+            )
+        ).toCompletableFuture().join();
+        MatcherAssert.assertThat(
+            "Failed to generate 6 items: metadatas and checksums",
+            this.storage.list(temp).join(),
+            Matchers.iterableWithSize(6)
+        );
     }
 
     private void checksumCheck(final Key res, final XmlPackage other) {
