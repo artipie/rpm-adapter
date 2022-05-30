@@ -60,6 +60,7 @@ class AstoMetadataAddTest {
     }
 
     @Test
+    @Timeout(30)
     void addsEmptyFiles() throws IOException {
         final Key temp = new AstoMetadataAdd(
             this.storage,
@@ -89,6 +90,7 @@ class AstoMetadataAddTest {
     }
 
     @Test
+    @Timeout(30)
     void addsPackagesMetadata() throws IOException {
         new TestResource("AstoMetadataAddTest/primary.xml.gz")
             .saveTo(this.storage, new Key.From("repodata", "primary.xml.gz"));
@@ -145,7 +147,7 @@ class AstoMetadataAddTest {
     }
 
     @Test
-    @Timeout(60)
+    @Timeout(30)
     void addItemsToLargeFiles() throws IOException {
         new TestResource("AstoMetadataAddTest/large-primary.xml.gz")
             .saveTo(this.storage, new Key.From("repodata", "primary.xml.gz"));
