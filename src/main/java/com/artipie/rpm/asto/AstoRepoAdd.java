@@ -103,7 +103,8 @@ public final class AstoRepoAdd {
     private CompletionStage<List<Package.Meta>> read() {
         return SingleInterop.fromFuture(this.asto.list(RpmUpload.TO_ADD))
             .flatMapPublisher(Flowable::fromIterable)
-            .parallel().runOn(Schedulers.io())
+            .parallel()
+            .runOn(Schedulers.newThread())
             .flatMap(
                 key -> Flowable.fromFuture(
                     new AstoRpmPackage(this.asto, this.cnfg.digest()).packageMeta(
@@ -119,7 +120,7 @@ public final class AstoRepoAdd {
                             .andThen(Flowable.empty());
                     }
                 )
-            ).sequential().observeOn(Schedulers.io()).toList().to(SingleInterop.get());
+            ).sequential().observeOn(Schedulers.newThread()).toList().to(SingleInterop.get());
     }
 
     /**
