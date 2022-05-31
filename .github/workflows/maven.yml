@@ -12,8 +12,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest]
-        java: [1.8, 11, 13]
+#        os: [windows-latest, ubuntu-latest]
+        os: [ubuntu-latest]
+        java: [13]
+#        java: [1.8, 11, 13]
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK
@@ -27,6 +29,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-jdk-${{ matrix.java }}-maven-
       - name: Build adapter with Maven
-        run: mvn -B install -Pqulice
-      - name: Build benchmarks with Maven
-        run: mvn -B install -f ./benchmarks
+#        run: mvn -B install -Pqulice
+        run: mvn -B install
+#      - name: Build benchmarks with Maven
+#        run: mvn -B install -f ./benchmarks
