@@ -56,7 +56,7 @@ class AstoMetadataRemoveTest {
     }
 
     @Test
-    @Disabled
+    @Timeout(30)
     void doesNothingIfStorageIsEmpty() {
         new AstoMetadataRemove(this.storage, this.conf).perform(new ListOf<String>("abc123"))
             .toCompletableFuture().join();
@@ -111,7 +111,7 @@ class AstoMetadataRemoveTest {
     }
 
     @Test
-    @Disabled
+    @Timeout(30)
     void savesTheSameContentIfPackageNotFound() throws IOException {
         final String path = "AstoMetadataRemoveTest/savesTheSameContentIfPackageNotFound";
         new TestResource(String.join("/", path, "primary.xml.gz"))
