@@ -37,6 +37,7 @@ SOFTWARE.
   <inceptionYear>2019</inceptionYear>
   <properties>
     <qulice.license>${project.basedir}/LICENSE.header</qulice.license>
+    <junit-platform.version>5.8.2</junit-platform.version>
   </properties>
   <licenses>
     <license>
