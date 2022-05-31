@@ -22,6 +22,7 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -30,7 +31,6 @@ import org.junit.jupiter.params.provider.ValueSource;
  * @since 1.10
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-@Disabled
 class AstoMetadataNamesTest {
 
     /**
@@ -45,6 +45,7 @@ class AstoMetadataNamesTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
+    @Timeout(30)
     void preparesNewNames(final boolean filelists) {
         final Key temp = new Key.From(UUID.randomUUID().toString());
         new XmlPackage.Stream(filelists).get().forEach(

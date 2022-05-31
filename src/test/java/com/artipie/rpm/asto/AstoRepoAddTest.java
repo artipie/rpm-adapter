@@ -26,6 +26,7 @@ import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 /**
  * Test for {@link AstoRepoAdd}.
@@ -58,6 +59,7 @@ class AstoRepoAddTest {
     }
 
     @Test
+    @Timeout(30)
     void createsEmptyMetadata() throws IOException {
         new AstoRepoAdd(
             this.storage,
@@ -95,6 +97,7 @@ class AstoRepoAddTest {
     }
 
     @Test
+    @Timeout(30)
     void addsPackagesToRepo() throws IOException {
         new TestResource("AstoRepoAddTest/filelists.xml.gz")
             .saveTo(this.storage, new Key.From(AstoRepoAddTest.MTD, "filelists.xml.gz"));
@@ -185,6 +188,7 @@ class AstoRepoAddTest {
     }
 
     @Test
+    @Timeout(30)
     void doesNothingIfOnlyInvalidPackageIsInUpdate() throws IOException {
         new TestResource("AstoRepoAddTest/other.xml.gz")
             .saveTo(this.storage, new Key.From(AstoRepoAddTest.MTD, "other.xml.gz"));
