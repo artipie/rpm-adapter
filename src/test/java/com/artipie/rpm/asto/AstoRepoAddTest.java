@@ -35,7 +35,6 @@ import org.junit.jupiter.api.Test;
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-@Disabled
 class AstoRepoAddTest {
 
     /**
@@ -97,6 +96,7 @@ class AstoRepoAddTest {
     }
 
     @Test
+    @Disabled
     void addsPackagesToRepo() throws IOException {
         new TestResource("AstoRepoAddTest/filelists.xml.gz")
             .saveTo(this.storage, new Key.From(AstoRepoAddTest.MTD, "filelists.xml.gz"));
@@ -187,6 +187,7 @@ class AstoRepoAddTest {
     }
 
     @Test
+    @Disabled
     void doesNothingIfOnlyInvalidPackageIsInUpdate() throws IOException {
         new TestResource("AstoRepoAddTest/other.xml.gz")
             .saveTo(this.storage, new Key.From(AstoRepoAddTest.MTD, "other.xml.gz"));
