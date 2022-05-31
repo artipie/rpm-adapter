@@ -14,8 +14,6 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -117,14 +115,14 @@ public class RpmStorageValuePipeline<R> {
                         final PipedInputStream inpto = new PipedInputStream();
                         final PipedOutputStream outto = new PipedOutputStream(inpto);
                         final AtomicReference<R> ref = new AtomicReference<>();
-                        final ExecutorService ser = Executors.newFixedThreadPool(2);
-                        try {
+//                        final ExecutorService ser = Executors.newFixedThreadPool(2);
+//                        try {
                             return CompletableFuture
                                 .allOf(
                                     CompletableFuture.runAsync(
                                         () -> ref.set(
                                             action.apply(inpfrom, outto)
-                                        ), ser
+                                        )//, ser
                                     ).handle(
                                         inpfrom.map(
                                             stream -> new FutureHandler<>(stream, outto)
@@ -137,13 +135,13 @@ public class RpmStorageValuePipeline<R> {
                                                 new ReactiveInputStream(inpto)
                                                     .read(Buffers.Standard.K8)
                                             )
-                                        ).join(), ser
+                                        )//, ser
                                     )
                                 ).handle(new FutureHandler<>(inpto))
                                 .thenApply(nothing -> ref.get());
-                        } finally {
-                            ser.shutdown();
-                        }
+//                        } finally {
+//                            ser.shutdown();
+//                        }
                     } catch (final IOException err) {
                         throw new ArtipieIOException(err);
                     }
