@@ -25,7 +25,6 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -186,7 +185,6 @@ class AstoRepoAddTest {
     }
 
     @Test
-    @Disabled
     void doesNothingIfOnlyInvalidPackageIsInUpdate() throws IOException {
         new TestResource("AstoRepoAddTest/other.xml.gz")
             .saveTo(this.storage, new Key.From(AstoRepoAddTest.MTD, "other.xml.gz"));
