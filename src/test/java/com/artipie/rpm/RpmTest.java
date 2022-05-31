@@ -60,6 +60,7 @@ import org.xmlunit.matchers.CompareMatcher;
  * @checkstyle ClassFanOutComplexityCheck (500 lines)
  */
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
+@Disabled
 final class RpmTest {
 
     /**
