@@ -14,12 +14,14 @@ import java.nio.charset.StandardCharsets;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
  * Test for {@link AstoChecksumAndSize}.
  * @since 1.9
  */
+@Disabled
 class AstoChecksumAndSizeTest {
 
     @Test

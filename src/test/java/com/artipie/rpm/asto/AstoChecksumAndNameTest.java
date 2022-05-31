@@ -14,6 +14,7 @@ import org.cactoos.map.MapEntry;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Test;
  * @since 1.10
  */
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+@Disabled
 class AstoChecksumAndNameTest {
 
     /**
