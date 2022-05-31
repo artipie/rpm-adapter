@@ -22,6 +22,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 /**
  * Test for {@link AstoMetadataRemove}.
@@ -66,6 +67,7 @@ class AstoMetadataRemoveTest {
     }
 
     @Test
+    @Timeout(30)
     void removesPackageAndSavesChecksum() throws IOException {
         final String path = "AstoMetadataRemoveTest/removesPackageAndSavesChecksum";
         new TestResource(String.join("/", path, "primary.xml.gz"))
