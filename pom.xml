@@ -112,7 +112,6 @@ SOFTWARE.
     <dependency>
       <groupId>com.artipie</groupId>
       <artifactId>asto</artifactId>
-<!--      <version>v1.12.1</version>-->
       <version>v1.12.0</version>
     </dependency>
     <dependency>
