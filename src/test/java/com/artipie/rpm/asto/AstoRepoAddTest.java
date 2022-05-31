@@ -21,6 +21,7 @@ import com.artipie.rpm.meta.XmlPackage;
 import com.jcabi.matchers.XhtmlMatchers;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import static java.util.concurrent.ForkJoinPool.getCommonPoolParallelism;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.hamcrest.core.IsEqual;
@@ -53,6 +54,7 @@ class AstoRepoAddTest {
 
     @BeforeEach
     void init() {
+        System.out.println("my-debug CommonPoolParallelism=" + getCommonPoolParallelism());
         this.storage = new InMemoryStorage();
         this.mbytes = new MetadataBytes(this.storage);
     }
