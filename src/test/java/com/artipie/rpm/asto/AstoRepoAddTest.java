@@ -96,7 +96,6 @@ class AstoRepoAddTest {
     }
 
     @Test
-    @Disabled
     void addsPackagesToRepo() throws IOException {
         new TestResource("AstoRepoAddTest/filelists.xml.gz")
             .saveTo(this.storage, new Key.From(AstoRepoAddTest.MTD, "filelists.xml.gz"));
