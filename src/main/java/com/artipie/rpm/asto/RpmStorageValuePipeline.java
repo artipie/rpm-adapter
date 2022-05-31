@@ -1,3 +1,7 @@
+/*
+ * The MIT License (MIT) Copyright (c) 2020-2021 artipie.com
+ * https://github.com/artipie/rpm-adapter/LICENSE.txt
+ */
 package com.artipie.rpm.asto;
 
 import com.artipie.asto.ArtipieIOException;
@@ -24,7 +28,14 @@ import org.cqfn.rio.WriteGreed;
 import org.cqfn.rio.stream.ReactiveInputStream;
 import org.cqfn.rio.stream.ReactiveOutputStream;
 
-public class RpmStorageValuePipeline<R> {
+/**
+ * For test.
+ *
+ * @param <R> sssssddddd
+ * @since 0.9
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
+ */
+public final class RpmStorageValuePipeline<R> {
 
     /**
      * Abstract storage.
@@ -67,8 +78,7 @@ public class RpmStorageValuePipeline<R> {
     /**
      * Process storage item and save it back.
      *
-     * @param action Action to perform with storage content if exists and write back as
-     * output stream.
+     * @param action Action output stream.
      * @return Completion action
      * @throws ArtipieIOException On Error
      */
@@ -89,8 +99,7 @@ public class RpmStorageValuePipeline<R> {
     /**
      * Process storage item, save it back and return some result.
      *
-     * @param action Action to perform with storage content if exists and write back as
-     * output stream.
+     * @param action Action output stream.
      * @return Completion action with the result
      * @throws ArtipieIOException On Error
      */
@@ -149,7 +158,6 @@ public class RpmStorageValuePipeline<R> {
                     }
                 }
             );
-
     }
 
     /**
