@@ -8,7 +8,6 @@ import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.misc.UncheckedIOFunc;
 import com.artipie.asto.misc.UncheckedIOScalar;
-import com.artipie.asto.streams.StorageValuePipeline;
 import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.meta.XmlAlter;
 import com.artipie.rpm.meta.XmlMaid;
@@ -77,7 +76,7 @@ public final class AstoMetadataRemove {
                             if (opt.isPresent()) {
                                 result = this.removePackages(pckg, opt.get(), tmpkey, checksums)
                                     .thenCompose(
-                                        cnt -> new StorageValuePipeline<>(this.asto, tmpkey)
+                                        cnt -> new RpmStorageValuePipeline<>(this.asto, tmpkey)
                                             .process(
                                                 (inpt, out) -> new XmlAlter.Stream(
                                                     new BufferedInputStream(inpt.get()),
@@ -113,7 +112,7 @@ public final class AstoMetadataRemove {
     private CompletionStage<Long> removePackages(
         final XmlPackage pckg, final Key key, final Key temp, final Collection<String> checksums
     ) {
-        return new StorageValuePipeline<Long>(this.asto, key, temp).processWithResult(
+        return new RpmStorageValuePipeline<Long>(this.asto, key, temp).processWithResult(
             (opt, out) -> {
                 final XmlMaid maid;
                 final InputStream input = opt.map(new UncheckedIOFunc<>(GZIPInputStream::new))

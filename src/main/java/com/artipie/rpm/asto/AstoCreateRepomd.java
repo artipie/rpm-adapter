@@ -11,7 +11,6 @@ import com.artipie.asto.Storage;
 import com.artipie.asto.ext.ContentAs;
 import com.artipie.asto.ext.ContentDigest;
 import com.artipie.asto.rx.RxStorageWrapper;
-import com.artipie.asto.streams.StorageValuePipeline;
 import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.meta.XmlRepomd;
@@ -61,7 +60,7 @@ public final class AstoCreateRepomd {
     public CompletionStage<Void> perform(final Key temp) {
         return this.openChecksums(temp).thenCompose(
             open -> this.gzipedChecksums(temp).thenCompose(
-                gziped -> new StorageValuePipeline<>(this.asto, new Key.From(temp, "repomd.xml"))
+                gziped -> new RpmStorageValuePipeline<>(this.asto, new Key.From(temp, "repomd.xml"))
                     .process(
                         (opt, out) -> {
                             try (XmlRepomd repomd = new XmlRepomd(out)) {

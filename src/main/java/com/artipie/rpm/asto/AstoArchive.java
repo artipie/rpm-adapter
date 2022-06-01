@@ -7,7 +7,6 @@ package com.artipie.rpm.asto;
 import com.artipie.asto.ArtipieIOException;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.asto.streams.StorageValuePipeline;
 import java.io.IOException;
 import java.util.concurrent.CompletionStage;
 import java.util.zip.GZIPOutputStream;
@@ -37,7 +36,7 @@ final class AstoArchive {
      * @return Completable action
      */
     public CompletionStage<Void> gzip(final Key key) {
-        return new StorageValuePipeline<>(this.asto, key).process(
+        return new RpmStorageValuePipeline<>(this.asto, key).process(
             (inpt, out) -> {
                 try (GZIPOutputStream gzos = new GZIPOutputStream(out)) {
                     // @checkstyle MagicNumberCheck (1 line)
