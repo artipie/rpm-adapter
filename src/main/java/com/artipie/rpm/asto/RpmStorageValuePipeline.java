@@ -30,8 +30,8 @@ import org.cqfn.rio.stream.ReactiveOutputStream;
  * For test.
  *
  * @param <R> sssssddddd
- * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @since 0.9
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public final class RpmStorageValuePipeline<R> {
 
@@ -133,8 +133,8 @@ public final class RpmStorageValuePipeline<R> {
                                 stream -> new FutureHandler<>(stream, outto)
                             ).orElseGet(() -> new FutureHandler<>(outto))
                         );
-
-                        return this.asto.save(
+                        return this.asto
+                            .save(
                                 this.write,
                                 new Content.From(
                                     new ReactiveInputStream(inpto)
