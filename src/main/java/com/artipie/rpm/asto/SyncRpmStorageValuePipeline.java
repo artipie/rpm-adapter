@@ -9,6 +9,8 @@ import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.ext.ContentAs;
+import com.artipie.asto.misc.UncheckedIOConsumer;
+import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Single;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -16,8 +18,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
@@ -99,39 +102,41 @@ public class SyncRpmStorageValuePipeline<R> {
     public CompletionStage<R> processWithResult(
         final BiFunction<Optional<InputStream>, OutputStream, R> action
     ) {
-        return this.asto.exists(this.read)
+        final AtomicReference<R> res = new AtomicReference<>();
+        final CompletionStage<Optional<InputStream>> fut = this.asto.exists(this.read)
             .thenCompose(
                 exists -> {
-                    try {
-                        final Optional<InputStream> inpfrom;
-                        if (exists) {
-                            inpfrom = Optional.of(
-                                new ByteArrayInputStream(
-                                    ContentAs.BYTES.apply(
-                                        Single.just(
-                                            this.asto.value(this.read).join()
-                                        )
-                                    ).toFuture().get()
-                                )
+                    final CompletionStage<Optional<InputStream>> stage;
+                    if (exists) {
+                        stage = this.asto.value(this.read)
+                            .thenCompose(
+                                content -> ContentAs.BYTES.apply(
+                                    Single.just(
+                                        content
+                                    )
+                                ).to(SingleInterop.get())
+                            ).thenApply(
+                                bytes -> Optional.of(new ByteArrayInputStream(bytes))
                             );
-                        } else {
-                            inpfrom = Optional.empty();
-                        }
-                        try (ByteArrayOutputStream outto = new ByteArrayOutputStream()) {
-                            final R res = action.apply(inpfrom, outto);
-                            return this.asto.save(
-                                this.write,
-                                new Content.From(
-                                    outto.toByteArray()
-                                )
-                            ).thenApply(noting -> res);
-                        } catch (final IOException err) {
-                            throw new ArtipieIOException(err);
-                        }
-                    } catch (final ExecutionException | InterruptedException err) {
-                        throw new ArtipieIOException(err);
+                    } else {
+                        stage = CompletableFuture.completedFuture(Optional.empty());
                     }
+                    return stage;
                 }
             );
+        return fut
+            .thenApply(
+                optional -> {
+                    try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+                        res.set(action.apply(optional, output));
+                        return new Content.From(output.toByteArray());
+                    } catch (final IOException err) {
+                        throw new ArtipieIOException(err);
+                    } finally {
+                        optional.ifPresent(new UncheckedIOConsumer<>(InputStream::close));
+                    }
+                }
+            ).thenCompose(content -> this.asto.save(this.write, content))
+            .thenApply(nothing -> res.get());
     }
 }
