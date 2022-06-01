@@ -12,11 +12,9 @@ import com.artipie.asto.ext.ContentAs;
 import io.reactivex.Single;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -27,8 +25,8 @@ import java.util.function.BiFunction;
  * For test.
  *
  * @param <R> sssssddddd
- * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  * @since 0.9
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
 public class SyncRpmStorageValuePipeline<R> {
 
@@ -119,57 +117,21 @@ public class SyncRpmStorageValuePipeline<R> {
                         } else {
                             inpfrom = Optional.empty();
                         }
-                        final ByteArrayOutputStream outto = new ByteArrayOutputStream();
-                        final R res = action.apply(inpfrom, outto);
-                        return this.asto.save(
-                            this.write,
-                            new Content.From(
-                                outto.toByteArray()
-                            )
-                        ).thenApply(noting -> res);
-                    } catch (final ExecutionException err) {
+                        try (ByteArrayOutputStream outto = new ByteArrayOutputStream()) {
+                            final R res = action.apply(inpfrom, outto);
+                            return this.asto.save(
+                                this.write,
+                                new Content.From(
+                                    outto.toByteArray()
+                                )
+                            ).thenApply(noting -> res);
+                        } catch (final IOException err) {
+                            throw new ArtipieIOException(err);
+                        }
+                    } catch (final ExecutionException | InterruptedException err) {
                         throw new ArtipieIOException(err);
-                    } catch (final InterruptedException err) {
-                        throw new RuntimeException(err);
                     }
                 }
             );
-    }
-
-    /**
-     * Future's handler to close streams.
-     *
-     * @param <T> Result type.
-     * @since 1.12.0
-     */
-    private static class FutureHandler<T> implements BiFunction<T, Throwable, T> {
-        /**
-         * Streams to close.
-         */
-        private final Closeable[] streams;
-
-        /**
-         * Ctor.
-         *
-         * @param streams Streams to close.
-         */
-        FutureHandler(final Closeable... streams) {
-            this.streams = Arrays.copyOf(streams, streams.length);
-        }
-
-        @Override
-        public T apply(final T res, final Throwable err) {
-            try {
-                for (final Closeable stream : this.streams) {
-                    stream.close();
-                }
-            } catch (final IOException ioe) {
-                throw new ArtipieIOException(ioe);
-            }
-            if (err != null) {
-                throw new ArtipieIOException(err);
-            }
-            return res;
-        }
     }
 }
