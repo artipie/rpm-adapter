@@ -76,7 +76,7 @@ public final class AstoMetadataRemove {
                             if (opt.isPresent()) {
                                 result = this.removePackages(pckg, opt.get(), tmpkey, checksums)
                                     .thenCompose(
-                                        cnt -> new RpmStorageValuePipeline<>(this.asto, tmpkey)
+                                        cnt -> new SyncRpmStorageValuePipeline<>(this.asto, tmpkey)
                                             .process(
                                                 (inpt, out) -> new XmlAlter.Stream(
                                                     new BufferedInputStream(inpt.get()),
@@ -112,7 +112,7 @@ public final class AstoMetadataRemove {
     private CompletionStage<Long> removePackages(
         final XmlPackage pckg, final Key key, final Key temp, final Collection<String> checksums
     ) {
-        return new RpmStorageValuePipeline<Long>(this.asto, key, temp).processWithResult(
+        return new SyncRpmStorageValuePipeline<Long>(this.asto, key, temp).processWithResult(
             (opt, out) -> {
                 final XmlMaid maid;
                 final InputStream input = opt.map(new UncheckedIOFunc<>(GZIPInputStream::new))

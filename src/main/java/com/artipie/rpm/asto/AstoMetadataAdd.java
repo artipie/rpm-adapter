@@ -98,7 +98,7 @@ public final class AstoMetadataAdd {
         return this.getExistingOrDefaultKey(XmlPackage.PRIMARY).thenCompose(
             key -> {
                 final Key tempkey = new Key.From(temp, XmlPackage.PRIMARY.name());
-                return new RpmStorageValuePipeline<MergedXml.Result>(this.asto, key, tempkey)
+                return new SyncRpmStorageValuePipeline<MergedXml.Result>(this.asto, key, tempkey)
                     .processWithResult(
                         (input, out) -> new UncheckedScalar<>(
                             () -> new MergedXmlPrimary(
@@ -106,7 +106,7 @@ public final class AstoMetadataAdd {
                             ).merge(metas, new XmlEventPrimary())
                         ).value()
                     ).thenCompose(
-                        res -> new RpmStorageValuePipeline<>(this.asto, tempkey).process(
+                        res -> new SyncRpmStorageValuePipeline<>(this.asto, tempkey).process(
                             (input, out) -> new XmlAlter.Stream(
                                 new BufferedInputStream(input.get()),
                                 new BufferedOutputStream(out)
@@ -132,7 +132,7 @@ public final class AstoMetadataAdd {
         return this.getExistingOrDefaultKey(type).thenCompose(
             key -> {
                 final Key tempkey = new Key.From(temp, type.name());
-                return new RpmStorageValuePipeline<>(this.asto, key, tempkey).process(
+                return new SyncRpmStorageValuePipeline<>(this.asto, key, tempkey).process(
                     (input, out) -> new UncheckedScalar<>(
                         () -> new MergedXmlPackage(
                             input.map(new UncheckedIOFunc<>(GZIPInputStream::new)),
@@ -146,7 +146,6 @@ public final class AstoMetadataAdd {
 
     /**
      * Find existing metadata key or return default key. Item with default key does not actually
-     * exist in storage, but later this key is used in {@link RpmStorageValuePipeline}
      * which handle the situation correctly.
      * @param type Metadata type
      * @return Completable action with the key
