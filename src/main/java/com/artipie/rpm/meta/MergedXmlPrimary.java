@@ -7,7 +7,6 @@ package com.artipie.rpm.meta;
 import com.artipie.rpm.pkg.Package;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.fasterxml.aalto.stax.OutputFactoryImpl;
-import com.jcabi.log.Logger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
