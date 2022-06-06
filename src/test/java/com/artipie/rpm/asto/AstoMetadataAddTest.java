@@ -101,7 +101,7 @@ class AstoMetadataAddTest {
             this.storage,
             new RepoConfig.Simple(AstoMetadataAddTest.DGST, StandardNamingPolicy.SHA256, true)
         ).perform(
-            new ListOf<Package.Meta>(
+            new ListOf<>(
                 new FilePackage.Headers(
                     new FilePackageHeader(libdeflt.path()).header(),
                     libdeflt.path(), Digest.SHA256, libdeflt.path().getFileName().toString()

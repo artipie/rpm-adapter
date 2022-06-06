@@ -103,7 +103,7 @@ public class SyncRpmStorageValuePipeline<R> {
         final BiFunction<Optional<InputStream>, OutputStream, R> action
     ) {
         final AtomicReference<R> res = new AtomicReference<>();
-        final CompletionStage<Optional<InputStream>> fut = this.asto.exists(this.read)
+        return this.asto.exists(this.read)
             .thenCompose(
                 exists -> {
                     final CompletionStage<Optional<InputStream>> stage;
@@ -123,9 +123,7 @@ public class SyncRpmStorageValuePipeline<R> {
                     }
                     return stage;
                 }
-            );
-        return fut
-            .thenApply(
+            ).thenApply(
                 optional -> {
                     try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
                         res.set(action.apply(optional, output));

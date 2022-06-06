@@ -36,7 +36,7 @@ final class AstoArchive {
      * @return Completable action
      */
     public CompletionStage<Void> gzip(final Key key) {
-        return new SyncRpmStorageValuePipeline<>(this.asto, key).process(
+        return new ReactorRpmStorageValuePipeline<>(this.asto, key).process(
             (inpt, out) -> {
                 try (GZIPOutputStream gzos = new GZIPOutputStream(out)) {
                     // @checkstyle MagicNumberCheck (1 line)
