@@ -100,7 +100,7 @@ final class RpmSliceDownloadITCase {
 
     private String yumInstall(final String url) throws IOException, InterruptedException {
         return this.cntn.execInContainer(
-            "yum", "-y", "install", url
+            "dnf", "-y", "install", url
         ).getStdout();
     }
 
@@ -115,7 +115,7 @@ final class RpmSliceDownloadITCase {
         );
         this.port = this.server.start();
         Testcontainers.exposeHostPorts(this.port);
-        this.cntn = new GenericContainer<>("centos:centos8")
+        this.cntn = new GenericContainer<>("fedora:36")
             .withCommand("tail", "-f", "/dev/null");
         this.cntn.start();
     }

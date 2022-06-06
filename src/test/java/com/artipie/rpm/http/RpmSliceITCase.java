@@ -17,6 +17,7 @@ import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.Rpm;
 import com.artipie.rpm.TestRpm;
 import com.artipie.vertx.VertxSliceServer;
+import com.jcabi.log.Logger;
 import io.vertx.reactivex.core.Vertx;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.testcontainers.Testcontainers;
+import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 
 /**
@@ -78,7 +80,7 @@ public final class RpmSliceITCase {
 
     @ParameterizedTest
     @CsvSource({
-        "centos:centos8,yum,repo-pkgs",
+        "redhat/ubi9:9.0.0,yum,repo-pkgs",
         "fedora:32,dnf,repository-packages"
     })
     void canListAndInstallFromArtipieRepo(final String linux,
@@ -98,7 +100,7 @@ public final class RpmSliceITCase {
 
     @ParameterizedTest
     @CsvSource({
-        "centos:centos8,yum,repo-pkgs",
+        "redhat/ubi9:9.0.0,yum,repo-pkgs",
         "fedora:32,dnf,repository-packages"
     })
     void canListAndInstallFromArtipieRepoWithAuth(final String linux,
@@ -143,9 +145,11 @@ public final class RpmSliceITCase {
      * @throws Exception On error
      */
     private String exec(final String mngr, final String key, final String action) throws Exception {
-        return this.cntn.execInContainer(
+        final Container.ExecResult res = this.cntn.execInContainer(
             mngr, "-y", key, "example", action
-        ).getStdout();
+        );
+        Logger.info(this, res.toString());
+        return res.getStdout();
     }
 
     /**
