@@ -5,6 +5,7 @@
 
 package com.artipie.rpm;
 
+import com.artipie.asto.misc.UncheckedIOScalar;
 import com.artipie.rpm.meta.XmlPackage;
 import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.FilePackageHeader;
@@ -22,8 +23,8 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.cactoos.map.MapEntry;
-import org.cactoos.scalar.Unchecked;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -79,17 +80,17 @@ public class RpmMetadataAppendBench {
                 file -> new XmlPackage.Stream(true).get()
                     .filter(xml -> file.toString().contains(xml.lowercase()))
                     .findFirst().map(
-                        item -> new MapEntry<>(
+                        item -> new ImmutablePair<>(
                             item,
-                            new Unchecked<>(() -> Files.readAllBytes(file)).value()
+                            new UncheckedIOScalar<>(() -> Files.readAllBytes(file)).value()
                         )
                     )
             ).filter(Optional::isPresent).map(Optional::get)
-                .collect(Collectors.toMap(MapEntry::getKey, MapEntry::getValue));
+                .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
             this.rpms = flist.stream().filter(item -> item.endsWith(".rpm"))
                 .map(
                     item -> new FilePackage.Headers(
-                        new Unchecked<>(() -> new FilePackageHeader(item).header()).value(),
+                        new UncheckedIOScalar<>(() -> new FilePackageHeader(item).header()).value(),
                         item, Digest.SHA256, item.getFileName().toString()
                     )
                 ).collect(Collectors.toList());
