@@ -6,7 +6,6 @@ package com.artipie.rpm.http;
 
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
-import com.artipie.asto.SubStorage;
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.auth.Authentication;
 import com.artipie.http.auth.Permissions;
@@ -34,7 +33,8 @@ import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 
 /**
- * Test for {@link RpmSlice}.
+ * Test for {@link RpmSlice}, uses dnf and yum rpm-package managers,
+ * checks that list and install works with and without authentication.
  * @since 0.10
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
@@ -50,15 +50,14 @@ public final class RpmSliceITCase {
      * Installed packages verifier.
      */
     private static final ListOf<String> INSTALLED = new ListOf<>(
-        "Installed", "aspell-12:0.60.6.1-9.el7.x86_64",
-        "time-1.7-45.el7.x86_64", "Complete!"
+        "Installed", "time-1.7-45.el7.x86_64", "Complete!"
     );
 
     /**
      * Packaged list verifier.
      */
     private static final ListOf<String> AVAILABLE = new ListOf<>(
-        "Available Packages", "aspell.x86_64", "12:0.60.6.1-9.el7", "time.x86_64", "1.7-45.el7"
+        "Available Packages", "time.x86_64", "1.7-45.el7"
     );
 
     /**
@@ -81,18 +80,18 @@ public final class RpmSliceITCase {
     @ParameterizedTest
     @CsvSource({
         "redhat/ubi9:9.0.0,yum,repo-pkgs",
-        "fedora:32,dnf,repository-packages"
+        "fedora:36,dnf,repository-packages"
     })
     void canListAndInstallFromArtipieRepo(final String linux,
         final String mngr, final String rey) throws Exception {
         this.start(Permissions.FREE, Authentication.ANONYMOUS, "", linux);
         MatcherAssert.assertThat(
-            "Lists 'time' and 'aspell' packages",
+            "Lists 'time' package",
             this.exec(mngr, rey, "list"),
             new StringContainsInOrder(RpmSliceITCase.AVAILABLE)
         );
         MatcherAssert.assertThat(
-            "Installs 'time' and 'aspell' package",
+            "Installs 'time' package",
             this.exec(mngr, rey, "install"),
             new StringContainsInOrder(RpmSliceITCase.INSTALLED)
         );
@@ -101,7 +100,7 @@ public final class RpmSliceITCase {
     @ParameterizedTest
     @CsvSource({
         "redhat/ubi9:9.0.0,yum,repo-pkgs",
-        "fedora:32,dnf,repository-packages"
+        "fedora:36,dnf,repository-packages"
     })
     void canListAndInstallFromArtipieRepoWithAuth(final String linux,
         final String mngr, final String key) throws Exception {
@@ -160,12 +159,12 @@ public final class RpmSliceITCase {
      * @param linux Linux distribution name and version
      * @throws Exception On error
      * @checkstyle ParameterNumberCheck (10 lines)
+     * @checkstyle ExecutableStatementCountCheck (100 lines)
      */
     private void start(final Permissions perms, final Authentication auth, final String cred,
         final String linux) throws Exception {
         final Storage storage = new InMemoryStorage();
         new TestRpm.Time().put(storage);
-        new TestRpm.Aspell().put(new SubStorage(new Key.From("spelling"), storage));
         final RepoConfig config = new RepoConfig.Simple(
             Digest.SHA256, new NamingPolicy.HashPrefixed(Digest.SHA1), true
         );
@@ -188,12 +187,33 @@ public final class RpmSliceITCase {
                 "gpgcheck=0"
             )
         );
+        final Path product = this.tmp.resolve("product-id.conf");
+        this.tmp.resolve("product-id.conf").toFile().createNewFile();
+        Files.write(
+            product,
+            new ListOf<>(
+                "[main]",
+                "enabled=0"
+            )
+        );
+        final Path mng = this.tmp.resolve("subscription-manager.conf");
+        this.tmp.resolve("subscription-manager.conf").toFile().createNewFile();
+        Files.write(
+            mng,
+            new ListOf<>(
+                "[main]",
+                "enabled=0"
+            )
+        );
         this.cntn = new GenericContainer<>(linux)
             .withCommand("tail", "-f", "/dev/null")
             .withWorkingDirectory("/home/")
             .withFileSystemBind(this.tmp.toString(), "/home");
         this.cntn.start();
         this.cntn.execInContainer("mv", "/home/example.repo", "/etc/yum.repos.d/");
+        // @checkstyle LineLengthCheck (3 lines)
+        this.cntn.execInContainer("mv", "/home/product-id.conf", "/etc/yum/pluginconf.d/product-id.conf");
+        this.cntn.execInContainer("mv", "/home/subscription-manager.conf", "/etc/yum/pluginconf.d/subscription-manager.conf");
     }
 
 }
