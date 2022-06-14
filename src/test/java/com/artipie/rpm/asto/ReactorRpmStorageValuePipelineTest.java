@@ -50,7 +50,7 @@ public final class ReactorRpmStorageValuePipelineTest {
         final Key key = new Key.From("test.txt");
         final Charset charset = StandardCharsets.US_ASCII;
         this.asto.save(key, new Content.From("one\ntwo\nfour".getBytes(charset))).join();
-        new ReactorRpmStorageValuePipeline<>(this.asto, key).process(
+        new RxStorageValuePipeline<>(this.asto, key).process(
             (input, out) -> {
                 try {
                     final List<String> list = IOUtils.readLines(input.get(), charset);
@@ -82,7 +82,7 @@ public final class ReactorRpmStorageValuePipelineTest {
         final Key kfrom = new Key.From(read);
         final Key kto = new Key.From(write);
         this.asto.save(kfrom, new Content.From(data)).join();
-        new ReactorRpmStorageValuePipeline<String>(this.asto, kfrom, kto)
+        new RxStorageValuePipeline<String>(this.asto, kfrom, kto)
             .processWithResult(
                 (input, out) -> {
                     final byte[] buffer = new byte[bufsize];
@@ -118,7 +118,7 @@ public final class ReactorRpmStorageValuePipelineTest {
         final Key key = new Key.From("my_test.txt");
         final Charset charset = StandardCharsets.US_ASCII;
         final String text = "Hello world!";
-        new ReactorRpmStorageValuePipeline<>(this.asto, key).process(
+        new RxStorageValuePipeline<>(this.asto, key).process(
             (input, out) -> {
                 MatcherAssert.assertThat(
                     "Input should be absent",
@@ -146,7 +146,7 @@ public final class ReactorRpmStorageValuePipelineTest {
         this.asto.save(key, new Content.From("five\nsix\neight".getBytes(charset))).join();
         MatcherAssert.assertThat(
             "Resulting lines count should be 4",
-            new ReactorRpmStorageValuePipeline<Integer>(this.asto, key).processWithResult(
+            new RxStorageValuePipeline<Integer>(this.asto, key).processWithResult(
                 (input, out) -> {
                     try {
                         final List<String> list = IOUtils.readLines(input.get(), charset);
@@ -173,7 +173,7 @@ public final class ReactorRpmStorageValuePipelineTest {
         final Charset charset = StandardCharsets.US_ASCII;
         final String text = "Have a food time!";
         MatcherAssert.assertThat(
-            new ReactorRpmStorageValuePipeline<>(this.asto, key).processWithResult(
+            new RxStorageValuePipeline<>(this.asto, key).processWithResult(
                 (input, out) -> {
                     MatcherAssert.assertThat(
                         "Input should be absent",
@@ -203,7 +203,7 @@ public final class ReactorRpmStorageValuePipelineTest {
         final Key write = new Key.From("write.txt");
         final Charset charset = StandardCharsets.US_ASCII;
         this.asto.save(read, new Content.From("Hello".getBytes(charset))).join();
-        new ReactorRpmStorageValuePipeline<>(this.asto, read, write).process(
+        new RxStorageValuePipeline<>(this.asto, read, write).process(
             (input, out) -> {
                 try {
                     IOUtils.write(

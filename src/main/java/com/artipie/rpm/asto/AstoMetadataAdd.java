@@ -98,7 +98,7 @@ public final class AstoMetadataAdd {
         return this.getExistingOrDefaultKey(XmlPackage.PRIMARY).thenCompose(
             key -> {
                 final Key tempkey = new Key.From(temp, XmlPackage.PRIMARY.name());
-                return new ReactorRpmStorageValuePipeline<MergedXml.Result>(this.asto, key, tempkey)
+                return new RxStorageValuePipeline<MergedXml.Result>(this.asto, key, tempkey)
                     .processWithResult(
                         (input, out) -> new UncheckedScalar<>(
                             () -> new MergedXmlPrimary(
@@ -106,7 +106,7 @@ public final class AstoMetadataAdd {
                             ).merge(metas, new XmlEventPrimary())
                         ).value()
                     ).thenCompose(
-                        res -> new ReactorRpmStorageValuePipeline<>(this.asto, tempkey).process(
+                        res -> new RxStorageValuePipeline<>(this.asto, tempkey).process(
                             (input, out) -> new XmlAlter.Stream(
                                 new BufferedInputStream(input.get()),
                                 new BufferedOutputStream(out)
@@ -132,7 +132,7 @@ public final class AstoMetadataAdd {
         return this.getExistingOrDefaultKey(type).thenCompose(
             key -> {
                 final Key tempkey = new Key.From(temp, type.name());
-                return new ReactorRpmStorageValuePipeline<>(this.asto, key, tempkey).process(
+                return new RxStorageValuePipeline<>(this.asto, key, tempkey).process(
                     (input, out) -> new UncheckedScalar<>(
                         () -> new MergedXmlPackage(
                             input.map(new UncheckedIOFunc<>(GZIPInputStream::new)),

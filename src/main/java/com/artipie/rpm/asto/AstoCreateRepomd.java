@@ -60,7 +60,7 @@ public final class AstoCreateRepomd {
     public CompletionStage<Void> perform(final Key temp) {
         return this.openChecksums(temp).thenCompose(
             open -> this.gzipedChecksums(temp).thenCompose(
-                gziped -> new ReactorRpmStorageValuePipeline<>(
+                gziped -> new RxStorageValuePipeline<>(
                     this.asto, new Key.From(temp, "repomd.xml")
                 )
                     .process(
