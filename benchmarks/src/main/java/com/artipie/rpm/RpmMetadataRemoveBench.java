@@ -5,7 +5,9 @@
 
 package com.artipie.rpm;
 
+import com.artipie.asto.misc.UncheckedIOScalar;
 import com.artipie.rpm.meta.XmlPackage;
+import com.google.common.collect.Lists;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -17,9 +19,8 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.cactoos.list.ListOf;
-import org.cactoos.map.MapEntry;
-import org.cactoos.scalar.Unchecked;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -69,13 +70,13 @@ public class RpmMetadataRemoveBench {
                 file -> new XmlPackage.Stream(true).get()
                     .filter(xml -> file.toString().contains(xml.lowercase()))
                     .findFirst().map(
-                        item -> new MapEntry<>(
+                        item -> new ImmutablePair<>(
                             item,
-                            new Unchecked<>(() -> Files.readAllBytes(file)).value()
+                            new UncheckedIOScalar<>(() -> Files.readAllBytes(file)).value()
                         )
                     )
             ).filter(Optional::isPresent).map(Optional::get)
-                .collect(Collectors.toMap(MapEntry::getKey, MapEntry::getValue));
+                .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
         }
     }
 
@@ -91,7 +92,7 @@ public class RpmMetadataRemoveBench {
                 )
             ).toArray(RpmMetadata.MetadataItem[]::new)
         ).perform(
-            new ListOf<String>(
+            Lists.newArrayList(
                 "35f6b7ceecb3b66d41991358113ae019dbabbac21509afbe770c06d6999d75c7",
                 "8dad6a68a8868c7e4595634affbad8677e48e259dac9180dd73a41ae8414305a",
                 "0ab1a22f716b480392a3fe28e9fafebd61ff8afe3196aa35ccc937413e0a3c4a",
