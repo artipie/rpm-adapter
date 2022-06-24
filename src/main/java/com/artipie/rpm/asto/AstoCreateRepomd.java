@@ -1,5 +1,5 @@
 /*
- * The MIT License (MIT) Copyright (c) 2020-2021 artipie.com
+ * The MIT License (MIT) Copyright (c) 2020-2022 artipie.com
  * https://github.com/artipie/rpm-adapter/LICENSE.txt
  */
 package com.artipie.rpm.asto;
@@ -24,7 +24,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import javax.xml.stream.XMLStreamException;
-import org.cactoos.map.MapEntry;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Creates `repomd.xml`.
@@ -105,21 +106,21 @@ public final class AstoCreateRepomd {
         return rxsto.list(temp)
             .flatMapObservable(Observable::fromIterable)
             .filter(key -> !key.string().endsWith(this.cnfg.digest().name()))
-            .<MapEntry<XmlPackage, String>>flatMapSingle(
+            .<Pair<XmlPackage, String>>flatMapSingle(
                 key -> rxsto.value(key).flatMap(
                     val -> Single.fromFuture(
                         new ContentDigest(
                             val,
                             () -> this.cnfg.digest().messageDigest()
                         ).hex().thenApply(
-                            hex -> new MapEntry<>(
+                            hex -> new ImmutablePair<>(
                                 this.pckgType(key), String.format("%s %d", hex, val.size().get())
                             )
                         ).toCompletableFuture()
                     )
                 )
             )
-            .toMap(MapEntry::getKey, MapEntry::getValue)
+            .toMap(Pair::getKey, Pair::getValue)
             .to(SingleInterop.get());
     }
 
@@ -133,11 +134,11 @@ public final class AstoCreateRepomd {
         return rxsto.list(temp)
             .flatMapObservable(Observable::fromIterable)
             .filter(key -> key.string().endsWith(this.cnfg.digest().name()))
-            .<MapEntry<XmlPackage, String>>flatMapSingle(
+            .<Pair<XmlPackage, String>>flatMapSingle(
                 key -> rxsto.value(key).to(ContentAs.STRING)
-                    .map(str -> new MapEntry<>(this.pckgType(key), str))
+                    .map(str -> new ImmutablePair<>(this.pckgType(key), str))
             )
-            .toMap(MapEntry::getKey, MapEntry::getValue)
+            .toMap(Pair::getKey, Pair::getValue)
             .to(SingleInterop.get());
     }
 

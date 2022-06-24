@@ -1,5 +1,5 @@
 /*
- * The MIT License (MIT) Copyright (c) 2020-2021 artipie.com
+ * The MIT License (MIT) Copyright (c) 2020-2022 artipie.com
  * https://github.com/artipie/rpm-adapter/LICENSE.txt
  */
 package com.artipie.rpm.asto;
@@ -14,7 +14,8 @@ import io.reactivex.Observable;
 import io.reactivex.Single;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
-import org.cactoos.map.MapEntry;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Checksums and names of the storage items.
@@ -57,8 +58,8 @@ public final class AstoChecksumAndName {
                     cnt -> Single.fromFuture(
                         new ContentDigest(cnt, this.dgst::messageDigest).hex().toCompletableFuture()
                     )
-                ).map(hex -> new MapEntry<>(keyPart(key, item), hex))
-            ).toMap(MapEntry::getKey, MapEntry::getValue)
+                ).map(hex -> new ImmutablePair<>(keyPart(key, item), hex))
+            ).toMap(Pair::getKey, Pair::getValue)
             .to(SingleInterop.get());
     }
 
