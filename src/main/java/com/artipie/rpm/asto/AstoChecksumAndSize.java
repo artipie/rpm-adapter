@@ -51,7 +51,7 @@ public final class AstoChecksumAndSize {
                 val, this.dgst::messageDigest
             ).hex().thenCompose(
                 hex -> this.asto.save(
-                    new Key.From(key, this.dgst.name()),
+                    new Key.From(String.format("%s.%s", key, this.dgst.name())),
                     new Content.From(
                         String.format(
                             "%s %d", hex,
