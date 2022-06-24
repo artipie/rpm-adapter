@@ -106,6 +106,8 @@ public final class AstoMetadataAdd {
                                 input.map(new UncheckedIOFunc<>(GZIPInputStream::new)), out
                             ).merge(metas, new XmlEventPrimary())
                         ).value()
+                    ).thenApply(
+                        res -> res
                     ).thenCompose(
                         res -> new StorageValuePipeline<>(this.asto, tempkey).process(
                             (input, out) -> new XmlAlter.Stream(
@@ -113,6 +115,8 @@ public final class AstoMetadataAdd {
                                 new BufferedOutputStream(out)
                             ).pkgAttr(XmlPackage.PRIMARY.tag(), String.valueOf(res.count()))
                         ).thenApply(nothing -> res)
+                    ).thenApply(
+                        res -> res
                     );
             }
         );
