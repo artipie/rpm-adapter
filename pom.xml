@@ -363,7 +363,7 @@ SOFTWARE.
           </execution>
           <execution>
             <id>jacoco-site</id>
-            <phase>verify</phase>
+            <phase>install</phase>
             <goals>
               <goal>report</goal>
             </goals>
