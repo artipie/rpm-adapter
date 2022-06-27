@@ -143,7 +143,11 @@ class AstoMetadataRemoveTest {
             String.format("Checksum and size are expected to be stored for %s", other.name()),
             new String(
                 new BlockingStorage(this.storage)
-                    .value(new Key.From(res, other.name(), this.conf.digest().name())),
+                    .value(
+                        new Key.From(
+                            res, String.format("%s.%s", other.name(), this.conf.digest().name())
+                        )
+                    ),
                 StandardCharsets.UTF_8
             ),
             Matchers.matchesPattern("[0-9a-z]* \\d+")

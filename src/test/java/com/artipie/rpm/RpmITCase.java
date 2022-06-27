@@ -83,15 +83,15 @@ final class RpmITCase {
     }
 
     @Test
-    void generatesMetadata() throws IOException, InterruptedException {
-        this.modifyRepo();
+    void generatesMetadata() throws IOException {
+        final int size = this.modifyRepo();
         final boolean filelist = true;
         new Rpm(this.storage, StandardNamingPolicy.SHA1, Digest.SHA256, filelist)
             .batchUpdate(Key.ROOT)
             .blockingAwait();
         MatcherAssert.assertThat(
             this.storage,
-            new StorageHasMetadata(RpmITCase.SIZE.count(), filelist, RpmITCase.tmp)
+            new StorageHasMetadata(size, filelist, RpmITCase.tmp)
         );
     }
 
@@ -137,14 +137,18 @@ final class RpmITCase {
     }
 
     /**
-     * Modifies repo by removing/adding several rpms.
+     * Modifies repo by removing/adding several rpms and returns count of the rpm packages in
+     * the repository after modification.
+     * @return Rpm packages count after modification
      * @throws IOException On error
      */
-    private void modifyRepo() throws IOException, InterruptedException {
+    private int modifyRepo() throws IOException {
         final BlockingStorage bsto = new BlockingStorage(this.storage);
         bsto.list(Key.ROOT).stream()
             .filter(name -> name.string().contains("oxygen"))
             .forEach(new UncheckedConsumer<>(item -> bsto.delete(new Key.From(item))));
         new TestRpm.Multiple(new TestRpm.Abc(), new TestRpm.Libdeflt()).put(this.storage);
+        return (int) bsto.list(Key.ROOT).stream()
+            .filter(item -> item.string().endsWith(".rpm")).count();
     }
 }
