@@ -34,7 +34,7 @@ SOFTWARE.
   <version>1.0-SNAPSHOT</version>
   <properties>
     <jmh.version>1.29</jmh.version>
-    <asto.version>v1.9.0</asto.version>
+    <asto.version>v1.13.0</asto.version>
     <qulice.license>${project.basedir}/LICENSE.header</qulice.license>
   </properties>
   <dependencies>
@@ -55,7 +55,7 @@ SOFTWARE.
     </dependency>
     <dependency>
       <groupId>com.artipie</groupId>
-      <artifactId>asto</artifactId>
+      <artifactId>asto-core</artifactId>
       <version>${asto.version}</version>
     </dependency>
   </dependencies>
