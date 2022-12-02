@@ -1,5 +1,5 @@
 /*
- * The MIT License (MIT) Copyright (c) 2020-2021 artipie.com
+ * The MIT License (MIT) Copyright (c) 2020-2022 artipie.com
  * https://github.com/artipie/rpm-adapter/LICENSE.txt
  */
 package com.artipie.rpm.asto;
@@ -34,7 +34,9 @@ class AstoChecksumAndSizeTest {
         new AstoChecksumAndSize(asto, dgst).calculate(new Key.From(item))
             .toCompletableFuture().join();
         MatcherAssert.assertThat(
-            new String(blsto.value(new Key.From(item, dgst.name())), charset),
+            new String(
+                blsto.value(new Key.From(String.format("%s.%s", item, dgst.name()))), charset
+            ),
             new IsEqual<>(String.format("%s %s", DigestUtils.sha256Hex(bfirst), bfirst.length))
         );
     }

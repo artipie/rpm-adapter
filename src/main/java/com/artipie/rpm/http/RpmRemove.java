@@ -1,5 +1,5 @@
 /*
- * The MIT License (MIT) Copyright (c) 2020-2021 artipie.com
+ * The MIT License (MIT) Copyright (c) 2020-2022 artipie.com
  * https://github.com/artipie/rpm-adapter/LICENSE.txt
  */
 package com.artipie.rpm.http;
@@ -25,7 +25,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.stream.StreamSupport;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.cactoos.map.MapEntry;
 import org.reactivestreams.Publisher;
 
 /**
@@ -129,7 +128,7 @@ public final class RpmRemove implements Slice {
     ) {
         final String name = "x-checksum-";
         return StreamSupport.stream(headers.spliterator(), false)
-            .map(hdr -> new MapEntry<>(hdr.getKey().toLowerCase(Locale.US), hdr.getValue()))
+            .map(hdr -> new ImmutablePair<>(hdr.getKey().toLowerCase(Locale.US), hdr.getValue()))
             .filter(hdr -> hdr.getKey().startsWith(name))
             .findFirst().map(
                 hdr -> new ImmutablePair<>(hdr.getKey().substring(name.length()), hdr.getValue())

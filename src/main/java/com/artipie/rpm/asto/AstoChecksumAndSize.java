@@ -1,5 +1,5 @@
 /*
- * The MIT License (MIT) Copyright (c) 2020-2021 artipie.com
+ * The MIT License (MIT) Copyright (c) 2020-2022 artipie.com
  * https://github.com/artipie/rpm-adapter/LICENSE.txt
  */
 package com.artipie.rpm.asto;
@@ -51,7 +51,7 @@ public final class AstoChecksumAndSize {
                 val, this.dgst::messageDigest
             ).hex().thenCompose(
                 hex -> this.asto.save(
-                    new Key.From(key, this.dgst.name()),
+                    new Key.From(String.format("%s.%s", key, this.dgst.name())),
                     new Content.From(
                         String.format(
                             "%s %d", hex,

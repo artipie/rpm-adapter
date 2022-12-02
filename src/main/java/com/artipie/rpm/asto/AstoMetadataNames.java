@@ -1,5 +1,5 @@
 /*
- * The MIT License (MIT) Copyright (c) 2020-2021 artipie.com
+ * The MIT License (MIT) Copyright (c) 2020-2022 artipie.com
  * https://github.com/artipie/rpm-adapter/LICENSE.txt
  */
 package com.artipie.rpm.asto;
@@ -15,7 +15,8 @@ import io.reactivex.Observable;
 import io.reactivex.Single;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
-import org.cactoos.map.MapEntry;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Prepares new names for metadata files.
@@ -65,12 +66,12 @@ final class AstoMetadataNames {
                 key -> new XmlPackage.Stream(this.cnfg.filelists()).get()
                     .anyMatch(item -> key.string().endsWith(item.name()))
             )
-            .<MapEntry<Key, Key>>flatMapSingle(
+            .<Pair<Key, Key>>flatMapSingle(
                 key -> rxsto.value(key).flatMap(
                     val -> Single.fromFuture(
                         new ContentDigest(val, () -> this.cnfg.digest().messageDigest()).hex()
                             .thenApply(
-                                hex -> new MapEntry<Key, Key>(
+                                hex -> new ImmutablePair<Key, Key>(
                                     key,
                                     new Key.From(
                                         this.cnfg.naming().fullName(
@@ -84,7 +85,7 @@ final class AstoMetadataNames {
                             ).toCompletableFuture()
                     )
                 )
-            ).toMap(MapEntry::getKey, MapEntry::getValue)
+            ).toMap(Pair::getKey, Pair::getValue)
             .flatMap(
                 map -> {
                     final Key.From repomd = new Key.From(temp, AstoMetadataNames.REPOMD);

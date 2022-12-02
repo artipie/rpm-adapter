@@ -2,7 +2,7 @@
 <!--
 The MIT License (MIT)
 
-Copyright (c) 2020 artipie.com
+Copyright (c) 2020-2022 artipie.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,7 @@ SOFTWARE.
   <parent>
     <groupId>com.artipie</groupId>
     <artifactId>ppom</artifactId>
-    <version>0.5.1</version>
+    <version>v1.1.3</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>rpm-bench</artifactId>
@@ -34,7 +34,7 @@ SOFTWARE.
   <version>1.0-SNAPSHOT</version>
   <properties>
     <jmh.version>1.29</jmh.version>
-    <asto.version>v1.9.0</asto.version>
+    <asto.version>v1.13.0</asto.version>
     <qulice.license>${project.basedir}/LICENSE.header</qulice.license>
   </properties>
   <dependencies>
@@ -55,11 +55,23 @@ SOFTWARE.
     </dependency>
     <dependency>
       <groupId>com.artipie</groupId>
-      <artifactId>asto</artifactId>
+      <artifactId>asto-core</artifactId>
       <version>${asto.version}</version>
     </dependency>
   </dependencies>
   <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <useFile>false</useFile>
+            <trimStackTrace>false</trimStackTrace>
+            <failIfNoTests>false</failIfNoTests>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
