@@ -8,13 +8,14 @@ import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.auth.Authentication;
-import com.artipie.http.auth.Permissions;
 import com.artipie.http.slice.LoggingSlice;
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.NamingPolicy;
 import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.Rpm;
 import com.artipie.rpm.TestRpm;
+import com.artipie.security.policy.Policy;
+import com.artipie.security.policy.PolicyByUsername;
 import com.artipie.vertx.VertxSliceServer;
 import com.jcabi.log.Logger;
 import io.vertx.reactivex.core.Vertx;
@@ -87,7 +88,7 @@ public final class RpmSliceITCase {
     })
     void canListAndInstallFromArtipieRepo(final String linux,
         final String mngr, final String rey) throws Exception {
-        this.start(Permissions.FREE, Authentication.ANONYMOUS, "", linux);
+        this.start(Policy.FREE, Authentication.ANONYMOUS, "", linux);
         MatcherAssert.assertThat(
             "Lists 'time' package",
             this.exec(mngr, rey, "list"),
@@ -110,7 +111,7 @@ public final class RpmSliceITCase {
         final String mark = "mark";
         final String pswd = "abc";
         this.start(
-            new Permissions.Single(mark, "download"),
+            new PolicyByUsername(mark),
             new Authentication.Single(mark, pswd),
             String.format("%s:%s@", mark, pswd),
             linux
@@ -156,7 +157,7 @@ public final class RpmSliceITCase {
 
     /**
      * Starts VertxSliceServer and docker container.
-     * @param perms Permissions
+     * @param policy Permissions
      * @param auth Authentication
      * @param cred String with user name and password to add in url, uname:pswd@
      * @param linux Linux distribution name and version
@@ -164,7 +165,7 @@ public final class RpmSliceITCase {
      * @checkstyle ParameterNumberCheck (10 lines)
      * @checkstyle ExecutableStatementCountCheck (100 lines)
      */
-    private void start(final Permissions perms, final Authentication auth, final String cred,
+    private void start(final Policy<?> policy, final Authentication auth, final String cred,
         final String linux) throws Exception {
         final Storage storage = new InMemoryStorage();
         new TestRpm.Time().put(storage);
@@ -174,7 +175,7 @@ public final class RpmSliceITCase {
         new Rpm(storage, config).batchUpdate(Key.ROOT).blockingAwait();
         this.server = new VertxSliceServer(
             RpmSliceITCase.VERTX,
-            new LoggingSlice(new RpmSlice(storage, perms, auth, config))
+            new LoggingSlice(new RpmSlice(storage, policy, auth, config))
         );
         final int port = this.server.start();
         Testcontainers.exposeHostPorts(port);

@@ -6,11 +6,9 @@ package com.artipie.rpm.http;
 
 import com.artipie.asto.Storage;
 import com.artipie.http.Slice;
-import com.artipie.http.auth.Action;
 import com.artipie.http.auth.Authentication;
-import com.artipie.http.auth.BasicAuthSlice;
-import com.artipie.http.auth.Permission;
-import com.artipie.http.auth.Permissions;
+import com.artipie.http.auth.BasicAuthzSlice;
+import com.artipie.http.auth.OperationControl;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.StandardRs;
 import com.artipie.http.rt.ByMethodsRule;
@@ -20,6 +18,9 @@ import com.artipie.http.rt.SliceRoute;
 import com.artipie.http.slice.SliceDownload;
 import com.artipie.http.slice.SliceSimple;
 import com.artipie.rpm.RepoConfig;
+import com.artipie.security.perms.Action;
+import com.artipie.security.perms.AdapterBasicPermission;
+import com.artipie.security.policy.Policy;
 
 /**
  * Artipie {@link Slice} for RPM repository HTTP API.
@@ -33,20 +34,20 @@ public final class RpmSlice extends Slice.Wrap {
      * @param storage The storage.
      */
     public RpmSlice(final Storage storage) {
-        this(storage, Permissions.FREE, Authentication.ANONYMOUS, new RepoConfig.Simple());
+        this(storage, Policy.FREE, Authentication.ANONYMOUS, new RepoConfig.Simple());
     }
 
     /**
      * Ctor.
      * @param storage Storage
-     * @param perms Access permissions.
+     * @param policy Access policy.
      * @param auth Auth details.
      * @param config Repository configuration.
      * @checkstyle ParameterNumberCheck (10 lines)
      */
     public RpmSlice(
         final Storage storage,
-        final Permissions perms,
+        final Policy<?> policy,
         final Authentication auth,
         final RepoConfig config
     ) {
@@ -54,26 +55,32 @@ public final class RpmSlice extends Slice.Wrap {
             new SliceRoute(
                 new RtRulePath(
                     new ByMethodsRule(RqMethod.GET),
-                    new BasicAuthSlice(
+                    new BasicAuthzSlice(
                         new SliceDownload(storage),
                         auth,
-                        new Permission.ByName(perms, Action.Standard.READ)
+                        new OperationControl(
+                            policy, new AdapterBasicPermission(config.name(), Action.Standard.READ)
+                        )
                     )
                 ),
                 new RtRulePath(
                     new ByMethodsRule(RqMethod.PUT),
-                    new BasicAuthSlice(
+                    new BasicAuthzSlice(
                         new RpmUpload(storage, config),
                         auth,
-                        new Permission.ByName(perms, Action.Standard.WRITE)
+                        new OperationControl(
+                            policy, new AdapterBasicPermission(config.name(), Action.Standard.WRITE)
+                        )
                     )
                 ),
                 new RtRulePath(
                     new ByMethodsRule(RqMethod.DELETE),
-                    new BasicAuthSlice(
+                    new BasicAuthzSlice(
                         new RpmRemove(storage, config),
                         auth,
-                        new Permission.ByName(perms, Action.Standard.WRITE)
+                        new OperationControl(
+                            policy, new AdapterBasicPermission(config.name(), Action.Standard.READ)
+                        )
                     )
                 ),
                 new RtRulePath(RtRule.FALLBACK, new SliceSimple(StandardRs.NOT_FOUND))
