@@ -157,5 +157,10 @@ public final class CliArguments {
                 this.cli.getOptionValue(RpmOptions.UPDATE.option().getOpt())
             );
         }
+
+        @Override
+        public String name() {
+            throw new UnsupportedOperationException("Method name() is not supported");
+        }
     }
 }

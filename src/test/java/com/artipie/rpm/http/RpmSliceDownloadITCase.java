@@ -9,13 +9,14 @@ import com.artipie.asto.Storage;
 import com.artipie.asto.SubStorage;
 import com.artipie.asto.memory.InMemoryStorage;
 import com.artipie.http.auth.Authentication;
-import com.artipie.http.auth.Permissions;
 import com.artipie.http.slice.LoggingSlice;
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.NamingPolicy;
 import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.Rpm;
 import com.artipie.rpm.TestRpm;
+import com.artipie.security.policy.Policy;
+import com.artipie.security.policy.PolicyByUsername;
 import com.artipie.vertx.VertxSliceServer;
 import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
@@ -92,7 +93,7 @@ final class RpmSliceDownloadITCase {
     void installsByUrl() throws Exception {
         final TestRpm rpm = new TestRpm.Time();
         rpm.put(this.asto);
-        this.start(Permissions.FREE, Authentication.ANONYMOUS);
+        this.start(Policy.FREE, Authentication.ANONYMOUS);
         MatcherAssert.assertThat(
             this.yumInstall(
                 String.format(
@@ -111,7 +112,7 @@ final class RpmSliceDownloadITCase {
         final TestRpm rpm = new TestRpm.Time();
         rpm.put(this.asto);
         this.start(
-            new Permissions.Single(john, "download"),
+            new PolicyByUsername(john),
             new Authentication.Single(john, pswd)
         );
         MatcherAssert.assertThat(
@@ -130,7 +131,7 @@ final class RpmSliceDownloadITCase {
         new TestRpm.Aspell().put(new SubStorage(new Key.From("spelling"), this.asto));
         new TestRpm.Time().put(this.asto);
         new Rpm(this.asto, RpmSliceDownloadITCase.CONFIG).batchUpdate(Key.ROOT).blockingAwait();
-        this.start(Permissions.FREE, Authentication.ANONYMOUS);
+        this.start(Policy.FREE, Authentication.ANONYMOUS);
         final Path setting = this.tmp.resolve("example.repo");
         this.tmp.resolve("example.repo").toFile().createNewFile();
         Files.write(
@@ -174,7 +175,7 @@ final class RpmSliceDownloadITCase {
         ).getStdout();
     }
 
-    private void start(final Permissions perms, final Authentication auth) {
+    private void start(final Policy<?> perms, final Authentication auth) {
         this.server = new VertxSliceServer(
             RpmSliceDownloadITCase.VERTX,
             new LoggingSlice(new RpmSlice(this.asto, perms, auth, RpmSliceDownloadITCase.CONFIG))

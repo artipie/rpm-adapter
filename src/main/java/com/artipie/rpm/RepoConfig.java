@@ -51,6 +51,12 @@ public interface RepoConfig {
     Optional<String> cron();
 
     /**
+     * Repository name.
+     * @return String name
+     */
+    String name();
+
+    /**
      * Rpm repository update mode.
      * @since 1.9
      */
@@ -90,19 +96,27 @@ public interface RepoConfig {
         private final YamlMapping yaml;
 
         /**
+         * Repository name.
+         */
+        private final String name;
+
+        /**
          * Ctor.
          * @param yaml Yaml settings
+         * @param name Repository name
          */
-        public FromYaml(final YamlMapping yaml) {
+        public FromYaml(final YamlMapping yaml, final String name) {
             this.yaml = yaml;
+            this.name = name;
         }
 
         /**
          * Ctor.
          * @param yaml Yaml settings
+         * @param name Repository name
          */
-        public FromYaml(final Optional<YamlMapping> yaml) {
-            this(yaml.orElse(Yaml.createYamlMappingBuilder().build()));
+        public FromYaml(final Optional<YamlMapping> yaml, final String name) {
+            this(yaml.orElse(Yaml.createYamlMappingBuilder().build()), name);
         }
 
         @Override
@@ -155,6 +169,11 @@ public interface RepoConfig {
                 );
             }
             return res;
+        }
+
+        @Override
+        public String name() {
+            return this.name;
         }
     }
 
@@ -248,6 +267,11 @@ public interface RepoConfig {
         @Override
         public Optional<String> cron() {
             return Optional.empty();
+        }
+
+        @Override
+        public String name() {
+            return "test";
         }
     }
 }
