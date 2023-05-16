@@ -4,8 +4,8 @@
  */
 package com.artipie.rpm.meta;
 
-import com.vdurmont.semver4j.Semver;
 import java.util.Comparator;
+import org.apache.maven.artifact.versioning.ComparableVersion;
 
 /**
  * Compare two dependencies by name.
@@ -73,8 +73,8 @@ public final class CrCompareDependency implements Comparator<String> {
                         } else {
                             vera = depa.substring(vera.length() - 1, verea.length() - 1);
                             verb = depb.substring(verb.length() - 1, vereb.length() - 1);
-                            result = new Semver(vera, Semver.SemverType.LOOSE).compareTo(
-                                new Semver(verb, Semver.SemverType.LOOSE)
+                            result = new ComparableVersion(vera).compareTo(
+                                new ComparableVersion(verb)
                             );
                         }
                     }

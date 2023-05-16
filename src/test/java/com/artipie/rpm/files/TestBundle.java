@@ -8,6 +8,7 @@ import com.jcabi.log.Logger;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import org.cactoos.io.InputOf;
@@ -122,11 +123,11 @@ public final class TestBundle {
          */
         URL url() {
             try {
-                return new URL(
+                return URI.create(
                     String.format(
                         "https://artipie.s3.amazonaws.com/rpm-test/%s.tar.gz", this.filename()
                     )
-                );
+                ).toURL();
             } catch (final MalformedURLException ex) {
                 throw new IllegalArgumentException("Invalid url", ex);
             }
