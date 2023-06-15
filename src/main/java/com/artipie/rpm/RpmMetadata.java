@@ -168,19 +168,19 @@ public interface RpmMetadata {
                         );
                     final MergedXml.Result res = new MergedXmlPrimary(primary.input, out)
                         .merge(packages, Append.XML_EVENT_PRIMARY);
-                    CompletableFuture.allOf(
-                        CompletableFuture.runAsync(Append.setPrimaryPckg(temp, res, primary))
-                            .thenRun(
-                                () -> {
-                                    try {
-                                        Files.delete(temp);
-                                    } catch (final IOException err) {
-                                        throw new ArtipieIOException(err);
-                                    }
-                                }
-                            ),
+                    CompletableFuture<Void> fut = CompletableFuture.allOf(
                         CompletableFuture.runAsync(this.updateOther(packages, res)),
                         CompletableFuture.runAsync(this.updateFilelist(packages, res))
+                    );
+                    Append.setPrimaryPckg(temp, res, primary).run();
+                    fut.thenRun(
+                        () -> {
+                            try {
+                                Files.delete(temp);
+                            } catch (final IOException err) {
+                                throw new ArtipieIOException(err);
+                            }
+                        }
                     ).join();
                 }
             } catch (final IOException err) {
