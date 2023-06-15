@@ -175,10 +175,7 @@ public interface RpmMetadata {
                     try (InputStream input = new BufferedInputStream(Files.newInputStream(temp))) {
                         new XmlAlter.Stream(input, primary.out)
                             .pkgAttr(primary.type.tag(), String.valueOf(res.count()));
-                    } catch (final IOException err) {
-                        throw new ArtipieIOException(err);
                     }
-
                     fut.join();
                     Files.delete(temp);
                 }
