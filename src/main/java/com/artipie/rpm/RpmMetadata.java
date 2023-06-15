@@ -168,7 +168,7 @@ public interface RpmMetadata {
                         );
                     final MergedXml.Result res = new MergedXmlPrimary(primary.input, out)
                         .merge(packages, Append.XML_EVENT_PRIMARY);
-                    CompletableFuture<Void> fut = CompletableFuture.allOf(
+                    final CompletableFuture<Void> fut = CompletableFuture.allOf(
                         CompletableFuture.runAsync(this.updateOther(packages, res)),
                         CompletableFuture.runAsync(this.updateFilelist(packages, res))
                     );
