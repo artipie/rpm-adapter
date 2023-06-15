@@ -173,15 +173,8 @@ public interface RpmMetadata {
                         CompletableFuture.runAsync(this.updateFilelist(packages, res))
                     );
                     Append.setPrimaryPckg(temp, res, primary).run();
-                    fut.thenRun(
-                        () -> {
-                            try {
-                                Files.delete(temp);
-                            } catch (final IOException err) {
-                                throw new ArtipieIOException(err);
-                            }
-                        }
-                    ).join();
+                    fut.join();
+                    Files.delete(temp);
                 }
             } catch (final IOException err) {
                 throw new ArtipieIOException(err);
