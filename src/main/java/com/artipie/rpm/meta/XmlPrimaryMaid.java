@@ -4,7 +4,8 @@
  */
 package com.artipie.rpm.meta;
 
-import com.artipie.rpm.RpmMetadata;
+import com.fasterxml.aalto.stax.InputFactoryImpl;
+import com.fasterxml.aalto.stax.OutputFactoryImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -16,6 +17,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import javax.xml.namespace.QName;
+import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLEventWriter;
 import javax.xml.stream.XMLStreamException;
@@ -89,16 +91,17 @@ public final class XmlPrimaryMaid implements XmlMaid {
         public long clean(final Collection<String> ids) throws IOException {
             final long res;
             try {
-                final XMLEventReader reader = RpmMetadata.INPUT_FACTORY
-                    .createXMLEventReader(this.input);
-                final XMLEventWriter writer = RpmMetadata.OUTPUT_FACTORY
-                    .createXMLEventWriter(this.out);
+                final XMLEventReader reader =
+                    new InputFactoryImpl().createXMLEventReader(this.input);
+                final XMLEventWriter writer =
+                    new OutputFactoryImpl().createXMLEventWriter(this.out);
                 try {
+                    final XMLEventFactory events = XMLEventFactory.newFactory();
                     MergedXmlPackage.startDocument(writer, "-1", XmlPackage.PRIMARY);
                     res = Stream.processPackages(ids, reader, writer);
-                    writer.add(RpmMetadata.EVENTS_FACTORY.createSpace("\n"));
+                    writer.add(events.createSpace("\n"));
                     writer.add(
-                        RpmMetadata.EVENTS_FACTORY.createEndElement(
+                        events.createEndElement(
                             new QName(XmlPackage.PRIMARY.tag()), Collections.emptyIterator()
                         )
                     );

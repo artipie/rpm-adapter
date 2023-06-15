@@ -4,8 +4,9 @@
  */
 package com.artipie.rpm.meta;
 
-import com.artipie.rpm.RpmMetadata;
 import com.artipie.rpm.pkg.Package;
+import com.fasterxml.aalto.stax.InputFactoryImpl;
+import com.fasterxml.aalto.stax.OutputFactoryImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -18,6 +19,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import javax.xml.namespace.QName;
+import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLEventWriter;
 import javax.xml.stream.XMLStreamException;
@@ -28,8 +30,6 @@ import javax.xml.stream.events.XMLEvent;
  * excluding duplicated packages by `location` tag.
  * @since 1.5
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
- * @checkstyle ConditionalRegexpMultilineCheck (500 lines)
- * @checkstyle NestedTryDepthCheck (500 lines)
  */
 public final class MergedXmlPrimary implements MergedXml {
 
@@ -69,34 +69,35 @@ public final class MergedXmlPrimary implements MergedXml {
         final AtomicLong res = new AtomicLong();
         Collection<String> checksums = Collections.emptyList();
         try {
-            final XMLEventWriter writer = RpmMetadata.OUTPUT_FACTORY.createXMLEventWriter(this.out);
+            Optional<XMLEventReader> reader = Optional.empty();
+            if (this.input.isPresent()) {
+                reader = Optional.of(new InputFactoryImpl().createXMLEventReader(this.input.get()));
+            }
+            final XMLEventWriter writer = new OutputFactoryImpl().createXMLEventWriter(this.out);
             try {
+                final XMLEventFactory events = XMLEventFactory.newFactory();
                 MergedXmlPackage.startDocument(writer, "-1", XmlPackage.PRIMARY);
-                if (this.input.isPresent()) {
-                    final XMLEventReader reader = RpmMetadata.INPUT_FACTORY.createXMLEventReader(
-                        this.input.get()
+                if (reader.isPresent()) {
+                    checksums = MergedXmlPrimary.processPackages(
+                        packages.stream().map(Package.Meta::href).collect(Collectors.toSet()),
+                        reader.get(), writer, res
                     );
-                    try {
-                        checksums = MergedXmlPrimary.processPackages(
-                            packages.stream().map(Package.Meta::href).collect(Collectors.toSet()),
-                            reader, writer, res
-                        );
-                    } finally {
-                        reader.close();
-                    }
                 }
                 for (final Package.Meta item : packages) {
                     event.add(writer, item);
                     res.incrementAndGet();
                 }
-                writer.add(RpmMetadata.EVENTS_FACTORY.createSpace("\n"));
+                writer.add(events.createSpace("\n"));
                 writer.add(
-                    RpmMetadata.EVENTS_FACTORY.createEndElement(
+                    events.createEndElement(
                         new QName(XmlPackage.PRIMARY.tag()), Collections.emptyIterator()
                     )
                 );
             } finally {
                 writer.close();
+                if (reader.isPresent()) {
+                    reader.get().close();
+                }
             }
         } catch (final XMLStreamException err) {
             throw new IOException(err);
