@@ -4,9 +4,8 @@
  */
 package com.artipie.rpm.meta;
 
+import com.artipie.rpm.RpmMetadata;
 import com.artipie.rpm.pkg.Package;
-import com.fasterxml.aalto.stax.InputFactoryImpl;
-import com.fasterxml.aalto.stax.OutputFactoryImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -16,7 +15,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import javax.xml.namespace.QName;
-import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLEventWriter;
 import javax.xml.stream.XMLStreamException;
@@ -27,6 +25,7 @@ import javax.xml.stream.events.XMLEvent;
  * provided checksums, adds items by provided file paths and updates `packages` attribute value.
  * @since 1.5
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
+ * @checkstyle NestedTryDepthCheck (500 lines)
  */
 public final class MergedXmlPackage implements MergedXml {
 
@@ -83,29 +82,30 @@ public final class MergedXmlPackage implements MergedXml {
     public MergedXml.Result merge(final Collection<Package.Meta> packages,
         final XmlEvent event) throws IOException {
         try {
-            Optional<XMLEventReader> reader = Optional.empty();
-            if (this.input.isPresent()) {
-                reader = Optional.of(new InputFactoryImpl().createXMLEventReader(this.input.get()));
-            }
-            final XMLEventWriter writer = new OutputFactoryImpl().createXMLEventWriter(this.out);
+            final XMLEventWriter writer = RpmMetadata.OUTPUT_FACTORY.createXMLEventWriter(this.out);
             try {
-                final XMLEventFactory events = XMLEventFactory.newFactory();
                 MergedXmlPackage.startDocument(writer, String.valueOf(this.res.count()), this.type);
-                if (reader.isPresent()) {
-                    this.process(this.res.checksums(), reader.get(), writer);
+                if (this.input.isPresent()) {
+                    final XMLEventReader reader = RpmMetadata.INPUT_FACTORY
+                        .createXMLEventReader(this.input.get());
+                    try {
+                        this.process(this.res.checksums(), reader, writer);
+                    } finally {
+                        reader.close();
+                    }
                 }
                 for (final Package.Meta item : packages) {
                     event.add(writer, item);
                 }
-                writer.add(events.createSpace("\n"));
+                writer.add(RpmMetadata.EVENTS_FACTORY.createSpace("\n"));
                 writer.add(
-                    events.createEndElement(new QName(this.type.tag()), Collections.emptyIterator())
+                    RpmMetadata.EVENTS_FACTORY.createEndElement(
+                        new QName(this.type.tag()),
+                        Collections.emptyIterator()
+                    )
                 );
             } finally {
                 writer.close();
-                if (reader.isPresent()) {
-                    reader.get().close();
-                }
             }
         } catch (final XMLStreamException err) {
             throw new IOException(err);
@@ -122,14 +122,17 @@ public final class MergedXmlPackage implements MergedXml {
      */
     static void startDocument(final XMLEventWriter writer, final String cnt, final XmlPackage type)
         throws XMLStreamException {
-        final XMLEventFactory events = XMLEventFactory.newFactory();
-        writer.add(events.createStartDocument(StandardCharsets.UTF_8.displayName(), "1.0"));
-        writer.add(events.createStartElement("", "", type.tag()));
+        writer.add(
+            RpmMetadata.EVENTS_FACTORY.createStartDocument(
+                StandardCharsets.UTF_8.displayName(), "1.0"
+            )
+        );
+        writer.add(RpmMetadata.EVENTS_FACTORY.createStartElement("", "", type.tag()));
         for (final Map.Entry<String, String> item : type.xmlNamespaces().entrySet()) {
-            writer.add(events.createNamespace(item.getKey(), item.getValue()));
+            writer.add(RpmMetadata.EVENTS_FACTORY.createNamespace(item.getKey(), item.getValue()));
         }
-        writer.add(events.createAttribute("packages", cnt));
-        writer.add(events.createSpace("\n"));
+        writer.add(RpmMetadata.EVENTS_FACTORY.createAttribute("packages", cnt));
+        writer.add(RpmMetadata.EVENTS_FACTORY.createSpace("\n"));
     }
 
     /**
