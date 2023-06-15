@@ -172,7 +172,13 @@ public interface RpmMetadata {
                         CompletableFuture.runAsync(this.updateOther(packages, res)),
                         CompletableFuture.runAsync(this.updateFilelist(packages, res))
                     );
-                    Append.setPrimaryPckg(temp, res, primary).run();
+                    try (InputStream input = new BufferedInputStream(Files.newInputStream(temp))) {
+                        new XmlAlter.Stream(input, primary.out)
+                            .pkgAttr(primary.type.tag(), String.valueOf(res.count()));
+                    } catch (final IOException err) {
+                        throw new ArtipieIOException(err);
+                    }
+
                     fut.join();
                     Files.delete(temp);
                 }
@@ -223,25 +229,6 @@ public interface RpmMetadata {
                         );
                     new MergedXmlPackage(other.input, other.out, XmlPackage.OTHER, res)
                         .merge(packages, new XmlEvent.Other());
-                } catch (final IOException err) {
-                    throw new ArtipieIOException(err);
-                }
-            };
-        }
-
-        /**
-         * Creates actions to update `packages` attribute of primary.xml.
-         * @param temp Merge result temp file
-         * @param res Xml primary update result
-         * @param primary Metadata
-         * @return Action
-         */
-        private static Runnable setPrimaryPckg(final Path temp, final MergedXml.Result res,
-            final MetadataItem primary) {
-            return () -> {
-                try (InputStream input = new BufferedInputStream(Files.newInputStream(temp))) {
-                    new XmlAlter.Stream(input, primary.out)
-                        .pkgAttr(primary.type.tag(), String.valueOf(res.count()));
                 } catch (final IOException err) {
                     throw new ArtipieIOException(err);
                 }
