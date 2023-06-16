@@ -4,8 +4,7 @@
  */
 package com.artipie.rpm.meta;
 
-import com.fasterxml.aalto.stax.InputFactoryImpl;
-import com.fasterxml.aalto.stax.OutputFactoryImpl;
+import com.artipie.rpm.RpmMetadata;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -106,9 +105,9 @@ public interface XmlMaid {
                 final long res;
                 try {
                     final XMLEventReader reader =
-                        new InputFactoryImpl().createXMLEventReader(this.input);
+                        RpmMetadata.INPUT_FACTORY.createXMLEventReader(this.input);
                     final XMLEventWriter writer =
-                        new OutputFactoryImpl().createXMLEventWriter(this.out);
+                        RpmMetadata.OUTPUT_FACTORY.createXMLEventWriter(this.out);
                     try {
                         res = Stream.process(ids, reader, writer);
                     } finally {

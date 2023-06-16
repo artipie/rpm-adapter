@@ -17,7 +17,9 @@ import com.artipie.rpm.meta.XmlPrimaryMaid;
 import com.artipie.rpm.pkg.Checksum;
 import com.artipie.rpm.pkg.FilePackage;
 import com.artipie.rpm.pkg.Package;
-import com.jcabi.log.Logger;
+import com.fasterxml.aalto.AsyncXMLInputFactory;
+import com.fasterxml.aalto.stax.InputFactoryImpl;
+import com.fasterxml.aalto.stax.OutputFactoryImpl;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -28,28 +30,45 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CompletableFuture;
+import javax.xml.stream.XMLEventFactory;
+import org.codehaus.stax2.XMLOutputFactory2;
 import org.redline_rpm.header.Header;
 
 /**
  * Rpm metadata class works with xml metadata - adds or removes records about xml packages.
  * @since 1.4
  * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
+ * @checkstyle ModifierOrderCheck (500 lines)
+ * @checkstyle InterfaceIsTypeCheck (500 lines)
+ * @checkstyle NestedTryDepthCheck (500 lines)
  */
 public interface RpmMetadata {
 
     /**
+     * Temp file suffix.
+     */
+    String SUFFIX = ".xml";
+
+    /**
+     * Xml Events Factory.
+     */
+    XMLEventFactory EVENTS_FACTORY = XMLEventFactory.newFactory();
+    /**
+     * Xml Output Factory.
+     */
+    XMLOutputFactory2 OUTPUT_FACTORY = new OutputFactoryImpl();
+    /**
+     * Xml Input Factory.
+     */
+    AsyncXMLInputFactory INPUT_FACTORY = new InputFactoryImpl();
+
+    /**
      * Removes RMP records from metadata.
+     *
      * @since 1.4
      */
     final class Remove {
-
-        /**
-         * Temp file suffix.
-         */
-        private static final String SUFFIX = ".xml";
 
         /**
          * Metadata list.
@@ -76,7 +95,7 @@ public interface RpmMetadata {
                     if (!item.input.isPresent()) {
                         continue;
                     }
-                    final Path temp = Files.createTempFile("rpm-index", Remove.SUFFIX);
+                    final Path temp = Files.createTempFile("rpm-index", RpmMetadata.SUFFIX);
                     try {
                         final long res;
                         final XmlMaid maid;
@@ -106,9 +125,14 @@ public interface RpmMetadata {
 
     /**
      * Appends RMP records into metadata.
+     *
      * @since 1.4
      */
     final class Append {
+        /**
+         * Xml Event Primary.
+         */
+        private final static XmlEventPrimary XML_EVENT_PRIMARY = new XmlEventPrimary();
 
         /**
          * Metadata list.
@@ -129,27 +153,30 @@ public interface RpmMetadata {
          * @throws ArtipieIOException On io-operation error
          * @checkstyle NestedTryDepthCheck (20 lines)
          */
+        @SuppressWarnings("PMD.AvoidDuplicateLiterals")
         public void perform(final Collection<Package.Meta> packages) {
             try {
-                final Path temp = Files.createTempFile("rpm-primary-append", Remove.SUFFIX);
-                try {
-                    final MergedXml.Result res;
+                final Path temp = Files.createTempFile("rpm-primary-append", RpmMetadata.SUFFIX);
+                try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(temp))) {
                     final MetadataItem primary = this.items.stream()
-                        .filter(item -> item.type == XmlPackage.PRIMARY).findFirst().get();
-                    try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(temp))) {
-                        res = new MergedXmlPrimary(primary.input, out)
-                            .merge(packages, new XmlEventPrimary());
+                        .filter(item -> item.type == XmlPackage.PRIMARY)
+                        .findFirst()
+                        .orElseThrow(
+                            () -> new ArtipieIOException(
+                                String.format("Should have a file with type %s", XmlPackage.PRIMARY)
+                            )
+                        );
+                    final MergedXml.Result res = new MergedXmlPrimary(primary.input, out)
+                        .merge(packages, Append.XML_EVENT_PRIMARY);
+                    final CompletableFuture<Void> fut = CompletableFuture.allOf(
+                        CompletableFuture.runAsync(this.updateOther(packages, res)),
+                        CompletableFuture.runAsync(this.updateFilelist(packages, res))
+                    );
+                    try (InputStream input = new BufferedInputStream(Files.newInputStream(temp))) {
+                        new XmlAlter.Stream(input, primary.out)
+                            .pkgAttr(primary.type.tag(), String.valueOf(res.count()));
                     }
-                    final ExecutorService service = Executors.newFixedThreadPool(3);
-                    service.submit(Append.setPrimaryPckg(temp, res, primary));
-                    service.submit(this.updateOther(packages, res));
-                    service.submit(this.updateFilelist(packages, res));
-                    service.shutdown();
-                    service.awaitTermination(Long.MAX_VALUE, TimeUnit.HOURS);
-                } catch (final InterruptedException err) {
-                    Thread.currentThread().interrupt();
-                    Logger.error(this, err.getMessage());
-                } finally {
+                    fut.join();
                     Files.delete(temp);
                 }
             } catch (final IOException err) {
@@ -191,28 +218,14 @@ public interface RpmMetadata {
             return () -> {
                 try {
                     final MetadataItem other = this.items.stream()
-                        .filter(item -> item.type == XmlPackage.OTHER).findFirst().get();
+                        .filter(item -> item.type == XmlPackage.OTHER)
+                        .findFirst().orElseThrow(
+                            () -> new ArtipieIOException(
+                                String.format("Should have a file with type %s", XmlPackage.OTHER)
+                            )
+                        );
                     new MergedXmlPackage(other.input, other.out, XmlPackage.OTHER, res)
                         .merge(packages, new XmlEvent.Other());
-                } catch (final IOException err) {
-                    throw new ArtipieIOException(err);
-                }
-            };
-        }
-
-        /**
-         * Creates actions to update `packages` attribute of primary.xml.
-         * @param temp Merge result temp file
-         * @param res Xml primary update result
-         * @param primary Metadata
-         * @return Action
-         */
-        private static Runnable setPrimaryPckg(final Path temp, final MergedXml.Result res,
-            final MetadataItem primary) {
-            return () -> {
-                try (InputStream input = new BufferedInputStream(Files.newInputStream(temp))) {
-                    new XmlAlter.Stream(input, primary.out)
-                        .pkgAttr(primary.type.tag(), String.valueOf(res.count()));
                 } catch (final IOException err) {
                     throw new ArtipieIOException(err);
                 }

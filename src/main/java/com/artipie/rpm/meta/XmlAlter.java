@@ -4,6 +4,7 @@
  */
 package com.artipie.rpm.meta;
 
+import com.artipie.rpm.RpmMetadata;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -14,11 +15,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import javax.xml.namespace.QName;
-import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLEventWriter;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.Attribute;
 import javax.xml.stream.events.StartElement;
@@ -102,9 +100,9 @@ public interface XmlAlter {
         @Override
         public void pkgAttr(final String tag, final String value) {
             try {
-                final XMLEventReader reader = XMLInputFactory.newInstance()
+                final XMLEventReader reader = RpmMetadata.INPUT_FACTORY
                     .createXMLEventReader(this.input);
-                final XMLEventWriter writer = XMLOutputFactory.newInstance()
+                final XMLEventWriter writer = RpmMetadata.OUTPUT_FACTORY
                     .createXMLEventWriter(this.out);
                 try {
                     XMLEvent event;
@@ -135,15 +133,14 @@ public interface XmlAlter {
          */
         static XMLEvent alterEvent(final XMLEvent original, final String value) {
             final StartElement element = original.asStartElement();
-            final List<Attribute> newattrs = new ArrayList<>(0);
-            final XMLEventFactory events = XMLEventFactory.newFactory();
+            final List<Attribute> newattrs = new ArrayList<>(10);
             boolean replaced = false;
             final Iterator<?> origattrs = element.getAttributes();
             final XMLEvent res;
             while (origattrs.hasNext()) {
                 final Attribute attr = (Attribute) origattrs.next();
                 if (attr.getName().getLocalPart().equals("packages")) {
-                    newattrs.add(events.createAttribute(attr.getName(), value));
+                    newattrs.add(RpmMetadata.EVENTS_FACTORY.createAttribute(attr.getName(), value));
                     replaced = true;
                 } else {
                     newattrs.add(attr);
@@ -151,7 +148,7 @@ public interface XmlAlter {
             }
             if (replaced) {
                 final QName name = element.getName();
-                res = events.createStartElement(
+                res = RpmMetadata.EVENTS_FACTORY.createStartElement(
                     name.getPrefix(),
                     name.getNamespaceURI(),
                     name.getLocalPart(),
