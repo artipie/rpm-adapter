@@ -17,10 +17,14 @@ import com.artipie.http.rq.RequestLine;
 import com.artipie.http.rq.RqMethod;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.rpm.RepoConfig;
+import com.artipie.scheduling.ArtifactEvent;
 import com.jcabi.matchers.XhtmlMatchers;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedList;
+import java.util.Optional;
+import java.util.Queue;
 import java.util.zip.GZIPInputStream;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.hamcrest.MatcherAssert;
@@ -55,7 +59,7 @@ class RpmRemoveTest {
         this.asto.save(new Key.From(pckg), Content.EMPTY).join();
         MatcherAssert.assertThat(
             "Response status is not `ACCEPTED`",
-            new RpmRemove(this.asto, new RepoConfig.Simple()),
+            new RpmRemove(this.asto, new RepoConfig.Simple(), Optional.empty()),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.ACCEPTED),
                 new RequestLine(RqMethod.DELETE, "/my_package.rpm?skip_update=true&force=true"),
@@ -78,9 +82,10 @@ class RpmRemoveTest {
         final String pckg = "test_package.rpm";
         final byte[] bytes = "pkg".getBytes(StandardCharsets.US_ASCII);
         this.asto.save(new Key.From(pckg), new Content.From(bytes)).join();
+        final Optional<Queue<ArtifactEvent>> events = Optional.of(new LinkedList<>());
         MatcherAssert.assertThat(
             "Response status is not `ACCEPTED`",
-            new RpmRemove(this.asto, new RepoConfig.Simple()),
+            new RpmRemove(this.asto, new RepoConfig.Simple(), events),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.ACCEPTED),
                 new RequestLine(RqMethod.DELETE, line),
@@ -92,6 +97,7 @@ class RpmRemoveTest {
             "Storage should have package",
             this.asto.exists(new Key.From(pckg)).join()
         );
+        MatcherAssert.assertThat("Events queue is empty", events.get().size() == 0);
     }
 
     @ParameterizedTest
@@ -104,9 +110,10 @@ class RpmRemoveTest {
         new TestResource(pckg).saveTo(this.asto);
         new TestResource("RpmRemoveTest/primary.xml.gz")
             .saveTo(this.asto, new Key.From("repodata", "primary.xml.gz"));
+        final Optional<Queue<ArtifactEvent>> events = Optional.of(new LinkedList<>());
         MatcherAssert.assertThat(
             "Response status is not `ACCEPTED`",
-            new RpmRemove(this.asto, new RepoConfig.Simple()),
+            new RpmRemove(this.asto, new RepoConfig.Simple(), events),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.ACCEPTED),
                 new RequestLine(RqMethod.DELETE, String.format("/%s?%s", pckg, params)),
@@ -141,13 +148,14 @@ class RpmRemoveTest {
                 "/*[local-name()='metadata']/*[local-name()='package']/*[local-name()='name' and text()='nginx']"
             )
         );
+        MatcherAssert.assertThat("Events queue has one item", events.get().size() == 1);
     }
 
     @Test
     void returnsBadRequestIfFileDoesNotExist() {
         MatcherAssert.assertThat(
             "Response status is not `BAD_REQUEST`",
-            new RpmRemove(this.asto, new RepoConfig.Simple()),
+            new RpmRemove(this.asto, new RepoConfig.Simple(), Optional.empty()),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.BAD_REQUEST),
                 new RequestLine(RqMethod.DELETE, "/any.rpm"),
@@ -166,7 +174,7 @@ class RpmRemoveTest {
     void returnsBadRequestIfHeaderIsNotPresent() {
         MatcherAssert.assertThat(
             "Response status is not `BAD_REQUEST`",
-            new RpmRemove(this.asto, new RepoConfig.Simple()),
+            new RpmRemove(this.asto, new RepoConfig.Simple(), Optional.empty()),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.BAD_REQUEST),
                 new RequestLine(RqMethod.DELETE, "/any_package.rpm")
@@ -185,7 +193,7 @@ class RpmRemoveTest {
         this.asto.save(new Key.From(pckg), Content.EMPTY).join();
         MatcherAssert.assertThat(
             "Response status is not `BAD_REQUEST`",
-            new RpmRemove(this.asto, new RepoConfig.Simple()),
+            new RpmRemove(this.asto, new RepoConfig.Simple(), Optional.empty()),
             new SliceHasResponse(
                 new RsHasStatus(RsStatus.BAD_REQUEST),
                 new RequestLine(RqMethod.DELETE, "/my_package.rpm"),

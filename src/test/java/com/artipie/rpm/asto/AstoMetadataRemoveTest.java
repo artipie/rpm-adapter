@@ -13,9 +13,13 @@ import com.artipie.rpm.Digest;
 import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.StandardNamingPolicy;
 import com.artipie.rpm.hm.IsXmlEqual;
+import com.artipie.rpm.meta.PackageInfo;
 import com.artipie.rpm.meta.XmlPackage;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Optional;
 import org.cactoos.list.ListOf;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -72,7 +76,8 @@ class AstoMetadataRemoveTest {
             .saveTo(this.storage, new Key.From("repodata", "other.xml.gz"));
         new TestResource(String.join("/", path, "filelists.xml.gz"))
             .saveTo(this.storage, new Key.From("repodata", "filelists.xml.gz"));
-        final Key res = new AstoMetadataRemove(this.storage, this.conf).perform(
+        final Collection<PackageInfo> infos = new ArrayList<>(1);
+        final Key res = new AstoMetadataRemove(this.storage, this.conf, Optional.of(infos)).perform(
             new ListOf<String>("7eaefd1cb4f9740558da7f12f9cb5a6141a47f5d064a98d46c29959869af1a44")
         ).toCompletableFuture().join();
         MatcherAssert.assertThat(
@@ -100,6 +105,10 @@ class AstoMetadataRemoveTest {
             new IsXmlEqual(
                 this.mbytes.value(res, XmlPackage.FILELISTS)
             )
+        );
+        MatcherAssert.assertThat(
+            "Removed package info was not added to list",
+            infos, Matchers.contains(new PackageInfo("aom", "aarch64", "1.0.0"))
         );
         this.checksumCheck(res, XmlPackage.PRIMARY);
         this.checksumCheck(res, XmlPackage.OTHER);

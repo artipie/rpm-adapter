@@ -11,6 +11,8 @@ import com.artipie.asto.lock.storage.StorageLock;
 import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.http.RpmUpload;
+import com.artipie.rpm.meta.PackageInfo;
+import com.artipie.rpm.pkg.HeaderTags;
 import com.artipie.rpm.pkg.Package;
 import com.jcabi.log.Logger;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
@@ -19,6 +21,7 @@ import io.reactivex.schedulers.Schedulers;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 
 /**
  * Add packages to metadata and repository.
@@ -60,38 +63,60 @@ public final class AstoRepoAdd {
     public CompletionStage<Void> perform() {
         return this.read().thenCompose(
             list -> new AstoMetadataAdd(this.asto, this.cnfg).perform(list)
-        ).thenCompose(
-            temp -> new AstoCreateRepomd(this.asto, this.cnfg).perform(temp).thenCompose(
-                nothing -> new AstoMetadataNames(this.asto, this.cnfg).prepareNames(temp)
-                    .thenCompose(
-                        keys -> {
-                            final StorageLock lock = new StorageLock(this.asto, AstoRepoAdd.META);
-                            return lock.acquire()
-                                .thenCompose(ignored -> this.remove(AstoRepoAdd.META))
+        ).thenCompose(this::generateRepomdAndMoveXmls);
+    }
+
+    /**
+     * Performs whole workflow to add items, listed in {@link com.artipie.rpm.http.RpmUpload#TO_ADD}
+     * location, to the repository and metadata files. Returns list with info about added
+     * packages.
+     * @return Completable action with added packages info list
+     */
+    public CompletionStage<List<PackageInfo>> performWithResult() {
+        return this.read().thenCompose(
+            list -> new AstoMetadataAdd(this.asto, this.cnfg).perform(list)
+                .thenCompose(this::generateRepomdAndMoveXmls)
+                .thenApply(
+                    nothing -> list.stream()
+                        .map(info -> new PackageInfo(new HeaderTags(info), info.size()))
+                        .collect(Collectors.toList())
+                )
+        );
+    }
+
+    /**
+     * Creates repomd metadata file and moves all other metadata xmls to repository
+     * with storage lock.
+     * @param temp Temp location o metadata files
+     * @return Completable action
+     */
+    private CompletionStage<Void> generateRepomdAndMoveXmls(final Key temp) {
+        return new AstoCreateRepomd(this.asto, this.cnfg).perform(temp).thenCompose(
+            nothing -> new AstoMetadataNames(this.asto, this.cnfg).prepareNames(temp).thenCompose(
+                keys -> {
+                    final StorageLock lock = new StorageLock(this.asto, AstoRepoAdd.META);
+                    return lock.acquire().thenCompose(ignored -> this.remove(AstoRepoAdd.META))
+                        .thenCompose(
+                            ignored -> CompletableFuture.allOf(
+                                keys.entrySet().stream().map(
+                                    entry -> this.asto.move(entry.getKey(), entry.getValue())
+                                ).toArray(CompletableFuture[]::new)
+                            )
+                        ).thenCompose(
+                            ignored -> this.asto.list(RpmUpload.TO_ADD)
                                 .thenCompose(
-                                    ignored -> CompletableFuture.allOf(
-                                        keys.entrySet().stream().map(
-                                            entry -> this.asto
-                                                .move(entry.getKey(), entry.getValue())
+                                    list -> CompletableFuture.allOf(
+                                        list.stream().map(
+                                            key -> this.asto.move(
+                                                key, AstoRepoAdd.removeTempPart(key)
+                                            )
                                         ).toArray(CompletableFuture[]::new)
                                     )
                                 )
-                                .thenCompose(
-                                    ignored -> this.asto.list(RpmUpload.TO_ADD).thenCompose(
-                                        list -> CompletableFuture.allOf(
-                                            list.stream().map(
-                                                key -> this.asto.move(
-                                                    key, AstoRepoAdd.removeTempPart(key)
-                                                )
-                                            ).toArray(CompletableFuture[]::new)
-                                        )
-                                    )
-                                )
-                                .thenCompose(ignored -> lock.release()).thenCompose(
-                                    ignored -> this.remove(temp)
-                                );
-                        }
-                    )
+                        )
+                        .thenCompose(ignored -> lock.release())
+                        .thenCompose(ignored -> this.remove(temp));
+                }
             )
         );
     }
@@ -144,4 +169,5 @@ public final class AstoRepoAdd {
     private static Key removeTempPart(final Key key) {
         return new KeyExcludeFirst(key, RpmUpload.TO_ADD.string());
     }
+
 }
