@@ -111,8 +111,9 @@ public final class RpmRemove implements Slice {
                                                     )
                                                 );
                                         }
-                                    ).orElse(new AstoRepoRemove(this.asto, this.cnfg).perform())
-                                        .thenApply(ignored -> RsStatus.ACCEPTED);
+                                    ).orElseGet(
+                                        () -> new AstoRepoRemove(this.asto, this.cnfg).perform()
+                                    ).thenApply(ignored -> RsStatus.ACCEPTED);
                                 } else if (!valid) {
                                     res = this.asto.delete(temp)
                                         .thenApply(nothing -> RsStatus.BAD_REQUEST);

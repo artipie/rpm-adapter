@@ -123,7 +123,7 @@ public final class RpmUpload implements Slice {
                                                 )
                                             )
                                         )
-                                    ).orElse(repo.perform());
+                                    ).orElseGet(repo::perform);
                                 }
                                 return result;
                             }
