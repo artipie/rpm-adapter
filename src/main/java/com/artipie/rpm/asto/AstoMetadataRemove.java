@@ -10,6 +10,7 @@ import com.artipie.asto.misc.UncheckedIOFunc;
 import com.artipie.asto.misc.UncheckedIOScalar;
 import com.artipie.asto.streams.StorageValuePipeline;
 import com.artipie.rpm.RepoConfig;
+import com.artipie.rpm.meta.PackageInfo;
 import com.artipie.rpm.meta.XmlAlter;
 import com.artipie.rpm.meta.XmlMaid;
 import com.artipie.rpm.meta.XmlPackage;
@@ -20,6 +21,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -44,13 +46,30 @@ public final class AstoMetadataRemove {
     private final RepoConfig cnfg;
 
     /**
+     * Collection with removed packages info if required.
+     */
+    private final Optional<Collection<PackageInfo>> infos;
+
+    /**
+     * Ctor.
+     * @param asto Abstract storage
+     * @param cnfg Repos config
+     * @param infos Collection with removed packages info if required
+     */
+    public AstoMetadataRemove(final Storage asto, final RepoConfig cnfg,
+        final Optional<Collection<PackageInfo>> infos) {
+        this.asto = asto;
+        this.cnfg = cnfg;
+        this.infos = infos;
+    }
+
+    /**
      * Ctor.
      * @param asto Abstract storage
      * @param cnfg Repos config
      */
     public AstoMetadataRemove(final Storage asto, final RepoConfig cnfg) {
-        this.asto = asto;
-        this.cnfg = cnfg;
+        this(asto, cnfg, Optional.empty());
     }
 
     /**
@@ -119,7 +138,7 @@ public final class AstoMetadataRemove {
                 final InputStream input = opt.map(new UncheckedIOFunc<>(GZIPInputStream::new))
                     .get();
                 if (pckg == XmlPackage.PRIMARY) {
-                    maid = new XmlPrimaryMaid.Stream(input, out);
+                    maid = new XmlPrimaryMaid.Stream(input, out, this.infos);
                 } else {
                     maid = new XmlMaid.ByPkgidAttr.Stream(input, out);
                 }

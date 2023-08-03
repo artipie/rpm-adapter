@@ -6,13 +6,12 @@ package com.artipie.rpm.pkg;
 
 import com.artipie.rpm.Digest;
 import com.artipie.rpm.FileChecksum;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.apache.commons.io.FileUtils;
 import org.redline_rpm.header.AbstractHeader;
 import org.redline_rpm.header.Header;
 
@@ -24,7 +23,8 @@ import org.redline_rpm.header.Header;
 public final class FilePackage implements Package {
 
     /**
-     * File package metadata.
+     * File package metadata from package path. Used for tests and
+     * benchmarks only.
      * @since 0.6
      */
     public static final class Headers implements Meta {
@@ -86,8 +86,8 @@ public final class FilePackage implements Package {
         }
 
         @Override
-        public long size() throws IOException {
-            return Files.size(this.file);
+        public long size() {
+            return FileUtils.sizeOf(this.file.toFile());
         }
 
         @Override

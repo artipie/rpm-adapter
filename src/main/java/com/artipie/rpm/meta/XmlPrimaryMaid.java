@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLEventWriter;
@@ -62,6 +63,8 @@ public final class XmlPrimaryMaid implements XmlMaid {
      * Input/output streams are not closed in this implementation, resources
      * should be closed from the outside.
      * @since 1.4
+     * @checkstyle CyclomaticComplexityCheck (300 lines)
+     * @checkstyle ExecutableStatementCountCheck (300 lines)
      */
     public static final class Stream implements XmlMaid {
 
@@ -76,13 +79,32 @@ public final class XmlPrimaryMaid implements XmlMaid {
         private final OutputStream out;
 
         /**
+         * Collection with removed packages info if required.
+         */
+        private final Optional<Collection<PackageInfo>> infos;
+
+        /**
          * Ctor.
+         *
+         * @param input Input
+         * @param out Output
+         * @param infos Collection with removed packages info if required
+         */
+        public Stream(final InputStream input, final OutputStream out,
+            final Optional<Collection<PackageInfo>> infos) {
+            this.input = input;
+            this.out = out;
+            this.infos = infos;
+        }
+
+        /**
+         * Ctor.
+         *
          * @param input Input
          * @param out Output
          */
         public Stream(final InputStream input, final OutputStream out) {
-            this.input = input;
-            this.out = out;
+            this(input, out, Optional.empty());
         }
 
         @Override
@@ -95,7 +117,13 @@ public final class XmlPrimaryMaid implements XmlMaid {
                     .createXMLEventWriter(this.out);
                 try {
                     MergedXmlPackage.startDocument(writer, "-1", XmlPackage.PRIMARY);
-                    res = Stream.processPackages(ids, reader, writer);
+                    if (this.infos.isPresent()) {
+                        res = Stream.processPackagesWithResult(
+                            ids, reader, writer, this.infos.get()
+                        );
+                    } else {
+                        res = Stream.processPackages(ids, reader, writer);
+                    }
                     writer.add(RpmMetadata.EVENTS_FACTORY.createSpace("\n"));
                     writer.add(
                         RpmMetadata.EVENTS_FACTORY.createEndElement(
@@ -132,15 +160,13 @@ public final class XmlPrimaryMaid implements XmlMaid {
                     pckg.clear();
                 }
                 pckg.add(event);
-                if (Stream.isTag(event, "checksum")
-                ) {
+                if (Stream.isTag(event, "checksum")) {
                     event = reader.nextEvent();
                     pckg.add(event);
                     valid = event.isCharacters()
                         && !checksums.contains(event.asCharacters().getData());
                 }
-                if (event.isEndElement()
-                    && event.asEndElement().getName().getLocalPart().equals("package") && valid) {
+                if (Stream.isEndPackage(event) && valid) {
                     cnt = cnt + 1;
                     for (final XMLEvent item : pckg) {
                         writer.add(item);
@@ -148,6 +174,74 @@ public final class XmlPrimaryMaid implements XmlMaid {
                 }
             }
             return cnt;
+        }
+
+        /**
+         * Processes packages.
+         * @param checksums Checksums to skip
+         * @param reader Where to read from
+         * @param writer Where to write
+         * @param infos Collection to add removed packages info to
+         * @return Valid packages count
+         * @throws XMLStreamException If fails
+         * @checkstyle ParameterNumberCheck (5 lines)
+         */
+        @SuppressWarnings("PMD.CyclomaticComplexity")
+        private static long processPackagesWithResult(final Collection<String> checksums,
+            final XMLEventReader reader, final XMLEventWriter writer,
+            final Collection<PackageInfo> infos) throws XMLStreamException {
+            XMLEvent event;
+            final List<XMLEvent> pckg = new ArrayList<>(10);
+            boolean valid = true;
+            long cnt = 0;
+            String name = "";
+            String vers = "";
+            String arch = "";
+            while (reader.hasNext()) {
+                event = reader.nextEvent();
+                if (Stream.isTag(event, "package")) {
+                    pckg.clear();
+                }
+                pckg.add(event);
+                if (Stream.isTag(event, "checksum")) {
+                    event = reader.nextEvent();
+                    pckg.add(event);
+                    valid = event.isCharacters()
+                        && !checksums.contains(event.asCharacters().getData());
+                }
+                if (Stream.isTag(event, "name")) {
+                    event = reader.nextEvent();
+                    pckg.add(event);
+                    name = event.asCharacters().getData();
+                }
+                if (Stream.isTag(event, "arch")) {
+                    event = reader.nextEvent();
+                    pckg.add(event);
+                    arch = event.asCharacters().getData();
+                }
+                if (Stream.isTag(event, "version")) {
+                    vers = event.asStartElement().getAttributeByName(new QName("ver")).getValue();
+                }
+                if (Stream.isEndPackage(event) && valid) {
+                    cnt = cnt + 1;
+                    for (final XMLEvent item : pckg) {
+                        writer.add(item);
+                    }
+                } else if (Stream.isEndPackage(event)) {
+                    infos.add(new PackageInfo(name, arch, vers));
+                }
+            }
+            return cnt;
+        }
+
+        /**
+         * Is the event end of the "package" tag?
+         * @param event Event to check
+         * @return True if event is the end fo package tag
+         */
+        private static boolean isEndPackage(final XMLEvent event) {
+            return event.isEndElement()
+                && event.asEndElement().getName().getLocalPart().equals("package");
         }
 
         /**

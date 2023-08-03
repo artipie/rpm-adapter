@@ -16,10 +16,15 @@ import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.asto.AstoRepoRemove;
+import com.artipie.rpm.meta.PackageInfo;
+import com.artipie.scheduling.ArtifactEvent;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.StreamSupport;
@@ -57,13 +62,21 @@ public final class RpmRemove implements Slice {
     private final RepoConfig cnfg;
 
     /**
+     * Artifact upload/remove events.
+     */
+    private final Optional<Queue<ArtifactEvent>> events;
+
+    /**
      * Ctor.
      * @param asto Asto storage
      * @param cnfg Repo config
+     * @param events Artifact events
      */
-    public RpmRemove(final Storage asto, final RepoConfig cnfg) {
+    public RpmRemove(final Storage asto, final RepoConfig cnfg,
+        final Optional<Queue<ArtifactEvent>> events) {
         this.asto = asto;
         this.cnfg = cnfg;
+        this.events = events;
     }
 
     @Override
@@ -81,8 +94,26 @@ public final class RpmRemove implements Slice {
                                     .completedFuture(RsStatus.ACCEPTED);
                                 if (valid && this.cnfg.mode() == RepoConfig.UpdateMode.UPLOAD
                                     && !request.skipUpdate()) {
-                                    res = new AstoRepoRemove(this.asto, this.cnfg).perform()
-                                        .thenApply(ignored -> RsStatus.ACCEPTED);
+                                    res = this.events.map(
+                                        queue -> {
+                                            final Collection<PackageInfo> infos =
+                                                new ArrayList<>(1);
+                                            return new AstoRepoRemove(this.asto, this.cnfg, infos)
+                                                .perform().thenAccept(
+                                                    nothing -> infos.forEach(
+                                                        item -> queue.add(
+                                                            new ArtifactEvent(
+                                                                RpmUpload.REPO_TYPE,
+                                                                this.cnfg.name(), item.name(),
+                                                                item.version()
+                                                            )
+                                                        )
+                                                    )
+                                                );
+                                        }
+                                    ).orElseGet(
+                                        () -> new AstoRepoRemove(this.asto, this.cnfg).perform()
+                                    ).thenApply(ignored -> RsStatus.ACCEPTED);
                                 } else if (!valid) {
                                     res = this.asto.delete(temp)
                                         .thenApply(nothing -> RsStatus.BAD_REQUEST);

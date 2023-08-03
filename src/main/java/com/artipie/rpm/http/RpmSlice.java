@@ -18,9 +18,12 @@ import com.artipie.http.rt.SliceRoute;
 import com.artipie.http.slice.SliceDownload;
 import com.artipie.http.slice.SliceSimple;
 import com.artipie.rpm.RepoConfig;
+import com.artipie.scheduling.ArtifactEvent;
 import com.artipie.security.perms.Action;
 import com.artipie.security.perms.AdapterBasicPermission;
 import com.artipie.security.policy.Policy;
+import java.util.Optional;
+import java.util.Queue;
 
 /**
  * Artipie {@link Slice} for RPM repository HTTP API.
@@ -34,7 +37,10 @@ public final class RpmSlice extends Slice.Wrap {
      * @param storage The storage.
      */
     public RpmSlice(final Storage storage) {
-        this(storage, Policy.FREE, Authentication.ANONYMOUS, new RepoConfig.Simple());
+        this(
+            storage, Policy.FREE, Authentication.ANONYMOUS,
+            new RepoConfig.Simple(), Optional.empty()
+        );
     }
 
     /**
@@ -51,6 +57,25 @@ public final class RpmSlice extends Slice.Wrap {
         final Authentication auth,
         final RepoConfig config
     ) {
+        this(storage, policy, auth, config, Optional.empty());
+    }
+
+    /**
+     * Ctor.
+     * @param storage Storage
+     * @param policy Access policy.
+     * @param auth Auth details.
+     * @param config Repository configuration.
+     * @param events Artifact events queue
+     * @checkstyle ParameterNumberCheck (10 lines)
+     */
+    public RpmSlice(
+        final Storage storage,
+        final Policy<?> policy,
+        final Authentication auth,
+        final RepoConfig config,
+        final Optional<Queue<ArtifactEvent>> events
+    ) {
         super(
             new SliceRoute(
                 new RtRulePath(
@@ -66,7 +91,7 @@ public final class RpmSlice extends Slice.Wrap {
                 new RtRulePath(
                     new ByMethodsRule(RqMethod.PUT),
                     new BasicAuthzSlice(
-                        new RpmUpload(storage, config),
+                        new RpmUpload(storage, config, events),
                         auth,
                         new OperationControl(
                             policy, new AdapterBasicPermission(config.name(), Action.Standard.WRITE)
@@ -76,7 +101,7 @@ public final class RpmSlice extends Slice.Wrap {
                 new RtRulePath(
                     new ByMethodsRule(RqMethod.DELETE),
                     new BasicAuthzSlice(
-                        new RpmRemove(storage, config),
+                        new RpmRemove(storage, config, events),
                         auth,
                         new OperationControl(
                             policy, new AdapterBasicPermission(config.name(), Action.Standard.READ)

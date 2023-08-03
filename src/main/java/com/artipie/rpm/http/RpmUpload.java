@@ -7,19 +7,23 @@ package com.artipie.rpm.http;
 import com.artipie.asto.Content;
 import com.artipie.asto.Key;
 import com.artipie.asto.Storage;
+import com.artipie.http.Headers;
 import com.artipie.http.Response;
 import com.artipie.http.Slice;
 import com.artipie.http.async.AsyncResponse;
+import com.artipie.http.headers.Login;
 import com.artipie.http.rq.RequestLineFrom;
 import com.artipie.http.rs.RsStatus;
 import com.artipie.http.rs.RsWithStatus;
 import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.asto.AstoRepoAdd;
+import com.artipie.scheduling.ArtifactEvent;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Streams;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
@@ -31,13 +35,20 @@ import org.reactivestreams.Publisher;
  * Slice for rpm packages upload.
  *
  * @since 0.8.3
+ * @checkstyle ClassDataAbstractionCouplingCheck (500 lines)
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class RpmUpload implements Slice {
 
     /**
      * Temp key for the packages to remove.
      */
     public static final Key TO_ADD = new Key.From(".add");
+
+    /**
+     * Repository type.
+     */
+    static final String REPO_TYPE = "rpm";
 
     /**
      * Asto storage.
@@ -50,14 +61,22 @@ public final class RpmUpload implements Slice {
     private final RepoConfig config;
 
     /**
+     * Artipie artifact upload/remove events.
+     */
+    private final Optional<Queue<ArtifactEvent>> events;
+
+    /**
      * RPM repository HTTP API.
      *
      * @param storage Storage
      * @param config Repository configuration
+     * @param events Artipie artifact upload/remove events
      */
-    RpmUpload(final Storage storage, final RepoConfig config) {
+    RpmUpload(final Storage storage, final RepoConfig config,
+        final Optional<Queue<ArtifactEvent>> events) {
         this.asto = storage;
         this.config = config;
+        this.events = events;
     }
 
     @Override
@@ -88,7 +107,23 @@ public final class RpmUpload implements Slice {
                                     || this.config.mode() == RepoConfig.UpdateMode.CRON) {
                                     result = CompletableFuture.allOf();
                                 } else {
-                                    result = new AstoRepoAdd(this.asto, this.config).perform();
+                                    final AstoRepoAdd repo =
+                                        new AstoRepoAdd(this.asto, this.config);
+                                    result = this.events.map(
+                                        queue -> repo.performWithResult().thenAccept(
+                                            list -> list.forEach(
+                                                info -> queue.add(
+                                                    new ArtifactEvent(
+                                                        RpmUpload.REPO_TYPE, this.config.name(),
+                                                        new Login(new Headers.From(headers))
+                                                            .getValue(),
+                                                        info.name(), info.version(),
+                                                        info.packageSize()
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    ).orElseGet(repo::perform);
                                 }
                                 return result;
                             }

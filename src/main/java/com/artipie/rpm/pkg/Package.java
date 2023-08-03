@@ -4,7 +4,6 @@
  */
 package com.artipie.rpm.pkg;
 
-import java.io.IOException;
 import java.util.List;
 import org.redline_rpm.header.Header;
 
@@ -36,9 +35,8 @@ public interface Package {
         /**
          * RPM file size.
          * @return File size
-         * @throws IOException On error
          */
-        long size() throws IOException;
+        long size();
 
         /**
          * RPM location href.

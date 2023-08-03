@@ -12,11 +12,13 @@ import com.artipie.asto.lock.storage.StorageLock;
 import com.artipie.asto.rx.RxStorageWrapper;
 import com.artipie.rpm.RepoConfig;
 import com.artipie.rpm.http.RpmRemove;
+import com.artipie.rpm.meta.PackageInfo;
 import hu.akarnokd.rxjava2.interop.SingleInterop;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -43,13 +45,41 @@ public final class AstoRepoRemove {
     private final RepoConfig cnfg;
 
     /**
+     * Collection with removed packages info if required.
+     */
+    private final Optional<Collection<PackageInfo>> infos;
+
+    /**
+     * Ctor.
+     * @param asto Abstract storage
+     * @param cnfg Repository config
+     * @param infos Collection with removed packages info if required
+     */
+    public AstoRepoRemove(final Storage asto, final RepoConfig cnfg,
+        final Optional<Collection<PackageInfo>> infos) {
+        this.asto = asto;
+        this.cnfg = cnfg;
+        this.infos = infos;
+    }
+
+    /**
+     * Ctor.
+     * @param asto Abstract storage
+     * @param cnfg Repository config
+     * @param infos Collection with removed packages info
+     */
+    public AstoRepoRemove(final Storage asto, final RepoConfig cnfg,
+        final Collection<PackageInfo> infos) {
+        this(asto, cnfg, Optional.of(infos));
+    }
+
+    /**
      * Ctor.
      * @param asto Abstract storage
      * @param cnfg Repository config
      */
     public AstoRepoRemove(final Storage asto, final RepoConfig cnfg) {
-        this.asto = asto;
-        this.cnfg = cnfg;
+        this(asto, cnfg, Optional.empty());
     }
 
     /**
@@ -60,29 +90,30 @@ public final class AstoRepoRemove {
      * @return Completable action
      */
     public CompletionStage<Void> perform(final Collection<String> checksums) {
-        return new AstoMetadataRemove(this.asto, this.cnfg).perform(checksums).thenCompose(
-            temp -> new AstoCreateRepomd(this.asto, this.cnfg).perform(temp).thenCompose(
-                nothing -> new AstoMetadataNames(this.asto, this.cnfg).prepareNames(temp)
-                    .thenCompose(
-                        keys -> {
-                            final StorageLock lock =
-                                new StorageLock(this.asto, AstoRepoRemove.META);
-                            return lock.acquire()
-                                .thenCompose(ignored -> this.remove(AstoRepoRemove.META))
-                                .thenCompose(
-                                    ignored -> CompletableFuture.allOf(
-                                        keys.entrySet().stream().map(
-                                            entry ->
-                                                this.asto.move(entry.getKey(), entry.getValue())
-                                        ).toArray(CompletableFuture[]::new)
-                                    )
-                                ).thenCompose(ignored -> lock.release()).thenCompose(
-                                    ignored -> this.remove(temp)
-                                );
-                        }
-                    )
-            )
-        );
+        return new AstoMetadataRemove(this.asto, this.cnfg, this.infos).perform(checksums)
+            .thenCompose(
+                temp -> new AstoCreateRepomd(this.asto, this.cnfg).perform(temp).thenCompose(
+                    nothing -> new AstoMetadataNames(this.asto, this.cnfg).prepareNames(temp)
+                        .thenCompose(
+                            keys -> {
+                                final StorageLock lock =
+                                    new StorageLock(this.asto, AstoRepoRemove.META);
+                                return lock.acquire()
+                                    .thenCompose(ignored -> this.remove(AstoRepoRemove.META))
+                                    .thenCompose(
+                                        ignored -> CompletableFuture.allOf(
+                                            keys.entrySet().stream().map(
+                                                entry ->
+                                                    this.asto.move(entry.getKey(), entry.getValue())
+                                            ).toArray(CompletableFuture[]::new)
+                                        )
+                                    ).thenCompose(ignored -> lock.release()).thenCompose(
+                                        ignored -> this.remove(temp)
+                                    );
+                            }
+                        )
+                )
+            );
     }
 
     /**
