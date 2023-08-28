@@ -91,7 +91,17 @@ SOFTWARE.
           <groupId>org.apache.commons</groupId>
           <artifactId>commons-compress</artifactId>
         </exclusion>
+        <!-- org.bouncycastle:bcpg-jdk15on:1.69 is excluded because of some vulnerabilities, version 1.70 is used -->
+        <exclusion>
+          <groupId>org.bouncycastle</groupId>
+          <artifactId>bcpg-jdk15on</artifactId>
+        </exclusion>
       </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpg-jdk15on</artifactId>
+      <version>1.70</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
