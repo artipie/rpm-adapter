@@ -1,11 +1,11 @@
 /*
  * The MIT License (MIT) Copyright (c) 2020-2023 artipie.com
- * https://github.com/artipie/rpm-adapter/LICENSE.txt
+ * https://github.com/artipie/artipie/LICENSE.txt
  */
 package com.artipie.rpm.pkg;
 
 import java.util.List;
-import org.redline_rpm.header.Header;
+import org.redline_rpm.header.AbstractHeader;
 
 /**
  * RPM package.
@@ -24,7 +24,7 @@ public interface Package {
          * @param tag Tag name
          * @return Header
          */
-        MetaHeader header(Header.HeaderTag tag);
+        MetaHeader header(AbstractHeader.Tag tag);
 
         /**
          * RPM file checksum.
